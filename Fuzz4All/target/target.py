@@ -242,6 +242,11 @@ class Target(object):
             no_input_prompt=self.no_input_prompt,
         )
         self.prompt = self.initial_prompt
+        # Phase 1 hook: inject source-aware constraints if coordinator is attached
+        if getattr(self, "_huf_saem_coordinator", None) is not None:
+            aug = self._huf_saem_coordinator.get_source_aware_prompt_augmentation()
+            if aug:
+                self.apply_source_aware_prompt(aug)
         self.m_logger.logo("Done", level=LEVEL.INFO)
 
     def generate_model(self) -> List[str]:
@@ -356,6 +361,12 @@ class Target(object):
             )
         elif f_result == FResult.TIMED_OUT:
             self.v_logger.logo("{} timed out".format(file_name), LEVEL.VERBOSE)
+
+    def apply_source_aware_prompt(self, augmentation: str) -> None:
+        """Prepend source-derived constraint specification into the initial prompt."""
+        comment = self.wrap_in_comment(augmentation)
+        self.initial_prompt = comment + "\n" + self.initial_prompt
+        self.prompt = self.initial_prompt
 
     def validate_all(self):
         for fuzz_output in track(

@@ -16,3 +16,9 @@ coverage==7.2.7
 pandas==2.0.3
 ollama
 requests
+# HUF-SAEM additional dependencies
+tree-sitter>=0.21.0
+tree-sitter-languages>=1.10.0
+chromadb>=0.4.24
+sentence-transformers>=2.6.0
+PyGithub>=2.1.1

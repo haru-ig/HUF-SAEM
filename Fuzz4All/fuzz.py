@@ -2,6 +2,7 @@
 
 import os
 import time
+from typing import Optional
 
 import click
 from rich.traceback import install
@@ -40,6 +41,7 @@ def fuzz(
     output_folder: str,
     resume: bool,
     otf: bool,
+    coordinator=None,
 ):
     target.initialize()
     with Progress(
@@ -71,12 +73,20 @@ def fuzz(
             count < number_of_iterations
             and time.time() - start_time < total_time * 3600
         ):
-            fos = target.generate()
+            # Phase 3: cloze mode may override generation entirely
+            cloze_code = coordinator.maybe_cloze_generate() if coordinator else None
+            if cloze_code:
+                fos = [cloze_code]
+            else:
+                fos = target.generate()
             if not fos:
                 target.initialize()
                 continue
             prev = []
             for index, fo in enumerate(fos):
+                # Phase 2: optionally apply a synthesized mutator
+                if coordinator:
+                    fo = coordinator.maybe_apply_mutator(fo, count)
                 file_name = os.path.join(output_folder, f"{count}.fuzz")
                 write_to_file(fo, file_name)
                 count += 1
@@ -86,7 +96,22 @@ def fuzz(
                     f_result, message = target.validate_individual(file_name)
                     target.parse_validation_message(f_result, message, file_name)
                     prev.append((f_result, fo))
+                    # Phase 3: record result for seed DB + cloze rate tracking
+                    # Phase 4: collect coverage for SAFE programs
+                    if coordinator:
+                        coordinator.record_result_phase3(f_result, fo, count)
+                        from Fuzz4All.target.target import FResult
+                        if f_result == FResult.SAFE:
+                            coordinator.run_coverage_and_update(file_name)
             target.update(prev=prev)
+            # Phase 4: periodically attempt constraint-solver injection
+            if coordinator:
+                solver_code = coordinator.maybe_run_constraint_solver(count)
+                if solver_code:
+                    solver_file = os.path.join(output_folder, f"{count}.fuzz")
+                    write_to_file(solver_code, solver_file)
+                    count += 1
+                    p.update(task, advance=1)
 
 
 # evaluate against the oracle to discover any potential bugs
@@ -164,6 +189,13 @@ def main_with_config(ctx, folder, cpu, batch_size, target, model_name):
     print(config_dict)
 
     target = make_target_with_config(config_dict)
+
+    coordinator = None
+    if "huf_saem" in config_dict:
+        from Fuzz4All.huf_saem.huf_saem_coordinator import HUFSAEMCoordinator
+        coordinator = HUFSAEMCoordinator(config_dict, target)
+        coordinator.initialize()
+
     if not fuzzing["evaluate"]:
         assert (
             not os.path.exists(folder) or fuzzing["resume"]
@@ -176,6 +208,7 @@ def main_with_config(ctx, folder, cpu, batch_size, target, model_name):
             output_folder=folder,
             resume=fuzzing["resume"],
             otf=fuzzing["otf"],
+            coordinator=coordinator,
         )
     else:
         evaluate_all(target)
