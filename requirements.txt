@@ -3,7 +3,7 @@ rich
 openai
 tiktoken
 torch
-transformers
+transformers>=4.36.0,<5.0.0
 python-dotenv
 click
 PyYAML
@@ -20,5 +20,5 @@ requests
 tree-sitter>=0.21.0
 tree-sitter-languages>=1.10.0
 chromadb>=0.4.24
-sentence-transformers>=2.6.0
+sentence-transformers>=2.6.0,<3.0.0
 PyGithub>=2.1.1
