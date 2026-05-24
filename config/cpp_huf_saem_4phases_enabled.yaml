@@ -1,0 +1,108 @@
+# HUF-SAEM full-featured C++ fuzzing configuration.
+# Copy this file, enable the phases you want, and adjust paths.
+# All existing config keys (fuzzing/target/llm) are unchanged.
+
+fuzzing:
+  output_folder: Results/cpp_huf_saem
+  num: 1000
+  total_time: 24          # hours
+  otf: true               # on-the-fly validation (required for Phase 4 coverage)
+  resume: false
+  evaluate: false
+  use_hand_written_prompt: false
+  no_input_prompt: false
+  prompt_strategy: 3
+  log_level: 1
+
+target:
+  language: cpp
+  path_documentation: config/documentation/cpp/cpp_23.md
+  path_example_code: null
+  path_hand_written_prompt: null
+  trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
+  input_hint: "#include <iostream>\nint main() {"
+  target_string: null
+
+llm:
+  temperature: 0.8
+  batch_size: 5
+  device: cuda
+  model_name: ollama/deepseek-coder-v2
+  max_length: 1024
+  additional_eos_tokens: []
+
+# --------------------------------------------------------------------------- #
+# HUF-SAEM Architecture Configuration
+# Each phase is independently opt-in. Set enabled: true to activate.
+# --------------------------------------------------------------------------- #
+huf_saem:
+
+  # Phase 1: Source-Aware Contextual Autoprompting
+  # Scans compiler source, distills constraints via GPT-4o, injects into prompt.
+  phase1:
+    enabled: true
+    # Path to a compiler source directory to scan (e.g. llvm/lib/Transforms)
+    source_dir: /home/ubuntu/llvm-project/llvm/lib/Transforms
+    # Grammar for tree-sitter: "cpp" | "c" | "python"
+    source_language: cpp
+    # Minimum conditional nesting depth to flag a function
+    complexity_threshold: 4
+    # Number of top-complexity snippets to distill (one GPT-4o call each)
+    top_k_snippets: 10
+    distillation_model: gpt-4o
+    # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
+    constraint_cache: null   # e.g. Results/cpp_huf_saem/prompts/phase1_constraints.txt
+
+  # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
+  # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.
+  phase2:
+    enabled: true
+    # GitHub repo to fetch closed bug reports from
+    github_repo: llvm/llvm-project
+    # Local CSV with existing bug data (see bugs/*.csv for format)
+    csv_path: null           # e.g. bugs/clang.csv
+    # GitHub token (or set GITHUB_TOKEN env var)
+    github_token: YOUR_GITHUB_TOKEN   # or set the GITHUB_TOKEN environment variable
+    # Fraction of iterations that apply a mutator instead of pure generation
+    mutate_ratio: 0.20
+    # Directory to persist synthesized .py mutator scripts
+    mutator_dir: null        # defaults to {output_folder}/mutators/
+    synthesis_model: gpt-4o
+
+  # Phase 3: Cloze-Masked Evolutionary Seed Preservation
+  # Maintains a valid-seed vector DB; activates cloze-fill when success rate drops.
+  phase3:
+    enabled: true
+    # Rolling window size for computing the success rate
+    window_size: 50
+    # Success rate threshold below which cloze mode activates (0.0–1.0)
+    cloze_threshold: 0.30
+    # Fraction of tokens to mask in each seed
+    mask_ratio: 0.15
+    # ChromaDB persistent storage path
+    seed_db_path: null       # defaults to {output_folder}/seed_db/
+    # sentence-transformers model for embedding seeds
+    embedding_model: all-MiniLM-L6-v2
+    islands:
+      num_islands: 2
+      biases:
+        - memory_allocation
+        - concurrency
+      # Iterations between inter-island migrations
+      migration_interval: 50
+      # Fraction of top-population to migrate
+      migration_fraction: 0.10
+    cloze_model: gpt-4o
+
+  # Phase 4: Active Constraint-Solving Feedback Loop
+  # Instruments with gcov, detects blocked branches, uses GPT-4o to solve constraints.
+  phase4:
+    enabled: true
+    # Consecutive misses before a branch is flagged as "blocked"
+    block_threshold: 10
+    # Minimum uncovered downstream lines to consider a branch worth targeting
+    min_downstream_size: 5
+    # Check blocked branches every N iterations
+    solver_interval: 100
+    solver_model: gpt-4o
+    gcov_binary: /usr/bin/gcov
