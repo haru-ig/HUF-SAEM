@@ -17,10 +17,13 @@ RUN /root/anaconda3/envs/fuzz4all/bin/pip install --no-cache-dir -r requirements
 # Clone LLVM source for Phase 1 source-aware autoprompting.
 RUN git clone --depth 1 https://github.com/llvm/llvm-project /home/llvm-project
 
-# Install Ollama and pre-pull deepseek-coder-v2 so containers don't need to download it.
+# Install zstd (required by the Ollama installer), then install Ollama.
+RUN apt-get update && apt-get install -y --no-install-recommends zstd && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://ollama.com/install.sh | sh
+
+# Pre-pull deepseek-coder-v2 so containers don't need to download it.
 # NOTE: deepseek-coder-v2 is ~9 GB — this significantly increases the image size.
-RUN curl -fsSL https://ollama.com/install.sh | sh && \
-    ollama serve & sleep 10 && \
-    ollama pull deepseek-coder-v2
+RUN /bin/bash -c "ollama serve & until ollama list > /dev/null 2>&1; do sleep 1; done && ollama pull deepseek-coder-v2"
 
 WORKDIR /home/Fuzz4All

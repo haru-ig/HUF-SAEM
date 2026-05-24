@@ -1,0 +1,6 @@
+.venv
+Results
+outputs
+__pycache__
+*.pyc
+.git
