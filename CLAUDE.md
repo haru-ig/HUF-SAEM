@@ -29,7 +29,7 @@ AWS EC2 **g5.2xlarge** — 1× NVIDIA A10G GPU (24 GB VRAM), 8 vCPUs, 32 GB RAM.
 
 **If you are reading this on a fresh EC2 instance, follow these steps to set up the environment.**
 
-Use the **Deep Learning OSS Nvidia Driver AMI GPU PyTorch 2.11 (Amazon Linux 2023)** — it comes with NVIDIA drivers, CUDA, PyTorch, and conda pre-installed, so Docker and `nvidia-container-toolkit` are not required for this setup. (Docker is optional if you want to sandbox the fuzzer, since it executes LLM-generated code; see the note at the bottom of this section.)
+Use the **Deep Learning OSS Nvidia Driver AMI GPU PyTorch 2.11 (Amazon Linux 2023)** — it comes with NVIDIA drivers, CUDA, and PyTorch pre-installed at `/opt/pytorch`. **Note:** this AMI does not ship conda; the setup uses the pre-installed `/opt/pytorch` Python 3.13 venv directly. Docker and `nvidia-container-toolkit` are not required. (Docker is optional if you want to sandbox the fuzzer; see the note at the bottom of this section.)
 
 ### 1. Clone the repo
 
@@ -38,12 +38,13 @@ git clone https://github.com/haru-ig/HUF-SAEM.git
 cd HUF-SAEM
 ```
 
-### 2. Create and activate the conda environment
+### 2. Activate the pre-installed Python environment
 
 ```bash
-conda create -n huf-saem python=3.12 -y
-conda activate huf-saem
+source /opt/pytorch/bin/activate
 ```
+
+Add `source /opt/pytorch/bin/activate` to `~/.bashrc` to activate automatically on login.
 
 ### 3. Install Python dependencies
 
@@ -63,10 +64,10 @@ sudo dnf install -y gcc gcc-c++ clang
 ### 5. Clone LLVM source (required for Phase 1)
 
 ```bash
-git clone --depth 1 https://github.com/llvm/llvm-project /home/llvm-project
+git clone --depth 1 https://github.com/llvm/llvm-project /home/ec2-user/llvm-project
 ```
 
-Set `phase1.source_dir: /home/llvm-project/llvm/lib/Transforms` in your config to point Phase 1 at it.
+Set `phase1.source_dir: /home/ec2-user/llvm-project/llvm/lib/Transforms` in your config to point Phase 1 at it.
 
 ### 6. Install Ollama and pull the generation model
 
@@ -120,7 +121,7 @@ docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 See `how_to_run.md` for the full command reference. Quick start:
 
 ```bash
-conda activate huf-saem
+source /opt/pytorch/bin/activate
 python Fuzz4All/fuzz.py --config config/cpp_huf_saem_1phase_enabled.yaml main_with_config \
     --folder outputs/huf_saem_outputs \
     --batch_size 5 \

@@ -42,7 +42,7 @@ huf_saem:
   phase1:
     enabled: true
     # Path to a compiler source directory to scan (e.g. llvm/lib/Transforms)
-    source_dir: /home/llvm-project/llvm/lib/Transforms
+    source_dir: /home/ec2-user/llvm-project/llvm/lib/Transforms
     # Grammar for tree-sitter: "cpp" | "c" | "python"
     source_language: cpp
     # Minimum conditional nesting depth to flag a function
