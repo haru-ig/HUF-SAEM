@@ -1,180 +1,108 @@
-# <p style="text-align: center;">  🌌️Fuzz4All: Universal Fuzzing with LLMs </p>
+# HUF-SAEM: Hybrid Universal Fuzzing with Source-Aware Autoprompting and LLM-Synthesized Evolutionary Mutators
 
-<p align="center">
-    <a href="https://arxiv.org/abs/2308.04748"><img src="https://img.shields.io/badge/arXiv-2308.04748-b31b1b.svg?style=for-the-badge">
-    <a href="https://doi.org/10.5281/zenodo.10456883"><img src="https://img.shields.io/badge/DOI-10456883-blue?style=for-the-badge">
-    <a href="https://hub.docker.com/r/stevenxia/fuzz4all/tags"><img src="https://img.shields.io/badge/docker-fuzz4all-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=blue">
-    <a href="https://github.com/fuzz4all/fuzz4all/blob/master/LICENSE"><img src="https://forthebadge.com/images/badges/cc-by.svg" style="height: 28px"></a>
-</p>
+HUF-SAEM is a compiler fuzzer built on top of [Fuzz4All](https://github.com/fuzz4all/fuzz4all) that combines black-box universal generation with white-box analytical depth. It extends Fuzz4All's dual-LLM autoprompting loop with four independently opt-in phases that address the core limitations of pure generative fuzzing: shallow optimization coverage, low throughput, and semantic invalidity in strict languages.
 
-This repository contains the source code for our ICSE'24 paper <i> "Fuzz4All: Universal Fuzzing with Large Language Models" </i>
+## Architecture
 
-## 🌌️ About
+HUF-SAEM adds four phases on top of Fuzz4All's core fuzzing loop. Each phase is independently enabled via config:
 
-`Fuzz4All` -- the first fuzzer that can universally target many input languages and features of these languages.
-> The key idea behind `Fuzz4All` is to leverage large language models (LLMs) as an input generation and mutation engine, which enables the 
-> approach to produce diverse and realistic inputs for any practically relevant language. 
+**Phase 1 — Source-Aware Contextual Autoprompting**
+Scans the compiler's own source code (e.g. `llvm/lib/Transforms`) using tree-sitter, extracts deeply nested conditional logic, and uses GPT-4o to reverse-engineer the input conditions that trigger specific optimization passes. The resulting constraints are injected directly into Fuzz4All's autoprompting matrix, turning generic documentation-driven prompts into targeted, source-aware instructions.
 
-To realize this potential, we present a novel **autoprompting technique**, which creates LLM prompts 
-that are well-suited for fuzzing, and a novel **LLM-powered fuzzing loop**, which iteratively updates 
-the prompt to create new fuzzing inputs.
+**Phase 2 — Bug-Report-Driven Metamorphic Mutator Synthesis**
+Ingests closed bug reports from the target compiler's GitHub issue tracker or local CSV files. A GPT-4o agent analyzes each bug's triggering code and synthesizes a standalone Python AST mutation script using tree-sitter. These mutators run deterministically at CPU speed, giving the fuzzer high-throughput mutation without an LLM call on every iteration.
 
-![](./resources/overview.gif)
+**Phase 3 — Cloze-Masked Evolutionary Seed Preservation**
+Maintains a ChromaDB vector store of valid seed programs. When the compilation success rate drops below a configurable threshold (e.g. 30% for Rust's borrow checker), the system switches to cloze-fill mode: it masks portions of known-valid seeds and prompts the LLM to fill in the blanks. Multiple evolutionary islands with distinct biases (e.g. memory allocation, concurrency) run in parallel to prevent generative collapse.
 
-## ⚡ Quick Start
+**Phase 4 — Active Constraint-Solving Feedback Loop**
+Instruments the target with `gcov` and monitors branch coverage. When a branch is repeatedly reached but never traversed, a GPT-4o agent analyzes the blocking condition and generates an input specifically crafted to satisfy it, breaking through local optima that random generation cannot escape.
 
-> [!Important]
-> We highly recommend running `Fuzz4All` in a sandbox environment/machine such as docker. 
-> Since LLMs may generate potential harmful code your machine, please proceed with caution.
-> We have provided a complete docker image in our artifact here: https://doi.org/10.5281/zenodo.10456883
+## Setup
 
-### Setup
+HUF-SAEM is designed to run on an AWS EC2 **g5.2xlarge** (NVIDIA A10G, 24 GB VRAM) using the AWS Deep Learning AMI. See `CLAUDE.md` for complete step-by-step environment setup instructions.
 
-First, create the corresponding environment and install the required packages
+### Quick install
 
 ```bash
-conda create -n fuzz4all python=3.10
-conda activate fuzz4all
-
+git clone https://github.com/haru-ig/HUF-SAEM.git
+cd HUF-SAEM
+conda create -n huf-saem python=3.12 -y
+conda activate huf-saem
 pip install -r requirements.txt
 pip install -e .
 ```
 
-Next, we need to quickly configure the environmental variables. Here are the default parameters:
+### Install target compilers
 
 ```bash
-export FUZZING_BATCH_SIZE=30
-export FUZZING_MODEL="bigcode/starcoderbase"
-export FUZZING_DEVICE="gpu"
-```
-or if you want to run Fuzz4All with local ollama mode:
-```bash
-export FUZZING_MODEL="ollama/starcoder"
+sudo apt install -y gcc g++ clang gcov
 ```
 
-if you want to use other model than starcoder, please change the name of model after `ollama/*`. 
-Make sure you have model locally pulled.
-The exact parameters will depend on the machine you are running `Fuzz4All` on.
-
-> [!Note]
-> Currently `Fuzz4All` only supports starcoderbase and starcoderbase-1b models. However, one can easily modify 
-> the source code to include and use other models. See `model.py` for more detail.
-
-To use the autoprompting mechanism of `Fuzz4All` via GPT-4, please also export your openai key
-
-```
-export OPENAI_API_KEY={key_here}
-```
-
-### Fuzzing
-
-Now you are ready to run `Fuzz4All` on all targets (with arbitrary inputs through autoprompting)! 
-
-`Fuzz4All` is configured easily through config files. The one used for our experiment are store in `configs/`. 
-The config file controls various aspects of `Fuzz4All` including the fuzzing language, time, autoprompting strategy, etc.
-Please see any example config file in `configs/` for more detail. 
-
-In general, you can run `Fuzz4All` with the following command:
+### Install Ollama and pull the generation model
 
 ```bash
-python Fuzz4All/fuzz.py --config {config_file.yaml} main_with_config \ 
-                        --folder outputs/fuzzing_outputs \
-                        --batch_size {batch_size} \
-                        --model_name {model_name} \
-                        --target {target_name}
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull deepseek-coder-v2
 ```
 
-where `{config_file.yaml}` is the config file you want to use, `{batch_size}` is the batch size you want to use, 
-`{model_name}` is the model name you want to use, and `{target_name}` is the target binary you want to fuzz.
+### Environment variables
 
-> [!Note]
-> you will neede to build/download your own binary ({target_name}) for fuzzing
-
-For targeted fuzzing (i.e., fuzzing a specific API or library of a language), you can modify the config file to point to the 
-specific API/library documentation you want the model to generate prompts for. Please see `configs/targeted` for examples of such configs.
-
-<details><summary>You should see similar outputs to the following: </summary> 
-
-```
-BATCH_SIZE: 30
-MODEL_NAME: bigcode/starcoderbase
-DEVICE: gpu
-...
-=== Target Config ===
-language: smt2
-folder: outputs/full_run/cvc5/
-...
-====================
-[INFO] Initializing ... this may take a while ...
-[INFO] Loading model ...
-=== Model Config ===
-model_name: bigcode/starcoderbase
-...
-====================
-[INFO] Model Loaded
-[INFO] Use auto-prompting prompt ...
-Generating prompts... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:07:30
-[INFO] Done
- (resuming from 0)
-[VERBOSE] ; SMT2 is an input language commonly used by SMT solvers, with its syntax based on S-expressions. The multi-sorted logic accommodates a simple type system to confirm that terms from contrasting sorts
-aren't the equal. Uninterpreted functions can be declared, with the function symbol being an uninterpreted one. SMT2 supports various theories, including integer and real arithmetic, with basic logical
-connectives, quantifiers, and attribute annotations. An SMT2 theory includes sort and function symbol declarations and assertions of facts about them. Terms can be checked against these theories to determine their
-validity, with successful queries returning "unsat".
-; Please create a short program which uses complex SMT2 logic for an SMT solver
-(set-logic ALL)
-...
-(set-logic ALL)
-(assert (forall ((n Int)) (=> (> n 0) (= n (* 2 n)))))
-(check-sat)
-(exit)
-; Please create a short program which uses complex SMT2 logic for an SMT solver
-(set-logic ALL)
-
-Fuzzing •   0% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━     30/100000 • 0:02:26
-```
-</details>
-
-After fuzzing, you can find the generated fuzzing programs in `outputs/full_run/{target}/`. 
-
-<details>
-<summary>Here is the structure of the output directory: </summary>
-
-```
-- outputs/full_run/{target}/
-    - prompts 
-        - best_prompt.txt: the best prompt found by `Fuzz4All` for the target.
-        - greedy_prompt.txt
-        - prompt_0.txt
-        - prompt_1.txt
-        - prompt_2.txt
-        - scores.txt: keep track of the scores of each prompt (used to select the best prompt).
-    - 0.fuzz
-    - 1.fuzz
-    ... # 
-    - log.txt
-    - log_generation.txt
-    - log_validation.txt
-```
-</details>
-
-Most notably, we log both the generation and validation process in `log_generation.txt` and `log_validation.txt` respectively. Furthermore, `log.txt` provides an overview of the fuzzing process (including any potential bugs found by `Fuzz4All`) 
-
-Potential bugs will look like this in `log.txt`:
-
-```
-[VERBOSE] 2345.fuzz has potential error! # this indicates that file 2345.fuzz may have a potential bug
+```bash
+export OPENAI_API_KEY=sk-...       # required for all phases (GPT-4o)
+export GITHUB_TOKEN=ghp_...        # optional — Phase 2 GitHub ingestion only
 ```
 
-## ⚙️ Artifact
+## Running
 
-Please see [`README_artifact.md`](https://github.com/fuzz4all/fuzz4all/blob/master/README_artifact.md) and [Zenodo link](https://zenodo.org/records/10456883) for a more detailed explanation of Fuzz4All 
-as well as how to produce the complete results from our paper 
+```bash
+conda activate huf-saem
+python Fuzz4All/fuzz.py --config config/cpp_huf_saem_4phases_enabled.yaml main_with_config \
+    --folder outputs/huf_saem_cpp \
+    --batch_size 5 \
+    --model_name ollama/deepseek-coder-v2 \
+    --target g++
+```
 
-## 🐛 Bugs Found
+See `how_to_run.md` for the full command reference and per-phase configuration guide.
 
-We have included a complete list of bugs found by `Fuzz4All` under `bugs/` folder.
+## Configuration
 
-## 📝 Citation
+Three ready-to-use config files are provided:
+
+| Config | Description |
+|---|---|
+| `config/cpp_huf_saem.yaml` | Base template — all phases disabled (vanilla Fuzz4All behaviour) |
+| `config/cpp_huf_saem_1phase_enabled.yaml` | Phase 1 only enabled |
+| `config/cpp_huf_saem_4phases_enabled.yaml` | All 4 phases enabled |
+
+Each phase is independently toggled with `enabled: true/false` in the `huf_saem:` block. Phases with `enabled: false` are skipped entirely and the fuzzer behaves as vanilla Fuzz4All.
+
+To create a custom config, copy `config/cpp_huf_saem.yaml` and enable the phases you need:
+
+```yaml
+huf_saem:
+  phase1:
+    enabled: true
+    source_dir: /home/llvm-project/llvm/lib/Transforms
+
+  phase2:
+    enabled: true
+    github_repo: llvm/llvm-project
+    mutate_ratio: 0.20
+
+  phase3:
+    enabled: true
+    cloze_threshold: 0.30
+
+  phase4:
+    enabled: true
+    solver_interval: 100
+```
+
+## Based on
+
+HUF-SAEM is built on top of [Fuzz4All](https://github.com/fuzz4all/fuzz4all), the universal fuzzer presented at ICSE 2024:
 
 ```bibtex
 @inproceedings{fuzz4all,
@@ -185,4 +113,3 @@ We have included a complete list of bugs found by `Fuzz4All` under `bugs/` folde
   year = {2024},
 }
 ```
-
