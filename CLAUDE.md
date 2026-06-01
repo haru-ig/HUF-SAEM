@@ -29,7 +29,7 @@ AWS EC2 **g5.2xlarge** — 1× NVIDIA A10G GPU (24 GB VRAM), 8 vCPUs, 32 GB RAM.
 
 **If you are reading this on a fresh EC2 instance, follow these steps to set up the environment.**
 
-Use the **AWS Deep Learning AMI (Ubuntu)** — it comes with NVIDIA drivers, CUDA, and conda pre-installed, so Docker and `nvidia-container-toolkit` are not required for this setup. (Docker is optional if you want to sandbox the fuzzer, since it executes LLM-generated code; see the note at the bottom of this section.)
+Use the **Deep Learning OSS Nvidia Driver AMI GPU PyTorch 2.11 (Amazon Linux 2023)** — it comes with NVIDIA drivers, CUDA, PyTorch, and conda pre-installed, so Docker and `nvidia-container-toolkit` are not required for this setup. (Docker is optional if you want to sandbox the fuzzer, since it executes LLM-generated code; see the note at the bottom of this section.)
 
 ### 1. Clone the repo
 
@@ -55,9 +55,10 @@ pip install -e .
 ### 4. Install target compilers
 
 ```bash
-sudo apt update
-sudo apt install -y gcc g++ clang gcov
+sudo dnf install -y gcc gcc-c++ clang
 ```
+
+(`gcov` is included with `gcc` on Amazon Linux 2023.)
 
 ### 5. Clone LLVM source (required for Phase 1)
 
@@ -97,15 +98,14 @@ The fuzzer executes LLM-generated code directly on the host. If you want process
 
 ```bash
 # Install Docker
-curl -fsSL https://get.docker.com | sh
+sudo dnf install -y docker
+sudo systemctl enable --now docker
 sudo usermod -aG docker $USER && newgrp docker
 
 # Install nvidia-container-toolkit
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
-  | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
-  | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-sudo apt update && sudo apt install -y nvidia-container-toolkit
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo \
+  | sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+sudo dnf install -y nvidia-container-toolkit
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
