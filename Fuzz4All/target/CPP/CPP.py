@@ -45,7 +45,8 @@ class CPPTarget(Target):
 
     def filter(self, code) -> bool:
         clean_code = code.replace(self.prompt_used["begin"], "").strip()
-        if self.prompt_used["target_api"] not in clean_code:
+        target_api = self.prompt_used["target_api"]
+        if target_api is not None and target_api not in clean_code:
             return False
         return True
 

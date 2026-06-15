@@ -18,7 +18,9 @@ ollama
 requests
 # HUF-SAEM additional dependencies
 tree-sitter>=0.21.0
-# tree-sitter-languages not available for Python 3.13; phase1_source_analyzer.py falls back to regex
+tree-sitter-cpp>=0.23.4
+tree-sitter-c>=0.24.2
+tree-sitter-python>=0.25.0
 chromadb>=0.4.24
 sentence-transformers>=2.6.0,<3.0.0
 PyGithub>=2.1.1

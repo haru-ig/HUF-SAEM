@@ -83,6 +83,8 @@ class HUFSAEMCoordinator:
         model = cfg.get("distillation_model", "gpt-4o")
         cache_path = cfg.get("constraint_cache")
 
+        self._p1_prompt_injector = PromptInjector()
+
         # Use cached constraints if available
         if cache_path and os.path.exists(cache_path):
             with open(cache_path, "r", encoding="utf-8") as f:
@@ -91,14 +93,12 @@ class HUFSAEMCoordinator:
             analyzer = SourceAnalyzer(source_dir, source_language, threshold)
             snippets = analyzer.top_k_snippets(top_k)
             agent = DistillationAgent(model=model)
-            constraints = agent.batch_distill(snippets)
+            constraints = agent.batch_distill(snippets, self.language)
             self._p1_constraint_spec = agent.build_constraint_spec(constraints, self.language)
             if cache_path:
                 os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
                 with open(cache_path, "w", encoding="utf-8") as f:
                     f.write(self._p1_constraint_spec)
-
-        self._p1_prompt_injector = PromptInjector()
 
     def _init_phase2(self, cfg: Dict) -> None:
         from Fuzz4All.huf_saem.phase2_bug_ingester import BugIngester

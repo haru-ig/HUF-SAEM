@@ -10,7 +10,7 @@ fuzzing:
   resume: false
   evaluate: false
   use_hand_written_prompt: false
-  no_input_prompt: false
+  no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
   prompt_strategy: 3
   log_level: 1
 
@@ -51,7 +51,9 @@ huf_saem:
     top_k_snippets: 10
     distillation_model: gpt-4o
     # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
-    constraint_cache: null   # e.g. Results/cpp_huf_saem/prompts/phase1_constraints.txt
+    # Cached outside output_folder: _init_phase1 runs (and may create this
+    # path's parent dir) before fuzz.py's "folder must not exist" check.
+    constraint_cache: outputs/phase1_constraints_cache/cpp_transforms.txt
 
   # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
   # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.

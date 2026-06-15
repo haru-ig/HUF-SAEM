@@ -10,7 +10,7 @@ fuzzing:
   resume: false
   evaluate: false
   use_hand_written_prompt: false
-  no_input_prompt: false
+  no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
   prompt_strategy: 3
   log_level: 1
 
