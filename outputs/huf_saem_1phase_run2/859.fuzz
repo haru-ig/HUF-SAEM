@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>  
+#include <llvm/IR/Intrinsics.h>     
+#include <llvm/IR/Value.h>          
+#include <llvm/IR/Function.h>       
+#include <llvm/IR/CallBase.h>       
+#include <llvm/IR/IntrinsicInst.h>  
+
+int main() {
+     
+    llvm::Function *F = nullptr;  
+    llvm::CallInst *CI = nullptr;  
+
+    if (!CI->use_empty()) {
+        auto *II = dyn_cast<llvm::IntrinsicInst>(CI);
+        if (II && II->getIntrinsicID() == llvm::Intrinsic::memset) {
+             
+            uint64_t NumBytes = 0;  
+            if (NumBytes <= 0 || (NumBytes % sizeof(int)) != 0) {
+                std::cerr << "Handling undefined behavior for atomic unordered memory intrinsics" << std::endl;
+            }
+        }
+    }
+
+     
+    if (F && !F->doesNotThrow()) {
+         
+         
+    }
+
+     
+
+    return 0;
+}

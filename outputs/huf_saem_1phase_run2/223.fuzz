@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    Argument *Arg = F->addParam

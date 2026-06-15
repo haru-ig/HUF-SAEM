@@ -1,0 +1,129 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::anymemintrinsic, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    assert(!F->doesNotThrow() && "Function must be marked as nounwind while CallInst itself is not");
+
+     
+    CallInst *MI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {}, {ConstantInt::get(Type::getInt32Ty(Context), 0)}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(MI) && "CallInst must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(MI) && "CallInst must be a memory intrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    IRPosition Pos(CB, IRKind::IK_Argument);
+    assert(Pos.getPositionKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "IRPosition must have a positions kind of IKP_CALL_SITE_ARGUMENT");
+
+     
+    Function *Func = Pos.getFunction();
+    assert(Func && "Associated function must be non-null");
+
+     
+    TreeEntry *E = new TreeEntry();
+    E->Scalars.push_back(Type::getInt32Ty(Context));
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+
+     
+    DenseMap<TreeEntry*, Type*> MinBWs;
+    MinBWs[E] = Type::getInt32Ty(Context);
+    assert(MinBWs.find(E) != MinBWs.end() && "MinBWs map must contain an entry for E");
+    assert(((IntegerType*)MinBWs[E])->getBitWidth() == 32 && "Entry must provide a valid bit width");
+
+     
+    E->State = TreeEntry::SplitVectorize;
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(E, 0));
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+
+     
+    Value *CondVal = ICmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, CI->getArgOperand(0), ConstantInt::get(Type::getInt32Ty(Context), 2));
+    Value *TrueVal = F->arg_begin();
+    Value *FalseVal = new BinaryOperator(Instruction::FNeg, new CallInst(Intrinsic::fabs, {CI->getArgOperand(0)}, "", BB), "", BB);
+    Type *SelType = TrueVal->getType();
+    assert(CondVal && "SelectInst condition must be a valid Value");
+    assert(TrueVal && "SelectInst true value must be a valid Value");
+    assert(FalseVal && "SelectInst false value must be a valid Value");
+    assert(SelType && "SelectInst type must be correctly retrievable");
+
+     
+    assert(isa<ICmpInst>(CondVal) && cast<ICmpInst>(CondVal)->getPredicate() == ICmpInst::ICMP_ULT && "SelectInst condition must be an icmp ult comparison");
+
+     
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && "SelectInst type must be either scalar or vector integer type");
+
+     
+    Value *X = CI->getArgOperand(0);
+    BinaryOperator *BO = new BinaryOperator(Instruction::FNeg, new CallInst(Intrinsic::fabs, {X}, "", BB), "", BB);
+    assert(!BO->hasNoSignedWrap() && !BO->hasNoUnsignedWrap() && "Function's logic must disable wrap flags");
+
+     
+    E->Idx = 1;
+    assert(E->Idx > 0 && "TreeEntry *TE must have a non-zero Idx");
+
+     
+    E->UserTreeIndex = 1;
+    assert(E->UserTreeIndex != UINT_MAX && "TreeEntry *TE must have a valid UserTreeIndex");
+
+     
+    Loop *L = new Loop();
+    L->setLoopPreheader(BasicBlock::Create(Context, "", F));
+    L->setLoopLatch(BasicBlock::Create(Context, "", F));
+    assert(L->getLoopPreheader() && "Loop must have a valid preheader block");
+    assert(L->getLoopLatch() && "Loop must have a valid latch block");
+
+     
+    L->setIsSafeToClone(true);
+    assert(L->getHeader()->hasAddressTaken() == false && "Loop header's address must not be taken");
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Instruction *I = new BinaryOperator(Instruction::Add, CI->getArgOperand(0), CI->getArgOperand(1));
+    assert(I && "Instruction *I must be non-null");
+    assert(I->getType()->isIntegerTy() && I->getType()->getScalarSizeInBits() == 32 && "Instruction *I must have a valid type with scalar size in bits equal to the bit width of DemandedMask and Known");
+
+     
+    unsigned Depth = 1;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must be less than or equal to MaxAnalysisRecursionDepth");
+
+     
+    Value *MaskBase = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    assert(MaskBase && "MaskBase must be correctly computed and used in further logic");
+
+    std::cout << "All assertions passed." << std::endl;
+    return 0;
+}

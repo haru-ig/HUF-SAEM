@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(FTy, F, { Arg1 }, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    Type *ScalarTy = Type::getInt32Ty(Context);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+            Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+            II->setArgOperand(2, NumBytes);
+        } else if (II->getIntrinsicID() == Intrinsic::atomic_load) {
+             
+            Value *Ptr = CI->getArgOperand(0);
+            AtomicOrdering ordering = AtomicOrdering::Unordered;
+            Type *MemTy = Ptr->getType()->getPointerElementType();
+            II->setAtomicOrdering(ordering);
+        }
+    }
+
+     
+    if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+        IRPosition Pos = IRPosition::callsite_argument(*CB);
+        assert(!Pos.getIRForDebug()->isNull() && "IRPosition should be valid");
+    }
+
+     
+
+    std::cout << "Test case generated successfully!" << std::endl;
+    return 0;
+}

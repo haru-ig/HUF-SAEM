@@ -1,0 +1,131 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &M);
+    Argument *Arg = F->arg_begin();
+    Arg->setParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    BB->getInstList().push_back(ConstantExpr::getBitCast(Zero, Type::getInt8PtrTy(Context)));
+
+     
+    CallBase *CI = CallBase::Create(FTy, Zero, {}, "", BB);
+
+     
+    CI->use_begin();
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(&M.getContext());
+
+     
+    Intrinsic::ID IID = Intrinsic::any_mem_intrinsic;  
+    CallBase *IntrCall = CallBase::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), IID, {}, "", BB);
+
+     
+    IntrCall->setDoesNotThrow();
+    IntrCall->setUnwindDest(&M.getContext());
+
+     
+    Value *One = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    BB->getInstList().push_back(BinaryOperator::CreateAdd(Zero, One, "", BB));
+
+     
+    CallBase *CtxCI = cast<CallBase>(BB->front());
+
+     
+    if (!CI->use_empty()) {
+        CI->simplify();
+    }
+
+     
+    assert(F && "Function should be non-null");
+
+     
+    BB->getInstList().push_back(SelectInst::Create(ICmpInst::create(ICmpInst::ICMP_ULT, Zero, One), Zero, One, "", BB));
+
+     
+    SelectInst *SI = cast<SelectInst>(BB->getInstList().back());
+    Value *CondVal = SI->getCondition();
+    Value *TrueVal = SI->getTrueValue();
+    Value *FalseVal = SI->getFalseValue();
+    Type *SelType = SI->getType();
+
+     
+    assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst should be valid");
+
+     
+    BB->getInstList().push_back(BinaryOperator::CreateFNeg(TrueVal, "", BB));
+
+     
+    KnownFPClass Known;
+    assert(Known.isUnknown() && "Known should be in an uninitialized state");
+
+     
+    BB->getInstList().push_back(CallInst::Create(Intrinsic::fabs, TrueVal, {}, "", BB));
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth should not exceed maximum allowed recursion depth");
+
+     
+    BB->getInstList().push_back(CallInst::Create(Intrinsic::ctpop, TrueVal, {}, "", BB));
+
+     
+    FPClassTest DemandedMask;
+    assert(DemandedMask.isValid() && "DemandedMask should be a valid FPClassTest value");
+
+     
+    BB->getInstList().push_back(PHINode::Create(Type::getInt32Ty(Context), 0, "", BB));
+
+     
+    Loop *L = nullptr;  
+    assert(L && L->getLoopPreheader() && L->getLoopLatch() && "Loop should have valid preheader and latch block");
+
+     
+    BB->getInstList().push_back(BranchInst::Create(BB, BB, CondVal, BB));
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count should be greater than zero");
+
+     
+    BB->getInstList().push_back(ICmpInst::Create(ICmpInst::ICMP_ULT, Zero, One, "", BB));
+
+     
+    Value *I = cast<Value>(CI);
+    assert(I && I->getType()->isIntegerTy() && "I should be a non-null integer or integer vector type with scalar size in bits equal to the bit width of DemandedMask and Known");
+
+     
+    BB->getInstList().push_back(BinaryOperator::CreateFNeg(TrueVal, "", BB));
+
+     
+    unsigned NLZ = 1;
+    assert(NLZ > 0 && "There should be unused high bits in the operation");
+
+     
+    BB->getInstList().push_back(TruncInst::Create(Zero, Type::getInt8Ty(Context), "", BB));
+
+     
+    TreeEntry *TE = nullptr;  
+    assert(TE->get

@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "func", &M);
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), Type::getInt32Ty(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    assert(!CI->doesNotThrow() && "CallInst itself should not be marked as nounwind");
+
+     
+    CI->print(errs());
+
+    return 0;
+}

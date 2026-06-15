@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+void generateTestCode(LLVMContext &Ctx) {
+    Module M("test_module", Ctx);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Ctx), 42);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::abs, {}), {Arg}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Ctx));
+
+     
+    assert(!F->doesNotThrow() && "Function must be marked as nounwind");
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID ID = CI->getIntrinsicID();
+        if (ID == Intrinsic::abs) {
+             
+            Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Ctx), 10);
+            Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Ctx), -10);
+            SelectInst *SI = new SelectInst(CI->getType(), CI, TrueVal, FalseVal, "", BB);
+
+             
+            assert(SI->hasOneUse() && "SelectInst must have at least one use");
+            Type *SelType = SI->getType();
+            Value *CondVal = ICmpInst::make(ICmpInst::ICMP_ULT, CI, ConstantInt::get(CI->getType(), 2), "", BB);
+            SelectInst *SIValid = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+
+             
+            assert(!isSimplifiedOrTransformed(SI) && "SelectInst should not be simplified or transformed");
+        }
+    }
+
+     
+    if (verifyModule(M, &outs())) {
+        errs() << "Error: Invalid LLVM IR generated.\n";
+        return;
+    }
+
+     
+    F->print(errs());
+}
+
+int main() {
+    LLVMContext Ctx;
+    generateTestCode(Ctx);
+    return 0;
+}

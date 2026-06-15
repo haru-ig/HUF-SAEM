@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    CallInst *AtomicCI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::atomic_load), {}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(AtomicCI) && "CallInst must be an intrinsic call");
+    AtomicCI->setDoesNotThrow();
+
+     
+    Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    assert(NumBytes->getBitWidth() == 32 && "NumBytes must be non-positive or not a multiple of the element size");
+
+     
+    Value *CtxI = AtomicCI;
+    assert(isa<CallBase>(CtxI) && "Context instruction must be a CallBase instance");
+
+     
+    simplifyCall(CI);
+
+     
+     
+
+    std::cout << "Test case generated successfully!" << std::endl;
+    return 0;
+}

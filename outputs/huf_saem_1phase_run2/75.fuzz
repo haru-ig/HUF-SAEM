@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", &module);
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Argument *arg = &*func->args().begin();
+    arg->setName("inputArg");
+
+     
+    CallInst *ci = CallInst::Create(funcType, func, { arg }, "", bb);
+    assert(!ci->use_empty() && "CallInst must have at least one use.");
+
+     
+    assert(func->doesNotThrow() && !ci->doesNotThrow() && "Function must be nounwind and CallInst must not be nounwind.");
+
+     
+    Intrinsic::ID intrinsicID = Intrinsic::memcpy;
+    IntrinsicInst *intrinsic = IntrinsicInst::Create(module.getContext(), intrinsicID, { ci }, "", bb);
+    assert(dyn_cast<IntrinsicInst>(ci) && "CallInst must be an intrinsic call.");
+
+     
+    AnyMemIntrinsic *anyMem = cast<AnyMemIntrinsic>(intrinsic);
+    Value *numBytes = anyMem->getArgOperand(1);
+    assert(isa<ConstantInt>(numBytes) && "Memory intrinsic must have a constant zero or negative length.");
+
+     
+    module.print(errs(), nullptr);
+
+    return 0;
+}

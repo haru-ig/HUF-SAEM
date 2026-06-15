@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool generateTestFunction(Function &F) {
+     
+    if (F.arg_size() == 0) return false;
+    
+     
+    Argument *Arg = nullptr;
+    for (auto &A : F.args()) {
+        if (A.hasReturnedAttr()) {
+            Arg = &A;
+            break;
+        }
+    }
+    if (!Arg) return false;
+
+     
+    IRBuilder<> Builder(&F);
+    std::vector<Value *> Args;
+    Args.push_back(Arg);
+    CallInst *CI = Builder.CreateCall(Intrinsic::getDeclaration(&F, Intrinsic::anymem_start), Args);
+    
+     
+    if (CI->use_empty()) return false;
+
+     
+    F.setDoesNotThrow();
+    F.setNoUnwind();
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) return false;
+    auto *AnyMem = dyn_cast<AnyMemIntrinsic>(CI);
+    if (!AnyMem) return false;
+
+     
+    uint64_t NumBytes = AnyMem->getNumElements();
+    if (NumBytes <= 0 || (NumBytes % 8 != 0)) return true;  
+
+     
+    
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Builder.getInt32Ty(), {}, false);
+    Function &F = *Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+    
+     
+    Argument *Arg1 = F.addArg(Builder.getInt32Ty(), "arg1");
+    Arg1->addAttribute(AttributeSet::ReturnIndex, Attribute::get(*Context, Attribute::Returned));
+
+    if (generateTestFunction(F)) {
+        std::cout << "Test function generated successfully!\n";
+    } else {
+        std::cout << "Failed to generate test function.\n";
+    }
+    
+    return 0;
+}

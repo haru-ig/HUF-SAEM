@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *One = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Two = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    Value *CondVal = ICmpInst::create(Instruction::ICMP_ULT, Zero, Two, "", BB->getTerminator());
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = FPMathOperator::createFNeg(FCeil(FAbs(One)), "", BB->getTerminator());
+    InsertElementInst *IEI = new InsertElementInst(TrueVal, TrueVal, Zero, "", BB->getTerminator());
+
+     
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB->getTerminator());
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::memset, {Zero}, 0, "", BB);
+    CI->addUse(SI);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    M->print(outs(), nullptr);
+
+    delete M;
+    return 0;
+}

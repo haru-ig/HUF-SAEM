@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::abs, {Arg->getType()}), {Arg}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is an intrinsic call.\n";
+    } else {
+        errs() << "CallInst is not an intrinsic call.\n";
+    }
+
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+
+     
+    if (!CI->doesNotThrow()) {
+        errs() << "CallInst throws.\n";
+    } else {
+        errs() << "CallInst does not throw.\n";
+    }
+
+     
+    F->print(errs());
+
+    return 0;
+}

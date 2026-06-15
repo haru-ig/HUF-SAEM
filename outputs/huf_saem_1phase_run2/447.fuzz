@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createTestFunction(LLVMContext &context) {
+    Module *module = new Module("test", context);
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(context), {}, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", module);
+
+     
+    func->front().getParent()->setName("entry");
+
+     
+    IRBuilder<> builder(&func->front(), func->front().begin());
+    Value *arg = ConstantInt::get(Type::getInt32Ty(context), 0);
+    CallInst *CI = CallInst::Create(nullptr, arg, "", &func->front());
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    func->setDoesNotThrow();
+    func->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    assert(II->getIntrinsicID() == Intrinsic::anymemintrinsic && "Must be AnyMemIntrinsic");
+
+     
+
+    return func;
+}
+
+int main() {
+    LLVMContext context;
+    Module *module = new Module("test", context);
+    Function *func = createTestFunction(context);
+
+     
+    module->print(outs(), nullptr);
+
+    delete func;
+    delete module;
+
+    return 0;
+}

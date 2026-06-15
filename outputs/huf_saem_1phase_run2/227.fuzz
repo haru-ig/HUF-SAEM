@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Analysis/LoopAnalysis.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Module *createSampleModule() {
+  LLVMContext Context;
+  Module *M = new Module("test", Context);
+  
+   
+  FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "foo", M);
+  
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  IRBuilder<> Builder(&*BB->begin());
+  
+   
+  CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+  CI->setDoesNotThrow();  
+  
+  return M;
+}
+
+ 
+bool isIntrinsicAndType(const CallInst &CI, Intrinsic::ID ID) {
+  if (auto *II = dyn_cast<IntrinsicInst>(&CI)) {
+    if (II->getIntrinsicID() == ID) return true;
+  }
+  return false;
+}
+
+ 
+int main() {
+  Module *M = createSampleModule();
+  Function &F = *M->begin();  
+  
+   
+  for (auto &I : instructions(F)) {
+    if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+      if (isIntrinsicAndType(*CI, Intrinsic::sqrt)) {
+         
+        errs() << "CallInst is an intrinsic of type sqrt\n";
+        
+         
+      }
+    }
+  }
+  
+  return 0;
+}

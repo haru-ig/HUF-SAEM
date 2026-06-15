@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "test_func", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::anymemintrinsic), { Arg }, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setCallingConv(CallingConv::C);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    assert(AII && "Expected an intrinsic instruction");
+    assert(AII->getIntrinsicID() == Intrinsic::anymemintrinsic && "Expected anymemintrinsic intrinsic");
+
+     
+    M->print(outs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", &module);
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Argument *arg = func->getArg(0);
+
+     
+    Value *vec = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    ConstantInt *idx = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Instruction *insertelem = InsertElementInst::Create(vec, arg, idx, "", bb);
+
+     
+    insertelem->addUse(arg);
+
+     
+    CallBase *callIntrinsic = CallInst::Create(Intrinsic::getDeclaration(&module, Intrinsic::memset), {}, "", bb);
+    assert(!callIntrinsic->use_empty() && "CallInst must have at least one use");
+
+     
+    func->setDoesNotThrow();
+    func->addFnAttr(Attribute::Nounwind);
+
+     
+    IntrinsicInst *anyMemIntrinsic = dyn_cast<IntrinsicInst>(callIntrinsic);
+    assert(anyMemIntrinsic && "CallInst must be an intrinsic call");
+
+     
+
+     
+
+    std::cout << "Test program generated successfully." << std::endl;
+    return 0;
+}

@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+  
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getVoidTy(Context), {Type::getInt32Ty(Context)}, false);
+    Function* F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::memcpy;  
+    std::vector<Value*> Args;
+    Args.push_back(ConstantInt::get(Type::getInt32Ty(Context), 0));  
+    Args.push_back(ConstantInt::get(Type::getInt32Ty(Context), sizeof(int)));  
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), IntrID), Args, "", BB);
+
+     
+    CI->addUse(*F);
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    if (IntrID == Intrinsic::memcpy) {
+        ConstantInt* Length = cast<ConstantInt>(Args[1]);
+        int NumBytes = Length->getSExtValue();
+         
+        assert(NumBytes <= 0 || NumBytes % sizeof(int) != 0);
+    }
+
+     
+
+    std::cout << "Test setup completed." << std::endl;
+    return 0;
+}

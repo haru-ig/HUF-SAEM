@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void generateTestModule(LLVMContext &Ctx) {
+    Module *Mod = new Module("test", Ctx);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Ctx), {Type::getInt32Ty(Ctx)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    CallInst *CI = CallInst::Create(F, {}, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::anymemintrinsic && "Must be AnyMemIntrinsic");
+
+     
+    if (II->getIntrinsicID() == Intrinsic::atomicrmw) {
+         
+        Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
+        assert(NumBytes && "Length must be non-positive for atomic intrinsics");
+    }
+
+     
+    Mod->print(errs(), nullptr);
+}
+
+int main() {
+    LLVMContext Ctx;
+    generateTestModule(Ctx);
+    return 0;
+}

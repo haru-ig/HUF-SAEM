@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+     
+
+     
+    Function *F = nullptr;  
+    BasicBlock *BB = nullptr;  
+
+     
+    CallInst CI(nullptr, {}, "", BB);
+
+     
+    if (!CI.use_empty()) {
+         
+        Value *SimplifiedValue = simplifyCall(CI);
+        if (SimplifiedValue) {
+            CI.replaceAllUsesWith(SimplifiedValue);
+        }
+    }
+
+     
+    if (!CI.doesNotThrow()) {
+        F->setDoesNotThrow();
+    }
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    if (II && II->getIntrinsicID() == llvm::Intrinsic::anymemintrinsic) {
+         
+        int NumBytes = 0;  
+        if (NumBytes <= 0 || !isMultiple(NumBytes, 16)) {  
+             
+        }
+    }
+
+     
+    errs() << "Function: " << F->getName().str() << "\n";
+    CI.print(errs());
+
+    return 0;
+}

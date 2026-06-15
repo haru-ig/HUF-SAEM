@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createCallInst(Function &F) {
+  LLVMContext &Ctx = F.getContext();
+  Module *M = F.getParent();
+
+   
+  Intrinsic::ID IntrID = Intrinsic::sqrt;
+  CallBase *CI = CallInst::Create(IntrID, {}, "", F.back());
+
+   
+  F.setDoesNotThrow();
+  F.setNoUnwind();
+
+   
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+}
+
+ 
+void createLoop(Function &F) {
+  BasicBlock *Entry = BasicBlock::Create(F.getContext(), "", &F);
+  BranchInst::Create(Entry, Entry);  
+
+  Loop *L = new Loop();
+  L->initialize(Entry);
+
+   
+  assert(L->isSafeToClone() && "Loop must be safe to clone");
+  assert(L->getLoopPreheader() != nullptr && "Loop must have a preheader block");
+  assert(L->getLoopLatch() != nullptr && "Loop must have a latch block");
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("test", Context);
+  FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+  Function &F = *Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+   
+  createCallInst(F);
+
+   
+  createLoop(F);
+
+  return 0;
+}

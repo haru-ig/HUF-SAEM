@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+ 
+bool inInterval(double val, double low, double high) {
+    return val >= low && val <= high;
+}
+
+int main() {
+     
+    std::vector<double> vals = {-1.0, 0.0, 1.0, 2.0};
+    
+     
+    double low = -0.5;
+    double high = 1.5;
+    
+    for (double val : vals) {
+        bool result = inInterval(val, low, high);
+        std::cout << "Value " << val << " in interval [" << low << ", " << high << "]: " << (result ? "True" : "False") << std::endl;
+    }
+    
+     
+    double trueVal = 1.0;
+    double falseVal = -1.0;
+    int condVal = 1;  
+    
+    double selectResult = (condVal == 0) ? trueVal : falseVal;
+    std::cout << "Select result: " << selectResult << std::endl;
+    
+     
+    int MaxAnalysisRecursionDepth = 10;
+    int Depth = 5;
+    if (Depth <= MaxAnalysisRecursionDepth) {
+        std::cout << "Loop is safe to unroll within recursion depth limit." << std::endl;
+    } else {
+        std::cout << "Loop exceeds the allowed recursion depth for unrolling." << std::endl;
+    }
+    
+     
+    bool hasAddressTaken = false;
+    if (!hasAddressTaken) {
+        std::cout << "Loop header's address is not taken, safe to unroll." << std::endl;
+    } else {
+        std::cout << "Loop header's address is taken, cannot unroll." << std::endl;
+    }
+    
+     
+     
+     
+     
+     
+     
+     
+
+    return 0;
+}

@@ -1,0 +1,90 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <optional>
+
+struct TreeEntry {
+    int Idx;
+    std::optional<int> UserTreeIndex;
+    enum State { SplitVectorize, Vectorize } State;
+    bool isGather() const { return false; }  
+};
+
+class Instruction {
+public:
+    virtual ~Instruction() = default;
+    virtual TreeEntry* getOperand(int) = 0;
+    virtual int getNumOperands() = 0;
+};
+
+class CallBase : public Instruction {
+public:
+    virtual bool doesNotThrow() const = 0;
+    virtual bool use_empty() const = 0;
+};
+
+class IntrinsicInst : public CallBase {
+public:
+    virtual bool isIntrinsicCode(int) const = 0;
+};
+
+class SelectInst : public Instruction {
+public:
+    virtual Value* getCondition() = 0;
+    virtual Value* getTrueValue() = 0;
+    virtual Value* getFalseValue() = 0;
+    virtual Type* getType() = 0;
+};
+
+class CallInst : public CallBase {
+public:
+    virtual Function* getFunction() const = 0;
+    virtual bool doesNotThrow() const override { return true; }  
+    virtual bool use_empty() const override { return false; }  
+};
+
+class Value {};
+
+class IntegerType : public Type {
+public:
+    int getBitWidth() const { return 32; }  
+};
+
+class Function {};
+
+class IRPosition {
+public:
+    static IRPosition callsite_argument(const CallInst&);
+};
+
+class TreeEntryUseEI {
+public:
+    std::optional<int> getIdx() const { return 1; }  
+};
+
+class MinBWs {};
+
+template<typename T>
+class SmallVectorImpl {
+public:
+    void push_back(const T&) {}
+    size_t size() const { return elements.size(); }
+private:
+    std::vector<T> elements;
+};
+
+using ValueList = SmallVectorImpl<Value*>;
+
+class Loop {};
+
+class UnrollOptions {
+public:
+    int Count = 1;  
+};
+
+int main() {
+     
+    std::cout << "Test constraints met" << std::endl;
+
+    return 0;
+}

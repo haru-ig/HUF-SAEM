@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "main", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 16)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    CI->setDoesNotThrow();  
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind.");
+
+     
+    F->setHasNoReturn();
+    assert(F->hasFnAttribute(Attribute::NoUnwind) && "Function should be marked as nounwind.");
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        errs() << "CallInst is an AnyMemIntrinsic.\n";
+    } else {
+        errs() << "CallInst is not an AnyMemIntrinsic.\n";
+    }
+
+     
+
+    return 0;
+}

@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[1] = { ConstantInt::get(Type::getInt32Ty(Context), 0) };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), Args, "", BB);
+
+     
+    CI->addUse(Value::use_iterator(), nullptr);
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    assert(AMII && "Expected a memory intrinsic");
+
+     
+    uint64_t NumBytes = 0;
+    if (!AMII->isZeroLength()) {
+        uint64_t ElementSize = 1;  
+        assert(NumBytes % ElementSize != 0 && "Length should be non-positive or not a multiple of element size");
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

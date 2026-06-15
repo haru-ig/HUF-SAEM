@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Dominators.h>
+#include <llvm/Transforms/Scalar/SimplifyCFGPass.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = new Argument(Type::getInt32Ty(Context), "arg", nullptr, F);
+    Arg->setParamAttribute(0, AttributeSet::ReturnIndex, Attribute::getWithDefaultSyncScopeID(AttrScope::Function));
+
+     
+    CallBase *CI = CallInst::Create(F, {Arg}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    auto *AMTy = II->getArgOperand(0)->getType();
+    if (auto *ATy = dyn_cast<ArrayType>(AMTy)) {
+        AMTy = ATy->getElementType();
+    }
+    assert(isa<VectorType>(AMTy) || isa<IntegerType>(AMTy) && "Intrinsic must be an AnyMemIntrinsic");
+
+     
+    simplifyCallInst(*CI);
+
+    return 0;
+}

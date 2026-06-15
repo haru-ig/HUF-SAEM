@@ -1,0 +1,76 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Passes/PassPlugin.h>
+
+using namespace llvm;
+
+ 
+void exampleFunction(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), Type::getInt32Ty(Ctx), false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "example", M);
+  F->addParamAttr(0, Attribute::Returned);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+  CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Ctx), Type::getInt8PtrTy(Ctx), ConstantInt::get(Type::getInt64Ty(Ctx), 1)}, "", BB);
+
+   
+  CI->addUse(Value::use_begin(), Value::use_end());
+
+   
+  F->setDoesNotThrow();
+  F->setNoUnwind();
+
+   
+  CallInst *AnyMemCI = CallInst::CreateIntrinsic(Intrinsic::any_mem, {}, "", BB);
+
+   
+  AnyMemCI->addUse(Value::use_begin(), Value::use_end());
+  AnyMemCI->setDoesNotThrow();
+
+   
+  LoopInfo LI;
+  auto *L = LI.getLoopFor(BB);
+
+   
+  if (!L || !L->getLoopPreheader() || !L->getLoopLatch()) {
+    return;
+  }
+
+   
+  UnrollOptions ULO;
+  ULO.Count = 2;
+  if (!L->isSafeToClone() || L->hasAddressTaken() || ULO.Count <= 0) {
+    return;
+  }
+
+   
+  const unsigned MaxAnalysisRecursionDepth = 10;
+  unsigned Depth = 5;
+  if (Depth > MaxAnalysisRecursionDepth) {
+    return;
+  }
+
+   
+}
+
+int main() {
+  LLVMContext Context;
+  Module M(Context);
+  exampleFunction(M);
+  return 0;
+}

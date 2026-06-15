@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+ 
+bool handleConstraints(Function &F) {
+     
+    for (auto &arg : F.args()) {
+        if (arg.hasReturnedAttr()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ 
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    Argument *arg = F->addArg(Type::getInt32Ty(Context));
+    arg->addAttr(::Attribute::Returned);
+
+     
+    if (handleConstraints(*F)) {
+        std::cout << "Constraints handled successfully!\n";
+    } else {
+        std::cout << "Failed to handle some constraints.\n";
+    }
+
+    return 0;
+}

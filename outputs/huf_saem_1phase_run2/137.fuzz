@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Function.h>
+
+using namespace llvm;
+
+int main() {
+     
+    Function *func = Function::Create(
+        FunctionType::get(Type::getInt32Ty(*globalContext), false), 
+        GlobalValue::ExternalLinkage, "testFunc", TheModule);
+    
+    BasicBlock *entryBB = BasicBlock::Create(*globalContext, "", func);
+    IRBuilder<> builder(entryBB);
+
+     
+    Value *arg1 = ConstantFP::get(*globalContext, APFloat(1.0));
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(TheModule, Intrinsic::fabs, Type::getFloatTy(*globalContext)), arg1);
+
+     
+    func->setDoesNotThrow();
+    CI->addUse(func->arg_begin());
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "Intrinsic call detected." << std::endl;
+         
+    } else {
+        std::cout << "Not an AnyMemIntrinsic." << std::endl;
+    }
+
+    return 0;
+}

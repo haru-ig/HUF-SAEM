@@ -1,0 +1,85 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Callee = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    CallBase *CI = CallInst::Create(nullptr, Callee, "", BB);
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = IntrinsicInst::Create(Instruction::IntToPtr, CI, "", BB);
+    assert(II && "Failed to create intrinsic instruction");
+
+     
+    II->addUse(*CI);
+
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 2);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, CI, TrueVal, "cond", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "Select type must be integer");
+    assert(SI->getTrueValue()->getType() == SI->getFalseValue()->getType() && "True and false values must have same type");
+
+     
+    Loop *L = new Loop();
+    L->addBlockToList(BB);
+
+     
+    BasicBlock *PreHeader = BasicBlock::Create(Context, "", F);
+    BasicBlock *Latch = BasicBlock::Create(Context, "", F);
+    L->setLoopPreheader(PreHeader);
+    L->setLoopLatch(Latch);
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Value *X = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Instruction *FNegInst = new FNegInst(X, "", BB);
+
+     
+    KnownFPClass Known;
+    assert(Known == KnownFPClass() && "Known must be in an uninitialized state");
+
+     
+    LegacyPassManager Passes;
+    Passes.add(createInstructionCombiningPass());
+    Passes.run(*F);
+
+    return 0;
+}

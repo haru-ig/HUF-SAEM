@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &(*F->arg_begin());
+    Arg->setParamAttr(0, AttributeKind::Returned, Attribute::NoUnwind);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::sqrt;  
+    std::vector<Value *> Args;
+    Args.push_back(Arg);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), Args, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    F->setDoesNotThrow();
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == IntrID && "CallInst must be an intrinsic call");
+
+     
+    if (II->isMemIntrinsic()) {
+        Value *NumBytes = II->getArgOperand(1);  
+        assert(!isa<ConstantInt>(NumBytes) || cast<ConstantInt>(NumBytes)->getValue().ule(0), "Length must be non-positive or not a multiple of the element size");
+    }
+
+     
+    F->print(errs());
+    M.print(errs());
+
+    return 0;
+}

@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context), Type::getInt32Ty(Context), Type::getInt32Ty(Context)}, {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::ExternalLinkage);
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+        }
+    }
+
+    std::cout << "Module and Function created with intrinsic call." << std::endl;
+
+    return 0;
+}

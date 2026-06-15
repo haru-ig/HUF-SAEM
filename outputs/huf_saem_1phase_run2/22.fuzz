@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 10)}, Args, "", BB);
+    
+     
+    CI->addUse(Type::getInt32Ty(Context));
+    
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+    
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        errs() << "CallInst meets all specified conditions.\n";
+    } else {
+        errs() << "CallInst does not meet some of the specified conditions.\n";
+    }
+    
+    return 0;
+}

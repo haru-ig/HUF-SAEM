@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {Arg}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = cast<IntrinsicInst>(CI);
+        if (II->isMemoryOp()) {
+             
+            AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+            if (!AMII->isZeroLength() && !AMII->isAtomic()) {
+                 
+                std::cout << "CallInst satisfies all constraints." << std::endl;
+            }
+        }
+    }
+
+    return 0;
+}

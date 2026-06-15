@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(FTy, F, {Arg}, "", BB);
+    CI->setDoesNotThrow();
+
+     
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+     
+    Loop *L = new Loop(*BB, LI);
+    L->setLoopForall(*BB);
+    if (L) {
+        UnrollLoopOptions ULO;
+        ULO.Count = 2;  
+        llvm::UnrollLoop(L, ULO);
+    }
+
+     
+    Mod->print(outs(), nullptr);
+
+    return 0;
+}

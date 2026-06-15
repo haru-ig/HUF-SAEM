@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 16)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+    
+     
+    auto *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic");
+    auto *AM = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AM && "The intrinsic call must be a memory intrinsic");
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+    
+     
+
+    std::cout << "Test setup completed." << std::endl;
+    return 0;
+}

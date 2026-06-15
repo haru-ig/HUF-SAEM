@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Passes/PassPlugin.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createTestModule(LLVMContext &ctx, Module *mod) {
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(ctx), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", mod);
+    func->setDoesNotThrow();
+    func->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(ctx, "", func);
+    IRBuilder<> builder(entryBB);
+    Value *arg = ConstantInt::get(Type::getInt32Ty(ctx), 1);
+    CallInst *CI = CallInst::Create(funcType, Intrinsic::memset, {arg}, "", entryBB->getTerminator());
+
+     
+    CI->addUse(func->getArg(0));
+
+     
+    Value *trueVal = ConstantInt::get(Type::getInt32Ty(ctx), 1);
+    Value *falseVal = ConstantInt::get(Type::getInt32Ty(ctx), 0);
+    SelectInst *SI = SelectInst::Create(CmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, CI, ConstantInt::get(Type::getInt32Ty(ctx), 2)), trueVal, falseVal, "", entryBB->getTerminator());
+
+     
+    Loop *loop = new LoopInfoWrapperPass().getLoopInfo(*func).CreateLoop(entryBB, nullptr);
+    UnrollOptions ULO;
+    ULO.Count = 2;
+    ScalarEvolution SE(*func);
+    LoopUnrollAnalysis LUA(SE, loop, ULO);
+    if (!loop->isLoopVectorizable()) {
+         
+        return;
+    }
+
+     
+}
+
+int main() {
+    LLVMContext ctx;
+    Module mod("testModule", ctx);
+    createTestModule(ctx, &mod);
+
+    std::cout << "Module created with test function and constraints.\n";
+    return 0;
+}

@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+   #include <llvm/IR/Instructions.h>
+   #include <llvm/IR/Module.h>
+   using namespace llvm;
+
+   int main() {
+        
+       Module M("test_module", getGlobalContext());
+       FunctionType* FT = FunctionType::get(Type::getInt32Ty(M.getContext()), {}, false);
+       Function* F = Function::Create(FT, Function::ExternalLinkage, "test_function", &M);
+       
+        
+       BasicBlock* BB = BasicBlock::Create(M.getContext(), "", F);
+       CallInst* CI = CallInst::Create(nullptr, BB->end());
+
+        
+       if (!CI->use_empty()) {
+           std::cout << "CallInst has at least one use." << std::endl;
+       } else {
+           std::cout << "CallInst does not have any uses." << std::endl;
+       }
+   }
+   

@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+    FunctionType *funcType = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", &module);
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+
+     
+    Value *args[] = {};
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::getDeclaration(&module, Intrinsic::anymem_intrinsic), args, "", entryBB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    func->setDoesNotThrow();
+    func->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II->getIntrinsicID() == Intrinsic::anymem_intrinsic && "CallInst must be an AnyMemIntrinsic");
+    } else {
+        std::cerr << "CallInst is not an intrinsic call" << std::endl;
+        return 1;
+    }
+
+     
+    Instruction *ctxI = CI;
+    assert(isa<CallBase>(ctxI) && "Context instruction must be a CallBase");
+
+     
+    if (!CI->use_empty()) {
+        Value *simplifiedVal = nullptr;
+        bool simplified = SimplifyCallInst(CI, simplifiedVal);
+        if (simplified) {
+            CI->replaceAllUsesWith(simplifiedVal);
+        }
+    }
+
+     
+    module.print(outs(),  nullptr);
+
+    return 0;
+}

@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(FTy, F, {Arg}, "", BB);
+
+     
+    CI->addUse(*F);
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Intrinsic::ID IID = Intrinsic::memcpy;
+    Value *Dst = Builder.CreateAlloca(Type::getInt8Ty(Context), ConstantInt::get(Type::getInt32Ty(Context), 16));
+    Value *Src = ConstantDataArray::get(Type::getInt8Ty(Context), ArrayRef<uint8_t>(std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}));
+    CallInst *MemCpy = CallInst::Create(Intrinsic::getDeclaration(M, IID), Dst, Src, "", BB);
+
+     
+    assert(isa<CallBase>(CI) && "CI must be a CallBase");
+
+     
+    if (!CI->use_empty()) {
+        CI = simplifyCall(CI, F);
+    }
+
+     
+    assert(!F->isDeclaredNotToThrow() && "Function must be marked as nounwind");
+
+     
+    delete M;
+
+    return 0;
+}

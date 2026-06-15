@@ -1,0 +1,84 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    BinaryOperator *Add = BinaryOperator::Create(Instruction::Add, Zero, Zero, "", BB);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&Mod, Intrinsic::memset), {Arg}, {}, BB);
+
+     
+    CI->addUse(*F);
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic call." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function is not marked as nounwind." << std::endl;
+    }
+
+     
+    if (!CI->doesNotThrow()) {
+        std::cout << "CallInst is not marked as no-throw." << std::endl;
+    } else {
+        std::cout << "CallInst is marked as no-throw." << std::endl;
+    }
+
+     
+    if (isa<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an AnyMemIntrinsic." << std::endl;
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        std::cout << "Context instruction is a CallBase instance." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase instance." << std::endl;
+    }
+
+     
+     
+
+     
+     
+
+     
+     
+
+    return 0;
+}

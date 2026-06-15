@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/IR/Intrinsics.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    Instruction *Call = CallInst::Create(FuncTy, F, {Arg}, "", BB);
+
+     
+    Call->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *AnyMemCall = dyn_cast<IntrinsicInst>(Call);
+    if (!AnyMemCall || !AnyMemCall->isAnyMemory()) {
+        std::cerr << "CallInst is not a memory intrinsic!" << std::endl;
+        return 1;
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(Call);
+    if (!CB) {
+        std::cerr << "Context instruction is not a CallBase!" << std::endl;
+        return 1;
+    }
+
+     
+
+    return 0;
+}

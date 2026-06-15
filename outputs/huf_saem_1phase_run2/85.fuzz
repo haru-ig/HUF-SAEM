@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, { Arg->getType() }, { Arg, ConstantInt::get(Type::getInt8Ty(Context), 0), ConstantInt::get(Type::getInt64Ty(Context), 1) }, "", BB);
+
+     
+    CI->addUse(Arg);
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+         
+        CI->simplifyCall();
+    }
+
+     
+    M.print(errs());
+
+    return 0;
+}

@@ -1,0 +1,147 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(F, {Arg}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        std::cerr << "CallInst does not have any uses. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "CallInst is not an intrinsic call. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (!isa<AnyMemIntrinsic>(II)) {
+        std::cerr << "CallInst is not an AnyMemIntrinsic. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    Value *CtxI = CI;
+    if (!isa<CallBase>(CtxI)) {
+        std::cerr << "Context instruction is not a CallBase. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+     
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = Builder.CreateNeg(Builder.CreateFabs(Arg));
+    Type *SelType = FalseVal->getType();
+    SelectInst *SI = SelectInst::Create(Builder.CreateICmpULT(Arg, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal);
+
+     
+    if (!TrueVal || !FalseVal || SelType->isVectorTy()) {
+        std::cerr << "SelectInst does not meet the required conditions. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    if (!TrueVal->getType()->isIntegerTy() || !FalseVal->getType()->isIntegerTy()) {
+        std::cerr << "SelectInst types do not meet the required conditions. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    Loop *L = new Loop();
+    L->addBasicBlockToLoop(BB, LI);
+    if (!L->getLoopPreheader() || !L->getLoopLatch()) {
+        std::cerr << "Loop does not have a valid preheader or latch block. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    if (!L->isSafeToClone() || L->getHeader()->hasAddressTaken()) {
+        std::cerr << "Loop does not meet safety criteria for cloning. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    UnrollOptions ULO(2);
+    if (ULO.Count <= 0) {
+        std::cerr << "Unroll count must be greater than zero. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    Instruction *I = CI;
+    if (!I || !I->getType()->isIntegerTy()) {
+        std::cerr << "Input instruction does not meet the required conditions. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    unsigned MaxAnalysisRecursionDepth = 10;
+    int Depth = 5;
+    if (Depth > MaxAnalysisRecursionDepth) {
+        std::cerr << "Recursion depth exceeds maximum allowed. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    FPClassTest DemandedMask;
+    KnownFPClass Known;
+    if (DemandedMask.getBitWidth() != Known.getBitWidth() || DemandedMask.getBitWidth() != I->getType()->getScalarSizeInBits()) {
+        std::cerr << "Demanded mask bit width does not match known or input instruction type bit width. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    unsigned NLZ = 8;
+    if (NLZ <= 0) {
+        std::cerr << "No unused high bits for wrap flag disabling. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    TreeEntry *TE = nullptr;
+    if (TE->Idx == 0 || TE->UserTreeIndex == UINT_MAX) {
+        std::cerr << "TreeEntry does not meet the required conditions. Aborting." << std::endl;
+        return 1;
+    }
+
+     
+    unsigned SliceSize = 4;
+    unsigned Part = 2;
+    Value *MaskBase = ConstantInt::get(Type::getInt32Ty(Context), 0);
+
+    std::cout << "All conditions met. Test passed." << std::endl;
+    return 0;
+}

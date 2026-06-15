@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+    
+     
+    CallInst *CI;
+    if (true) {  
+        CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {}, { Arg, ConstantInt::get(Type::getInt32Ty(Context), 4) }, "", BB);
+    } else {
+        CI = CallInst::CreateMalloc(BB->end(), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 10), {}, "", BB);
+    }
+    
+     
+    CI->addUse(Value *v = nullptr);  
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);  
+    
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        unsigned NumBytes = 0;  
+        if (NumBytes > 0 && !isPowerOf2(NumBytes)) {
+             
+        } else {
+             
+        }
+    }
+    
+     
+    M->print(outs(), nullptr);
+    
+    delete M;
+    return 0;
+}

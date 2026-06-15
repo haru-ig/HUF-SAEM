@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::any_mem_intrinsic), { ConstantInt::get(Type::getInt32Ty(Context), 0) }, "", BB);
+    
+     
+    CI->addUse(F->getArg(0));
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+         
+    }
+    
+     
+    LoopInfo LI(*F);
+    auto L = std::make_unique<Loop>(BB, LI.getBase());
+    
+     
+    llvm::UnrollLoopOptions ULO;
+    ULO.Count = 2;  
+    unrollLoop(*F, ULO);
+    
+    return 0;
+}

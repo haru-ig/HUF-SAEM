@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    F->getBasicBlockList().push_back(new BasicBlock("entry", F));
+    IRBuilder<> Builder(F->getEntryBlock());
+    
+     
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), { Constant::getNullValue(Type::getInt8PtrTy(Context)) }, "", Builder.GetInsertBlock());
+    
+     
+    if (!CI->use_empty()) {
+        std::cerr << "CallInst has no uses, which is required for simplification.\n";
+        return 1;
+    }
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "The CallInst is an intrinsic call.\n";
+        auto *II = dyn_cast<IntrinsicInst>(CI);
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+            std::cout << "It's a memset intrinsic.\n";
+            
+             
+            uint64_t NumBytes = 0;  
+            if (NumBytes <= 0 || !isMultipleOfElementSize(NumBytes)) {
+                std::cout << "Condition met: non-positive length or not a multiple of element size.\n";
+            } else {
+                std::cerr << "No valid condition found for memset intrinsic.\n";
+                return 1;
+            }
+        }
+    } else {
+        std::cerr << "The CallInst is not an intrinsic call.\n";
+        return 1;
+    }
+    
+     
+    M.print(llvm::outs(), nullptr);
+    
+    return 0;
+}

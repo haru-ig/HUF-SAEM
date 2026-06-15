@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    assert(F->doesNotThrow() && !CI->doesNotThrow() && "Function must be marked as nounwind while the CallInst is not doesNotThrow");
+
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    assert(AII && AII->isAnyMemory() && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), -1.0);
+    ICmpInst *Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(Cmp, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must have valid condition, true value, and false value");
+
+     
+    Value *CondVal = Cmp;
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "SelectInst type must be an integer type or vector type");
+    assert((SelType->isVectorTy() || SelType->getScalarSizeInBits() == 32) && "Condition types must both be scalar types or vector types");
+
+     
+    CallInst *CIWithUse = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    CIWithUse->addUse(*CIWithUse

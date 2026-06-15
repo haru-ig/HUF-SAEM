@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>  
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+    FunctionType* FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Instruction *CI = CallInst::CreateIntrinsic(Intrinsic::anymemintrinsic, {}, "", BB);
+    assert(CI && "Failed to create CallInst");
+    
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has uses." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+    
+     
+    if (F->doesNotThrow()) {
+        CI->setDoesNotThrow();
+    } else {
+        F->setNoUnwind();
+    }
+    
+     
+    Loop *L = new Loop(&BB, nullptr);
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;  
+    if (ULO.Count > 0 && L->isSafeToClone()) {
+        std::cout << "Loop is safe to clone and unroll count is valid." << std::endl;
+    } else {
+        std::cout << "Loop is not safe to clone or unroll count is invalid." << std::endl;
+    }
+    
+     
+    delete L;
+    return 0;
+}

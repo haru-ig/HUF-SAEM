@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+ 
+define void @exampleFunction() nounwind {
+entry:
+  %call = call i32 @someIntrinsic(i32* nonnull dereferenceable(4))
+  ret void
+}
+
+ 
+declare i32 @someIntrinsic(i32*)
+
+ 
+define void @constrainedFunction() nounwind {
+entry:
+  %call = call i32 @someIntrinsic(i32* nonnull dereferenceable(4))
+  br label %loopStart
+
+loopStart:
+  %iv = phi i32 [ 0, %entry ], [ %nextIv, %loopBody ]
+  %condVal = icmp ult i32 %iv, 2
+  %trueVal = load i32, i32* null, align 4
+  %falseVal = sub nsw i32 0, %trueVal
+  %selectInst = select i1 %condVal, i32 %trueVal, i32 %falseVal
+  br label %loopBody
+
+loopBody:
+  ; Some loop logic here...
+  %nextIv = add nuw nsw i32 %iv, 1
+  br i1 %condVal, label %loopStart, label %loopEnd
+
+loopEnd:
+  ret void
+}

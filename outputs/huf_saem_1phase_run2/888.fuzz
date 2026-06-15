@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID IID = Intrinsic::sqrt;  
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+
+     
+    if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+        AMII->setArgOperandNum(0, Constant::getNullValue(Type::getInt8PtrTy(Context)));
+        AMII->setArgOperandNum(1, ConstantInt::get(Type::getInt64Ty(Context), 0));
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

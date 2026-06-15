@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+int main() {
+    llvm::LLVMContext Context;
+    std::unique_ptr<llvm::Module> Module = std::make_unique<llvm::Module>("test", Context);
+    
+     
+    auto *FnType = llvm::FunctionType::get(llvm::Type::getVoidTy(Context), {}, false);
+    auto *Fn = llvm::Function::Create(FnType, llvm::GlobalValue::InternalLinkage, "test_fn", Module.get());
+    Fn->setDoesNotThrow();
+    Fn->setUnwindBehavior(llvm::Function::Unwind);
+
+     
+    auto *BB = llvm::BasicBlock::Create(Context, "", Fn);
+    auto *CallInst = llvm::CallBase::Create(FnType, llvm::Instruction::OtherOps, BB);
+    
+     
+    CallInst->addUse(*BB);
+
+     
+    auto *Intrinsic = llvm::dyn_cast<llvm::IntrinsicInst>(CallInst);
+    if (!Intrinsic || !Intrinsic->isAnyMemIntrinsic()) {
+        std::cerr << "CallInst is not an AnyMemIntrinsic." << std::endl;
+        return 1;
+    }
+
+     
+    Module->print(llvm::outs(), nullptr);
+
+    return 0;
+}

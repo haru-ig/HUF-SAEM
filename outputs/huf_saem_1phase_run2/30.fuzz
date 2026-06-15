@@ -1,0 +1,9 @@
+#include <iostream>
+int main() {
+   void dummyFunction(int a) {
+        
+       if (a > 0) {
+            
+       }
+   }
+   

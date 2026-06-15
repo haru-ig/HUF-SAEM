@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createTestModule(LLVMContext &Ctx, Module *M) {
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    CI->setDoesNotThrow();  
+
+     
+    F->setDoesNotThrow();
+
+     
+    Intrinsic::ID ID = Intrinsic::memset;
+    auto *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call.");
+    auto *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "CallInst must be an AnyMemIntrinsic.");
+
+     
+    unsigned NumBytes = 0;
+    if (ID == Intrinsic::atomicrmw || ID == Intrinsic::cmpxchg) {
+        NumBytes = -1;  
+    }
+
+     
+    Argument *Arg = F->arg_begin();
+    Arg->addAttr(Attribute::Return);
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("testModule", Ctx);
+    createTestModule(Ctx, &M);
+
+     
+    legacy::PassManager PM;
+    PM.add(createPrintModulePass([](raw_ostream &OS, const Module *M) {
+        OS << *M;
+        return false;
+    }));
+    PM.run(M);
+
+    return 0;
+}

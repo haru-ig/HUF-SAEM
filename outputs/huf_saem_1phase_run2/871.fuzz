@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+void generateTestFunction(LLVMContext &Ctx, Module &M) {
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Ctx), 1)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), Args, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    CI->setDoesNotThrow();  
+
+     
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+}

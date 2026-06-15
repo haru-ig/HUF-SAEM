@@ -1,0 +1,12 @@
+#include <iostream>
+int main() {
+     
+    auto performCall = [](int x) noexcept -> int {
+        return someFunction(x);  
+    };
+
+     
+    int result = performCall(5);
+
+     
+    std::cout << "Result of the call: " << result << std::endl;

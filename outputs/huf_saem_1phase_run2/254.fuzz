@@ -1,0 +1,4 @@
+#include <iostream>
+int main() {
+   int func(int a) { return a; }
+   

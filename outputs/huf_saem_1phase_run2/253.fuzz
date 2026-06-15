@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+void createTestModule(LLVMContext &context) {
+    Module module("test", context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(context), {Type::getInt32Ty(context)}, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", module);
+    func->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(context, "", func);
+    Argument *arg = &*func->arg_begin();
+    arg->setName("arg");
+    arg->setReturnValueAttr(Attribute::NoUnwind);
+
+     
+    IRBuilder<> builder(entryBB);
+    Value *callVal = ConstantInt::get(Type::getInt32Ty(context), 1);
+    CallInst *CI = builder.CreateCall(funcType, callVal, {arg});
+    CI->setDoesNotThrow();  
+
+     
+    CI->addUse(funcType);
+
+     
+    module.print(errs(), nullptr);
+}
+
+int main() {
+    LLVMContext context;
+    createTestModule(context);
+    return 0;
+}

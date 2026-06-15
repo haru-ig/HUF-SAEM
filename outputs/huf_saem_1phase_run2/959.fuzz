@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createDummyFunction(LLVMContext &context) {
+  Module *module = new Module("testModule", context);
+  FunctionType *funcType = FunctionType::get(Type::getInt32Ty(context), {}, false);
+  Function *func = Function::Create(funcType, Function::ExternalLinkage, "dummyFunc", module);
+
+   
+  BasicBlock *bb = BasicBlock::Create(context, "", func);
+
+   
+  CallInst *CI = CallInst::Create(nullptr, {}, "", bb);
+
+   
+  CI->addUse(Type::getInt32Ty(context));
+
+   
+  assert(!func->doesNotThrow() && "Function must not be marked as nounwind");
+
+  return func;
+}
+
+int main() {
+  LLVMContext context;
+  Function *func = createDummyFunction(context);
+
+   
+  if (func) {
+    std::cout << "Created function: " << func->getName().str() << "\n";
+    if (!func->use_empty()) {
+      CallInst *CI = nullptr;
+      for (auto &user : func->users()) {
+        CI = dyn_cast<CallInst>(user);
+        if (CI) break;
+      }
+      if (CI) {
+        std::cout << "Found call instruction in function: " << func->getName().str() << "\n";
+      } else {
+        std::cout << "No call instruction found in function.\n";
+      }
+    } else {
+      std::cout << "Function has no uses.\n";
+    }
+  } else {
+    std::cout << "Failed to create dummy function.\n";
+  }
+
+  return 0;
+}

@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[] = {};
+    CallInst *CI = CallInst::Create(FuncTy, FunctionCtor::get(&M, "test_func"), Args, "", BB);
+
+     
+    if (CI->use_empty()) {
+        errs() << "Error: CallInst does not have any uses.\n";
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    Intrinsic::ID MemCpyIntrinsic = Intrinsic::memcpy;
+    CallInst *MemCI = CallInst::Create(FuncTy, Intrinsic::getDeclaration(&M, MemCpyIntrinsic), Args, "", BB);
+
+     
+    if (!dyn_cast<IntrinsicInst>(MemCI)) {
+        errs() << "Error: Expected a memory intrinsic but got a different kind.\n";
+        return 1;
+    }
+
+     
+    Value *TrueVal = Constant::getNullValue(Type::getInt32Ty(Context));
+    Value *FalseVal = Constant::getAllOnesValue(Type::getInt32Ty(Context));
+    SelectInst *SI = new SelectInst(ICmpInst::ICMP_ULT, TrueVal, FalseVal, "", BB);
+
+     
+    if (!TrueVal || !FalseVal || !SI->getType()->isIntegerTy()) {
+        errs() << "Error: Invalid operands or type for SelectInst.\n";
+        return 1;
+    }
+
+     
+    F->dump();
+    CI->dump();
+    MemCI->dump();
+    SI->dump();
+
+    return 0;
+}

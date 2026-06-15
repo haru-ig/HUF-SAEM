@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(nullptr, Callee, {}, "", BB);
+    CI->setCallingConv(CallingConv::C);
+
+     
+    F->setDoesNotThrow();
+    F->setOnlyRetUnsignedIntrinsicCall();
+
+     
+    IntrinsicInst *II = IntrinsicInst::Create(Instruction::AnyMem, {}, "", BB);
+    II->setCalledFunction(Intrinsic::anymemintrinsic);
+
+     
+    if (auto *AMII = dyn_cast<AtomicRMWInst>(II)) {
+        AMRI->setAlignment(MaybeAlign(0));
+    } else if (auto *AMI = dyn_cast<AnyMemIntrinsic>(II)) {
+        AMI->setAlignment(MaybeAlign(0));
+    }
+
+     
+    CallBase *CB = cast<CallBase>(CI);
+    assert(!CB.use_empty() && "CallInst must have at least one use");
+
+     
+
+    return 0;
+}

@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+
+     
+    F->setDoesNotThrow();
+
+     
+    Intrinsic::ID IntrID = Intrinsic::memset;
+    Value *MemSetArgs[] = {ConstantInt::get(Type::getInt64Ty(Context), 0), Arg, ConstantInt::get(Type::getInt32Ty(Context), 4)};
+    CallInst *IntrinsicCI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID)->getFunctionType(), Intrinsic::getDeclaration(&M, IntrID), MemSetArgs, "", BB);
+
+     
+    IntrinsicCI->addUse(*F->arg_begin());
+
+     
+
+    return 0;
+}

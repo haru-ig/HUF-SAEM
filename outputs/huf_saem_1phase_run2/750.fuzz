@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {PointerType::getUnqual(IntegerType::getInt8Ty(Context)), PointerType::getUnqual(IntegerType::getInt8Ty(Context)), IntegerType::getInt64Ty(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "The CallInst object CI must have at least one use");
+
+     
+    assert(F->doesNotThrow() && "The function containing the CallInst must be marked as nounwind");
+
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    assert(AII && AII->getIntrinsicID() == Intrinsic::memcpy && "The CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "The context instruction must be a CallBase instance");
+
+     
+    F->print(errs());
+
+    return 0;
+}

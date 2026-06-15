@@ -1,0 +1,124 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *I = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::anymem_intrinsic), {}, "", BB);
+
+     
+    I->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+
+     
+    auto *CI = dyn_cast<CallInst>(I);
+    assert(CI && "Expected a CallInst");
+    if (auto *Intr = dyn_cast<IntrinsicInst>(CI)) {
+        assert(isa<AnyMemIntrinsic>(Intr) && "Expected an AnyMemIntrinsic");
+    }
+
+     
+    auto *CtxI = dyn_cast<CallBase>(I);
+    assert(CtxI && "Expected a CallBase");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = BinaryOperator::CreateFNeg(TrueVal, "", BB);
+    ICmpInst *Cond = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_ULT, F->arg_begin(), ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(Cond, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "Expected one use of SI");
+    Value *CondVal = Cond;
+    Type *SelType = SI->getType();
+    assert(SelType && "Expected a valid type for SelType");
+
+     
+    if (!isa<IntegerType>(SelType)) {
+        errs() << "SelectInst should be of integer type\n";
+        return 1;
+    }
+
+     
+    Loop *L = nullptr;  
+    assert(L && L->getLoopPreheader() && "Expected non-null preheader");
+    assert(L && L->getLoopLatch() && "Expected non-null latch");
+
+     
+    assert(L && L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop conditions not met");
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Expected unroll count to be greater than zero");
+
+     
+    unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Expected depth within limits");
+
+     
+    KnownBits Known;
+    APInt DemandedMask;
+    assert(Known.getBitWidth() == DemandedMask.getBitWidth() && "Expected matching bit widths for Known and DemandedMask");
+    assert(I->getType()->getScalarSizeInBits() == Known.getBitWidth() && "Expected type match in bits");
+
+     
+    if (Known.countMinTrailingZeros() > 0) {
+        errs() << "Expected unused high bits in operation\n";
+        return 1;
+    }
+
+     
+    TreeEntry *TE = nullptr;  
+    assert(TE->Idx != 0 && "Expected non-zero Idx");
+
+     
+    DenseMap<TreeEntry *, Type *> MinBWs;
+    if (MinBWs.find(TE) != MinBWs.end()) {
+        assert(MinBWs[TE]->getBitWidth() > 0 && "Expected valid bit width in MinBWs entry");
+    } else {
+         
+        assert(TE->Idx == 0 && TE->isReducedBitcastRoot() && "Expected reduced bitcast root or Idx to be zero");
+    }
+
+     
+    Instruction *FNegInst = BinaryOperator::CreateFNeg(BinaryOperator::CreateFAbs(F->arg_begin()), "", BB);
+    assert(isa<FNegInst>(I) && "Expected FNeg instruction");
+    assert(FNegInst->getOperand(0)->hasOneUse() && "Expected one use of operand in fneg(fabs(x)) pattern");
+
+     
+    assert(Depth < MaxAnalysisRecursionDepth && "Expected depth within limits");
+
+     
+    assert(Known.getBitWidth() == DemandedMask.getBitWidth() && "Expected matching bit widths for Known and DemandedMask");
+    assert(I->getType()->getScalarSizeInBits() == Known.getBitWidth() && "Expected type match in bits");
+
+     
+    if (Known.countMinTrailingZeros() > 0) {
+        errs() << "Expected unused high bits to disable wrap flags\n";
+        return 1;
+    }
+
+     
+    std::cout << "All assertions passed.\n";
+    return 0;
+}

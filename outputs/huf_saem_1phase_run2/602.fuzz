@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    Argument *Arg = F->getArg(0);
+    Arg->addAttr(Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallBase *CI = CallInst::Create(Callee, {Arg}, "", BB);
+
+     
+    CI->addUse(F->getArgNo());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind();
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as doesNotThrow");
+
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    if (!AII || !AII->isAnyMemory()) {
+        std::cerr << "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic" << std::endl;
+        return 1;
+    }
+
+     
+    assert(isa<CallBase>(CI) && "Context instruction must be a CallBase instance");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

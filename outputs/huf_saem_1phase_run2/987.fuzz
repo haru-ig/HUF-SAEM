@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Intrinsic::ID IID = Intrinsic::memcpy;
+    Value *Args[] = {ConstantInt::get(Type::getInt64Ty(Context), 0), ConstantInt::get(Type::getInt64Ty(Context), 8)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), Args, "", BB);
+
+     
+    CI->addUse(*F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected a memory intrinsic");
+
+     
+    if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+        uint64_t NumBytes = AMII->getMemoryLength();
+        assert(NumBytes <= 0 && "Expected non-positive or not a multiple of element size for atomic unordered memory intrinsic");
+    }
+
+     
+    CallBase *CB = CI;
+
+     
+    std::unique_ptr<PassManager> PM(new PassManager());
+    PM->add(createInstructionSimplifierPass());
+    PM->run(*F);
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

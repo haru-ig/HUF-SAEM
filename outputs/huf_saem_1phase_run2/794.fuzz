@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    Argument *Arg = F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Arg->getType(), Arg->getType()}, {Arg, Arg}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    SelectInst *SI = SelectInst::Create(Builder.CreateICmpULT(Arg, ConstantInt::get(IntegerType::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "SelectInst must have at least one use");
+    Type *CondType = SI->getCondition()->getType();
+    Type *TrueType = SI->getTrueValue()->getType();
+    Type *FalseType = SI->getFalseValue()->getType();
+    assert(CondType == TrueType && CondType == FalseType && "SelectInst operands must have the same type");
+
+     
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

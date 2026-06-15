@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Attributes.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    F->setDoesNotThrow();  
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+    IRBuilder<> Builder(BB);
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(FTy, F, {Arg}, "", BB->getTerminator());
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    if (!F->hasFnAttr(Attribute::Nounwind) || CI->doesNotThrow()) {
+        std::cerr << "Function or CallInst attribute setup failed!" << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "All constraints met successfully!" << std::endl;
+    return 0;
+}

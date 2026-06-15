@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID IID = Intrinsic::memset;  
+    Value *MemSetIntrin = Intrinsic::getDeclaration(&M, IID, {Type::getInt8PtrTy(Context)});
+    CallInst *CI = CallInst::Create(MemSetIntrin, {}, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    if (auto *II = dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        if (!II->isZeroLength()) {
+            int NumBytes = 4;  
+            II->setArgOperand(0, ConstantExpr::getZExt(ConstantInt::get(Type::getInt32Ty(Context), NumBytes), Type::getInt8PtrTy(Context)));
+        }
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test_module", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+   
+  CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+  CI->addUse(Type::getInt32Ty(Context));
+
+   
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+
+   
+  F->setDoesNotThrow();
+  F->addFnAttr(Attribute::Nounwind);
+
+   
+  if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+    assert(isa<AnyMemIntrinsic>(II) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+  } else {
+    std::cerr << "Not an intrinsic call!" << std::endl;
+    return 1;
+  }
+
+   
+  legacy::PassManager PM;
+  PM.add(createSimplificationPass());
+  PM.run(*M.get());
+
+  std::cout << "Module after simplification:" << std::endl;
+  M.print(outs(), nullptr);
+
+  return 0;
+}

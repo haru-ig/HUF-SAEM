@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", M);
+
+     
+    F->arg_begin()->setName("arg1");
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {F->arg_begin()}, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->setOnlyAccessesStack();
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(F->onlyAccessesStack() && "Function should only access stack");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call");
+
+     
+    CallBase *CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "Context instruction must be a CallBase instance");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*F, 0);
+    assert(IRPos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must be callsite argument");
+
+     
+
+    std::cout << "All assertions passed!\n";
+
+    return 0;
+}

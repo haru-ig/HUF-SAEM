@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+
+     
+    BasicBlock *BB1 = BasicBlock::Create(Context, "", F);
+    BasicBlock *BB2 = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB1);
+
+     
+    CI->addUse(F->getArgList().begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Intrinsic::ID IID = Intrinsic::not_implemented;  
+    Value *Ptr = ConstantPointerNull::get(Type::getInt8Ty(Context));
+    CallInst *AnyMemCI = CallInst::Create(Intrinsic::getDeclaration(M, IID), { Ptr }, "", BB1);
+
+     
+    if (dyn_cast<IntrinsicInst>(AnyMemCI)) {
+        errs() << "The CallInst is an intrinsic call.\n";
+    } else {
+        errs() << "The CallInst is not an intrinsic call.\n";
+    }
+
+     
+    Instruction *CtxI = AnyMemCI;
+
+     
+    if (dyn_cast<CallBase>(CtxI)) {
+        errs() << "The context instruction is a CallBase.\n";
+    } else {
+        errs() << "The context instruction is not a CallBase.\n";
+    }
+
+     
+    delete M;
+
+    return 0;
+}

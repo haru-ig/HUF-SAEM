@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+ 
+void simplifySelectInst(bool cond, double trueVal, double falseVal) {
+    if (cond) {
+        std::cout << "Selected True Value: " << trueVal << "\n";
+    } else {
+        std::cout << "Selected False Value: " << falseVal << "\n";
+    }
+}
+
+ 
+void handleSelectInst(bool cond, double trueVal, double falseVal) {
+    if (cond) {
+        std::cout << "Handling True Value: " << trueVal << "\n";
+    } else {
+        std::cout << "Handling False Value: " << falseVal << "\n";
+    }
+}
+
+int main() {
+     
+    bool cond = true;
+    double trueVal = 1.0;
+    double falseVal = -1.0;
+
+     
+    handleSelectInst(cond, trueVal, falseVal);
+
+    return 0;
+}

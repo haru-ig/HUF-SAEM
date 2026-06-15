@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Arg->getType(), Arg}, Arg, "", BB);
+
+     
+    Value *User = CI;
+    assert(!User.use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II->getIntrinsicID() == Intrinsic::memset && "CI must be a memset intrinsic");
+    } else {
+        llvm_unreachable("CI must be an intrinsic call");
+    }
+
+     
+    if (!CI->use_empty()) {
+        CI->setArgOperand(0, ConstantInt::get(Type::getInt32Ty(Context), 4));
+    }
+
+     
+    legacy::PassManager Passes;
+    Passes.add(createPrintModulePass(&llvm::outs()));
+    Passes.run(M);
+
+    return 0;
+}

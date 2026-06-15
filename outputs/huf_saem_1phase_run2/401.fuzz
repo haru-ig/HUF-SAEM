@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &Mod);
+    F->setDoesNotThrow();  
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallBase *CI = CallInst::Create(FTy, nullptr, {}, "", BB);
+
+     
+    std::cout << "Function is nounwind: " << F->doesNotThrow() << "\n";
+    std::cout << "CallInst does not throw: " << !CI->doesNotThrow() << "\n";
+
+    return 0;
+}

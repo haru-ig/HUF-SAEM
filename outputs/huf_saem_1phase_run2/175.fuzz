@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Scalar/SimplifyCFGPass.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType* FuncType = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncType, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(IntegerType::getInt32Ty(Context), 5);
+    Value *Arg2 = ConstantInt::get(IntegerType::getInt32Ty(Context), 10);
+    Instruction *CallInst = CallInst::Create(FuncType, F, {Arg1, Arg2}, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    assert(!CallInst->use_empty() && "CallInst must have at least one use");
+
+     
+    assert(F->getName() == "test_function" && F->isNounwind());
+
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::create(CmpInst::ICMP_ULT, CallInst->getType(), Arg1, ConstantInt::get(CallInst->getType(), 2));
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "SelectInst must have at least one use");
+
+     
+    BB->getInstList().push_back(SI);
+
+     
+    PassManager PM;
+    PM.add(new SimplifyCFGPass());
+    PM.run(M);
+
+    std::cout << "Test module with simplified IR:\n" << M << "\n";
+
+    return 0;
+}

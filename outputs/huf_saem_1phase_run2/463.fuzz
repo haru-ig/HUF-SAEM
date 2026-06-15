@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Type *IntTy = Type::getInt32Ty(Context);
+
+     
+    Value *CondVal = Builder.CreateICmpULT(ConstantInt::get(Type::getInt32Ty(Context), 2), ConstantInt::get(Type::getInt32Ty(Context), 1));
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Value *FalseVal = Builder.CreateFNeg(Builder.CreateFAbs(ConstantFP::get(Type::getFloatTy(Context), APFloat(0.0))));
+    SelectInst *SI = Builder.CreateSelect(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI && "Failed to create SelectInst");
+    assert(SI->getType() == IntTy && "SelectInst type mismatch");
+    assert(!SI->use_empty() && "SelectInst must have at least one use");
+    assert(F->hasFnAttribute("nounwind") && "Function must be marked as nounwind");
+    assert(!SI.doesNotThrow() && "CallInst itself is not nounwind");
+
+     
+    Intrinsic::ID IID = Intrinsic::sqrt;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), {SI}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+     
+    if (!CI->use_empty()) {
+         
+        CI = cast<CallInst>(simplifyCall(CI));
+    }
+
+     
+    F->removeFnAttr("nounwind");
+    F->addFnAttr("nounwind");
+
+     
+
+    return 0;
+}

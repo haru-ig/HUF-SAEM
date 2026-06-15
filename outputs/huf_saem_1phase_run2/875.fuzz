@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::fabs;
+    Value *Op = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, IntrID), {Op}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == IntrID && "CallInst must be an intrinsic call");
+
+     
+    CallBase *CB = cast<CallBase>(CI);
+
+     
+    CB->simplify();
+
+     
+
+    return 0;
+}

@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setParamAttribute(0, AttributeKind::Returned, Attribute::NoUnwind);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, { Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1) }, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    if (!CI->use_empty()) {
+         
+        CallBase *CtxI = CI;
+
+         
+        Function *Func = CI->getFunction();
+        assert(Func && "Function should not be null");
+        Func->setDoesNotThrow();
+
+         
+        IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+        assert(II && II->isAnyMemory());
+
+         
+        if (II->mayStore() || II->mayLoad()) {
+            int NumBytes = 0;  
+            if (NumBytes <= 0) {
+                 
+                 
+            }
+        }
+
+         
+        std::cout << "Generated Code:\n";
+        Mod->print(errs(), nullptr);
+    }
+
+    return 0;
+}

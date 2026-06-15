@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("my_module", Context);
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", &M);
+    
+     
+    TypeBuilder<FloatTy, 1> FloatType(Context);
+    Value *TrueVal = ConstantFP::get(FloatType, APFloat(1.0));
+    Value *FalseVal = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::ctpop), TrueVal, "", BB);
+    
+     
+    ConstantInt *Const2 = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, Const2, "", BB);
+    
+     
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    M.print(outs(), nullptr);
+    
+    return 0;
+}

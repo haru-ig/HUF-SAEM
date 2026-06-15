@@ -1,0 +1,130 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/InstrTypes.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test_module", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "test_function", &module);
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Value *arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    bb->addArgume nt(arg);
+
+     
+    CallInst *CI = CallInst::Create(func, {arg}, "", bb);
+
+     
+    CI->addUse(0);
+
+     
+    func->setDoesNotThrow();
+
+     
+    Intrinsic::ID intrinID = Intrinsic::anymem_intrinsic;
+    Value *zeroLengthOperands[] = {ConstantInt::get(IntegerType::getInt32Ty(Context), 0)};
+    CallInst *anyMemCall = CallInst::Create(intrinID, zeroLengthOperands, "", bb);
+
+     
+    anyMemCall->setArgOperand(0, ConstantInt::get(IntegerType::getInt32Ty(Context), -1));
+
+     
+    Loop *L = createLoopForInitialization(*bb);
+
+     
+    if (!L->getLoopPreheader() || !L->getLoopLatch()) {
+        std::cerr << "Loop does not have a valid preheader or latch block." << std::endl;
+        return 1;
+    }
+
+     
+    CallBase *callBase = dyn_cast<CallBase>(anyMemCall);
+    if (!callBase) {
+        std::cerr << "The call instruction is not castable to CallBase." << std::endl;
+        return 1;
+    }
+
+     
+    TreeEntry *E = new TreeEntry();
+    E->State = TreeEntry::SplitVectorize;
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 0));
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 1));
+
+     
+    if (E->Scalars.empty() || E->Scalars.size() != 2) {
+        std::cerr << "TreeEntry does not have a valid Scalars list." << std::endl;
+        return 1;
+    }
+
+     
+    Value *trueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *falseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 2);
+    Value *condVal = ICmpInst::create(ICmpInst::ICMP_ULT, trueVal, falseVal, "", bb);
+    SelectInst *selInst = new SelectInst(condVal, trueVal, falseVal, "", bb);
+
+     
+    if (!selInst->getCondition() || !selInst->getTrueValue() || !selInst->getFalseValue()) {
+        std::cerr << "SelectInst does not have a valid condition, true value, or false value." << std::endl;
+        return 1;
+    }
+
+     
+    Type *selType = selInst->getType();
+    if (!selType->isIntegerTy() && !selType->isVectorTy()) {
+        std::cerr << "SelectInst does not have a valid integer type or vector type." << std::endl;
+        return 1;
+    }
+
+     
+    MinBWsMap minBWs;
+    if (E->Idx == 0 && isReducedBitcastRoot(E)) {
+         
+    } else {
+         
+    }
+
+     
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;
+    if (!loopIsSafeToClone(*L)) {
+        std::cerr << "Loop is not safe to clone." << std::endl;
+        return 1;
+    }
+
+     
+    if (L->getHeader()->hasAddressTaken() || ULO.Count <= 0) {
+        std::cerr << "Loop header's address is taken or unroll count is not greater than zero." << std::endl;
+        return 1;
+    }
+
+     
+    Instruction *I = BinaryOperator::CreateFNeg(UnaryOperator::createFabs(arg), "", bb);
+    if (!I || !match(I->getOperand(0), m_FNeg(m_FABS(m_Value()))) {
+        std::cerr << "Instruction does not match the expected pattern." << std::endl;
+        return 1;
+    }
+
+     
+    if (!ensureAllConditions()) {
+        std::cerr << "Not all necessary conditions are met." << std::endl;
+        return 1;
+    }
+
+     
+    std::cout << "All conditions are satisfied." << std::endl;
+    return 0;
+}

@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getDoubleTy(Context), true);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", &module);
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+
+     
+    Value *arg1 = func->getArg(0);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, Intrinsic::sqrt), arg1, "call", entryBB);
+
+     
+    CI->setDoesNotThrow();
+    func->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (II && II->getIntrinsicID() == Intrinsic::sqrt) {
+        errs() << "CallInst is a valid intrinsic call.\n";
+    } else {
+        errs() << "CallInst is not an intrinsic call or not the correct intrinsic.\n";
+    }
+
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst has at least one use.\n";
+    } else {
+        errs() << "CallInst does not have any uses.\n";
+    }
+
+     
+    module.print(errs(), nullptr);
+
+    return 0;
+}

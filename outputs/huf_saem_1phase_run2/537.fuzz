@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt64Ty(Context), 0);
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *II = CallInst::Create(Intrinsic::anymemintrinsic, {CI}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(II) && "Must be an intrinsic call");
+
+     
+    II->setDoesNotThrow();
+    II->setDoesNotUnwind();
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    F->addParamAttr(0, AttributeForArgument(Arg));
+
+     
+    F->setHasReturned();
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = Builder.CreateNeg(Builder.CreateFabs(TrueVal));
+    SelectInst *SI = Builder.CreateSelect(Builder.CreateICmpULT(TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal);
+
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+    assert(SI->getCondition()->getType()->isIntegerTy() && "Condition type must be integer");
+    assert(SI->getTrueValue()->getType()->isIntegerTy() && "TrueVal type must be integer");
+    assert(SI->getFalseValue()->getType()->isIntegerTy() && "FalseVal type must be integer");
+
+     
+     
+
+    std::cout << "Module:\n" << M;
+
+    return 0;
+}

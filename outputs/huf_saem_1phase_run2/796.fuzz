@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/Pass.h"
+#include "llvm/Support/raw_ostream.h"
+using namespace llvm;
+
+namespace {
+struct MyPass : public FunctionPass {
+  static char ID;
+  MyPass() : FunctionPass(ID) {}
+
+  bool runOnFunction(Function &F) override {
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        if (auto *CI = dyn_cast<CallInst>(&I)) {
+           
+          if (CI->use_empty()) continue;
+
+           
+          Function &Func = CI->getFunction();
+          if (!Func.doesNotThrow()) continue;
+
+           
+          if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+            if (!II->isAnyMemory()) continue;
+
+             
+             
+          }
+        }
+      }
+    }
+    return false;
+  }
+};
+
+char MyPass::ID = 0;
+static RegisterPass<MyPass> X("my-pass", "My LLVM Pass");
+}  

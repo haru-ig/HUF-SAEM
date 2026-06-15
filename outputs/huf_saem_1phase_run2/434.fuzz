@@ -1,0 +1,104 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Argument *Arg = &*F->arg_begin();
+    Arg->setParamAttr(0, Attribute::Returned);
+
+     
+    Intrinsic::ID IID = Intrinsic::sqrt;
+    Value *Args[] = { ConstantInt::get(Type::getInt32Ty(Context), 1) };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), Args, "", BB);
+
+     
+    CI->addUse(Value::use_iterator());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    Value *MemArgs[] = { ConstantInt::get(Type::getInt64Ty(Context), 0) };
+    CallInst *AtomicCI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::atomic_load), MemArgs, "", BB);
+
+     
+    AtomicCI->setOperand(1, ConstantInt::get(Type::getInt64Ty(Context), 0));
+
+     
+    Loop *L = new LoopInfo().InsertionSet.GetLoopFor(BB);
+    if (!L) {
+        std::cerr << "Failed to create loop" << std::endl;
+        return 1;
+    }
+
+     
+    if (!L->getLoopPreheader() || !L->getLoopLatch()) {
+        std::cerr << "Invalid loop structure" << std::endl;
+        return 1;
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    if (!CB) {
+        std::cerr << "Failed to cast CallInst to CallBase" << std::endl;
+        return 1;
+    }
+
+     
+    TreeEntry *E = new TreeEntry();
+    E->State = TreeEntry::SplitVectorize;
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 0));
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 1));
+
+     
+    if (!L->isSafeToClone() || L->getHeader()->hasAddressTaken()) {
+        std::cerr << "Loop safety or address taken check failed" << std::endl;
+        return 1;
+    }
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(1.0));
+    Value *FalseVal = CallInst::Create(Intrinsic::ctpop, TrueVal, "", BB);
+    SelectInst *SI = new SelectInst(ConstantInt::getTrue(Context), TrueVal, FalseVal, "", BB);
+
+     
+    if (!SI->getCondition() || !SI->getTrueValue() || !SI->getFalseValue()) {
+        std::cerr << "Invalid SelectInst operands" << std::endl;
+        return 1;
+    }
+
+     
+    Instruction *ReductionRoot = new Instruction(Instruction::FNeg, TrueVal, "", BB);
+
+     
+    if (!ReductionRoot->getParent()) {
+        std::cerr << "Failed to create reduction root instruction" << std::endl;
+        return 1;
+    }
+
+     
+    outs() << "All constraints satisfied\n";
+    return 0;
+}

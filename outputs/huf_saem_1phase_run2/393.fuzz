@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "testFunc", M);
+    Argument* Arg = &*F->arg_begin();
+    Arg->addAttr(Attribute::Returned);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value* VecVal = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    ConstantInt* Index = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Instruction* InsertInst = new InsertElementInst(VecVal, Arg, Index, "", BB);
+
+     
+    CallInst* CI = CallInst::Create(InsertInst, "", BB);
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst* II = IntrinsicInst::Create(Intrinsic::memcpy, CI, 0, "", BB);
+    assert(dyn_cast<IntrinsicInst>(&CI) && "CallInst must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(II) && "Intrinsic must be a memory intrinsic");
+
+     
+
+    return 0;
+}

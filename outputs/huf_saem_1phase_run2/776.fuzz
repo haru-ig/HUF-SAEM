@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+CallInst* createIntrinsicCall(LLVMContext &Ctx, Module *M) {
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "intrinsic_call", M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = Builder.CreateCall(Intrinsic::getDeclaration(M, Intrinsic::abs), {}, "");
+    return CI;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("module", Ctx);
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = createIntrinsicCall(Ctx, &M);
+    assert(!CI.use_empty() && "The CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        assert(isAnyMemIntrinsic(CI) && "The CallInst must be an intrinsic call and specifically an AnyMemIntrinsic.");
+    }
+
+     
+
+    std::cout << "Constraints satisfied." << std::endl;
+    return 0;
+}

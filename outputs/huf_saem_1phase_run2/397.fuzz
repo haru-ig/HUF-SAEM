@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(Func->getFunctionType(), Func, {Arg}, "", BB);
+
+     
+    CI->addUse(CI->getType());
+
+     
+    Func->setDoesNotThrow();
+    Func->setLinkage(GlobalValue::ExternalLinkage);
+    Func->setUnnamedAddr(GlobalValue::UnnamedAddr::None);
+    Func->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+        }
+    }
+
+    std::cout << "Module: " << *Module << std::endl;
+    return 0;
+}

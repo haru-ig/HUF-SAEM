@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test", Context);
+  
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+  
+   
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  
+   
+  Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+  IRBuilder<> Builder(BB);
+  CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {Arg}, "", BB);
+  
+   
+  if (CI->use_empty()) {
+    CI->addUse(F->arg_begin());
+  }
+  
+   
+  F->setDoesNotThrow();
+  F->setUnwindDest(&M.getNoneValue());
+  
+   
+  if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+    if (II->getIntrinsicID() == Intrinsic::memset) {
+       
+      if (!II->isAtomic()) {
+         
+        uint64_t NumBytes = 0;  
+        if (NumBytes <= 0 || (NumBytes % sizeof(int32_t) != 0)) {
+           
+        }
+      }
+    }
+  }
+  
+   
+  CallBase *CtxCI = CI;
+  
+   
+  if (auto *SimplifiedCI = simplifyCall(CtxCI)) {
+    CtxCI->replaceAllUsesWith(SimplifiedCI);
+  }
+  
+   
+  legacy::PassManager PM;
+  PM.add(createPrintModulePass(outs()));
+  PM.run(*F->getParent());
+  
+  return 0;
+}

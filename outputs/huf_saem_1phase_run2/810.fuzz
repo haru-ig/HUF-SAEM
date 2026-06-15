@@ -1,0 +1,101 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Scalar.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Vec = ConstantVector::get({ConstantInt::get(IntegerType::getInt32Ty(Context), 1)});
+    Value *Idx = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    Instruction *InsertInst = InsertElementInst::Create(Vec, Vec, Idx, "", BB);
+    
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::Create(ICmpInst::ICMP_ULT, InsertInst, ConstantInt::get(IntegerType::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(!SI->use_empty() && "SelectInst must have at least one use");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert((isa<IntrinsicInst>(SI) && dyn_cast<IntrinsicInst>(SI)->getIntrinsicID() == Intrinsic::anymemintrinsic) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+    
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert((isa<IntrinsicInst>(SI) && dyn_cast<IntrinsicInst>(SI)->getIntrinsicID() == Intrinsic::anymemintrinsic) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+    
+     
+    CallBase *CB = nullptr;
+    for (auto &I : instructions(F)) {
+        if (&I == SI) {
+            CB = dyn_cast<CallBase>(&I);
+            break;
+        }
+    }
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRPos = IRPosition::callsite_argument(CB, 0);
+    assert(IRPos.getPositionKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "IRPosition must have a position kind of IRP_CALL_SITE_ARGUMENT");
+    
+     
+    auto *AssocFunc = F;
+    assert(AssocFunc && "Function associated with the IRPosition must be non-null");
+    
+     
+    std::vector<Value *> Scalars;
+    assert(!Scalars.empty() && "TreeEntry object must have a non-empty Scalars list");
+    
+     
+    DenseMap<TreeEntry *, int> MinBWs;
+    auto *E = new TreeEntry();
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E] > 0 && "MinBWs entry must provide a valid bit width");
+    }
+    
+     
+    assert(E->State == TreeEntry::SplitVectorize && E->CombinedEntriesWithIndices.size() == 2);
+    
+     
+    Value *CondVal = SI->getCondition();
+    Value *TrueVal = SI->getTrueValue();
+    Value *FalseVal = SI->getFalseValue();
+    Type *SelType = SI->getType();
+    assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst must have valid operands and conditions");
+    
+     
+    assert(!SI->hasOneUse() && "SelectInst should be structured to avoid simplification or transformation");
+    
+     
+    auto *TrueValInt = dyn_cast<ConstantInt>(TrueVal);
+    auto *FalseValCtpop = CTPOPInst::Create(TrueValInt->getValue().getZExtValue(), "", BB);
+    ICmpInst *ICmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(IntegerType::getInt32Ty(Context), 2));
+    assert(isa<CTPOPInst>(FalseValCtpop) && isa<ICmpInst>(ICmp) && "SelectInst must have valid operands and conditions");
+    
+     
+    Type *SelType = SI->getType();
+    Type *CondType = CondVal->getType();
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondType->isIntegerTy() || CondType->isVectorTy()));
+    
+     
+    assert(E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement);
+    
+     
+    Value *LastOperand = E->getOperand(1)->get

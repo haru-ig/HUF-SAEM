@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::any_mem_intrinsic, { Type::getInt32Ty(Context) }, {}, "", BB);
+    
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+    
+     
+    BB->getTerminator()->setOperand(0, CI);
+    
+     
+    if (auto* II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::any_mem_intrinsic) {
+             
+            Value* NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+            if (!CI->use_empty()) {
+                 
+                CallBase* CB = dyn_cast<CallBase>(CI);
+                if (CB) {
+                    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+                    if (Pos.isValid()) {
+                         
+                    }
+                }
+            }
+        }
+    }
+    
+     
+    M->print(outs(), nullptr);
+
+    delete M;
+    return 0;
+}

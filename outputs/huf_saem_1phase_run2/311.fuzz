@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value* ZeroVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value* OneVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value* TwoVal = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    Type* Int32Ty = Type::getInt32Ty(Context);
+    Instruction* InsertElem = new InsertElementInst(ZeroVal, OneVal, ZeroVal, "", BB);
+    
+     
+    assert(InsertElem->getType()->isVectorTy() && "Insert element operand must be a vector");
+    
+     
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value* FalseVal = new ICmpInst(*BB, ICmpInst::ICMP_ULT, OneVal, TwoVal, "", BB);
+    Instruction* SelectInst = new SelectInst(TrueVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(SelectInst->getType()->isIntOrVectorInt()) && "Select operand types must be integers or integer vectors");
+    
+     
+     
+
+    return 0;
+}

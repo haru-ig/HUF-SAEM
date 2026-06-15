@@ -1,0 +1,102 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Type *IntTy = Type::getInt32Ty(Context);
+
+     
+    Argument *Arg = new Argument(IntTy, "arg", F);
+    Arg->setParamAttr(0, AttributeSet::getWithParam(Context, 0, Attribute::Returned));
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {}, "", BB);
+    CI->setDoesNotThrow();
+    CI->takeName(nullptr);
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic." << std::endl;
+    }
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow() && !CI->doesNotThrow()) {
+        std::cout << "Function and CallInst are correctly marked as nounwind and doesNotThrow." << std::endl;
+    } else {
+        std::cout << "Function or CallInst is not correctly marked as nounwind or doesNotThrow." << std::endl;
+    }
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is a memory intrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not a memory intrinsic." << std::endl;
+    }
+
+     
+    Instruction *CtxI = CI;
+    if (isa<CallBase>(CtxI)) {
+        std::cout << "Context instruction is a CallBase instance." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase instance." << std::endl;
+    }
+
+     
+    if (IRPosition::callsite_argument(CtxI).getKind() == IRPosition::CallSiteArgument) {
+        std::cout << "IRPosition is correctly set to callsite argument." << std::endl;
+    } else {
+        std::cout << "IRPosition is not correctly set to callsite argument." << std::endl;
+    }
+
+     
+    if (Function *Func = CtxI->getFunction()) {
+        std::cout << "Associated function exists." << std::endl;
+    } else {
+        std::cout << "No associated function found." << std::endl;
+    }
+
+     
+     
+
+     
+     
+
+     
+     
+
+    return 0;
+}

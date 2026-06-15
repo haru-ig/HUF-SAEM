@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Use.h>
+
+using namespace llvm;
+
+void checkCallInst(CallInst &CI) {
+    if (CI.use_empty()) {
+        std::cerr << "Error: CallInst does not have any uses.\n";
+        return;
+    }
+}

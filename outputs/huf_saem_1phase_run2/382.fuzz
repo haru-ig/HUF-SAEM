@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+void createCallInst(Module &M) {
+    LLVMContext &C = M.getContext();
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(C), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "exampleFunc", M);
+    BasicBlock *BB = BasicBlock::Create(C, "", F);
+
+     
+    CallInst *CI = CallInst::Create(F, {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(C));
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+            F->setDoesNotThrow();
+
+             
+            if (auto *AMII = dyn_cast<AtomicRMWInst>(CI)) {
+                Value *Ptr = AMII->getPointerOperand();
+                Type *Ty = Ptr->getType();
+                unsigned NumBytes = 0;  
+                if (NumBytes <= 0 || !isMultipleOfElementSize(NumBytes, Ty->getScalarType()->getPrimitiveSizeInBits())) {
+                     
+                    std::cerr << "Handling undefined behavior for atomic unordered memory intrinsic" << std::endl;
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    LLVMContext Context;
+    Module M(Context);
+
+    createCallInst(M);
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

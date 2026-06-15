@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->addFnAttr(Attribute::NoUnwind);
+    CI->setDoesNotThrow();
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    SelectInst *SI = new SelectInst(ICmpInst::ICMP_ULT, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be created successfully");
+
+     
+    Type *SelType = SI->getType();
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    SI->setOperand(0, CondVal);
+    SI->setOperand(1, TrueVal);
+    SI->setOperand(2, FalseVal);
+
+     
+    assert(!SI->isUndef() && "SelectInst should not be undefined");
+
+     
+    Loop *L = new Loop(*BB, nullptr);
+    BasicBlock *PreHeader = BB;
+    BasicBlock *Latch = BB;
+    L->setLoopPreheader(PreHeader);
+    L->setLoopLatch(Latch);
+
+     
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(L->getLoopPreheader() != nullptr && "Loop must have a preheader block");
+    assert(L->getLoopLatch() != nullptr && "Loop must have a latch block");
+
+     
+    UnrollOptions ULO;
+    ULO.Count = 2;
+    LoopUnroller LU(&ULO, &M);
+    LU.unrollLoop(L);
+
+     
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+    std::cout << "Test passed successfully!" << std::endl;
+    return 0;
+}

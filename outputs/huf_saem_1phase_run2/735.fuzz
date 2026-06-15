@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = &*F->arg_begin();  
+    Instruction *CallInst = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::abs), {Arg}, "", BB);
+
+     
+    Use &U = CallInst->use_begin();
+    U.getUser()->print(errs()); errs() << "\n";
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CallInst);
+    if (II && II->getIntrinsicID() == Intrinsic::abs) {
+        std::cout << "Intrinsic check passed!\n";
+    } else {
+        std::err << "Intrinsic check failed!\n";
+    }
+
+     
+    if (!CallInst->use_empty()) {
+        CallInst->replaceAllUsesWith(ConstantInt::get(Type::getInt32Ty(Context), 42));
+        CallInst->eraseFromParent();
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ICmpInst::makeICmp(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    Value *CondVal = SelectInst::Create(FalseVal, TrueVal, FalseVal);
+
+     
+    Value *X = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    Value *AbsValue = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::fabs), X, "");
+    Value *FNegValue = BinaryOperator::CreateFNeg(AbsValue);
+
+     
+    SelectInst *SI = new SelectInst(CondVal, FNegValue, TrueVal, "", BB);
+
+     
+    std::cout << "SelectInst created:\n" << *SI << "\n";
+
+    return 0;
+}

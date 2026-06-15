@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Use.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 5);
+    Argument *A1 = new Argument(Type::getInt32Ty(Context), "arg1", nullptr, &M);
+    A1->addIncoming(Arg1, BB);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, F, {A1}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+    F->setDoesNotThrow();
+    assert(F->doesNotThrow() && "Function should now be marked as nounwind");
+
+     
+    Intrinsic::ID MemIntrinsicID = Intrinsic::memcpy;
+    CallInst *MemCI = CallInst::Create(Intrinsic::getDeclaration(&M, MemIntrinsicID), CI->getType(), {CI}, "", BB);
+
+     
+    if (dyn_cast<IntrinsicInst>(MemCI)) {
+        std::cout << "The CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "The CallInst is not an intrinsic call." << std::endl;
+    }
+
+     
+    if (CallBase *CB = dyn_cast<CallBase>(MemCI)) {
+        std::cout << "Context instruction is a CallBase." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase." << std::endl;
+    }
+
+    return 0;
+}

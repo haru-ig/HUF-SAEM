@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_function", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    CI->addUse(F->getReturnType());
+    
+     
+    simplifyCall(CI, false);
+    
+    return 0;
+}

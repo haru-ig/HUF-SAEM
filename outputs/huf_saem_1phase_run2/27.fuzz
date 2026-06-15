@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::sqrt;  
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), Args, "", BB);
+
+     
+    BB->push_back(new StoreInst(CI, ConstantPointerNull::get(Type::getInt8PtrTy(Context)), false, BB));
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    assert(!F->hasFnAttribute(Attribute::NoUnwind) && "Function should be marked as nounwind");
+    assert(CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == IntrID && "CI must be an intrinsic call");
+
+     
+
+    return 0;
+}

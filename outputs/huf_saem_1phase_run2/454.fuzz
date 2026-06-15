@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Arg->getType()}, {Arg, ConstantInt::get(Type::getInt8Ty(Context), 0), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    CI->addUse(CI->getType());  
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Expected a memset intrinsic");
+
+     
+    assert(!F->hasFnAttr(Attribute::NoUnwind) && "Function should be marked as nounwind");
+
+     
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+
+     
+    std::cout << "Test passed!" << std::endl;
+
+    return 0;
+}

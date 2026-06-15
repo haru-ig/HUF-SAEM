@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = new Argument(IntegerType::getInt32Ty(Context), "arg", nullptr, F);
+    Arg->setParamAttr(0, AttributeSet::get(Context, {Attribute::Returned}));
+    F->getArgumentList().push_back(Arg);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::anymemintrinsic, {}, nullptr, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic");
+    assert(isa<AnyMemIntrinsic>(II) && "Intrinsic must be of type AnyMemIntrinsic");
+    
+     
+    if (auto *AMII = dyn_cast<AtomicRMWInst>(II)) {
+        assert(AMII->isUnordered() && "Atomic operation must be unordered");
+        uint64_t NumBytes;  
+        assert(NumBytes <= 0 || (NumBytes % getElementTypeSize(Arg->getType()) != 0), "Length must be non-positive or not a multiple of element size");
+    }
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    IRPosition Pos = IRPosition::callsite_argument(*BB, 0, Context);
+    assert(Pos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must be for a callsite argument");
+    
+     
+    Function *Func = Pos.getFunction();
+    assert(Func && "Associated function must exist");
+    
+     
+     
+    
+     
+    if (Arg->getType()->isIntegerTy()) {
+        Value *TrueVal = ConstantInt::get(Arg->getType(), 1);
+        Value *FalseVal = ConstantInt::get(Arg->

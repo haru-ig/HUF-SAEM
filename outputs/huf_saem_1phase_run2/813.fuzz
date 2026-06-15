@@ -1,0 +1,139 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, { Arg }, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->addFnAttr(Attribute::Nounwind);
+    assert(!CI->doesNotThrow() && "CallInst must not be marked as nounwind");
+    
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    assert(AII && AII->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call");
+    
+     
+    CallBase *CB = cast<CallBase>(CI);
+    
+     
+    auto IRPos = IRPosition::callsite_argument(CB, 0);
+    assert(IRPos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct kind");
+    
+     
+    Function *Funct = IRPos.getFunction();
+    assert(Funct && "Function must be non-null");
+    
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<TreeEntry*, Type*> MinBWs;
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getScalarSizeInBits() > 0 && "Precomputed type must have a valid bit width");
+    }
+    
+     
+    assert(E->State == TreeEntry::SplitVectorize && "TreeEntry state must be SplitVectorize");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+    
+     
+    if (!E->isGather() || !E->TransformedToGatherNodes) {
+        assert(E->State == TreeEntry::Vectorize && "TreeEntry state must be Vectorize for specific opcode");
+    }
+    
+     
+    Value *CondVal = ConstantInt::getTrue(Context);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = CallInst::CreateFNeg(CallInst::CreateFABS(TrueVal, "", BB), "", BB);
+    Type *SelType = TrueVal->getType();
+    assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst must have valid condition, true value, false value, and type");
+    
+     
+    ICmpInst *ICmp = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    CondVal = ICmp;
+    
+     
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondVal->getType()->isIntegerTy() || CondVal->getType()->isVectorTy()));
+    
+     
+    assert(!E->getOperand(1)->getType()->isVectorTy() && "Last operand must not be a vector type");
+    
+     
+    Type *ScalarTy = nullptr;  
+    assert(isValidElementType(ScalarTy) && "ScalarTy must be a valid element type");
+    
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        ScalarTy = MinBWs[E];
+    } else if (E->Idx == 0 && E->isReducedBitcastRoot()) {
+         
+        ScalarTy = getTypeForScalarization(*E);
+    }
+    
+     
+    Instruction *I = nullptr;  
+    assert(I->getOpcode() == Instruction::FNeg && "Instruction must be a FNeg");
+    
+     
+    FPClassKnownBits Known;
+    assert(Known.isZero() && "Known must be in an uninitialized state");
+    
+     
+    int Depth = 0;
+    const int MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest DemandedMask;
+    assert(DemandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+    
+     
+    DenseMap<BasicBlock*, ScheduleState> BlocksSchedules;
+    assert(!BlocksSchedules.empty() && "BlocksSchedules map must contain valid entries");
+    
+     
+    std::vector<TreeEntry*> VectorizableTree;
+    for (auto &TE : VectorizableTree) {
+        assert(!TE->isGather() && !TE->isDeleted() && TE->State != TreeEntry::CombinedVectorization && "Nodes must not be gathered or deleted");
+    }
+    
+     
+    Instruction *ReductionRoot = nullptr;  
+    assert(ReductionRoot->getParent() && "ReductionRoot must have a parent block");
+    
+     
+    std::vector<std::pair<Value*, APFloat>> VectorValuesAndScales;
+     
+    
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreHeader() && L->getLoopLatch() && "Loop must have a valid preheader and latch block");
+    
+    return 0;
+}

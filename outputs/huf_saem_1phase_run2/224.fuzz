@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FT, GlobalValue::ExternalLinkage, "testFunc", &M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value* Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    F->arg_begin()->setName("arg1");
+    
+     
+    CallInst* CI = CallInst::Create(F, { Arg1 }, "", BB);
+    
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst has no uses.\n";
+        return 1;
+    }
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is not an intrinsic.\n";
+        return 1;
+    }
+    
+    IntrinsicInst* II = cast<IntrinsicInst>(CI);
+    if (!II->isAnyMemIntrinsic()) {
+        errs() << "IntrinsicInst is not an AnyMemIntrinsic.\n";
+        return 1;
+    }
+    
+     
+    unsigned NumBytes = II->getArgOperand(0)->getType()->getPrimitiveSizeInBits() / 8;
+    if (NumBytes > 0) {
+        errs() << "Intrinsic has non-zero length operation.\n";
+        return 1;
+    }
+    
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (!AI->hasAttribute(AttributeSet::ReturnIndex)) {
+        errs() << "Function does not have a return argument.\n";
+        return 1;
+    }
+    
+     
+    CallBase* CB = dyn_cast<CallBase>(CI);
+    if (!CB) {
+        errs() << "Context instruction is not a CallBase.\n";
+        return 1;
+    }
+    
+     

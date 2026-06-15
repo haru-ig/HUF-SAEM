@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = cast<Function>(M->getOrInsertFunction(
+        "testFunc", 
+        Type::getVoidTy(Context), 
+        ArrayRef<Type*>()));
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+    CI->addUse(Value::Type::AnyMemTy);  
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    auto *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    auto *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "The intrinsic call must be an AnyMemIntrinsic");
+    
+     
+    if (AMII->isZeroLength()) {
+         
+    } else if (AMII->isAtomic() && AMII->getNumBytes() > 0) {
+         
+    }
+    
+     
+    auto *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+    
+     
+    
+    std::cout << "Test case generated successfully!\n";
+    return 0;
+}

@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+ 
+Value *generateTestCode(Function &F, LLVMContext &Ctx) {
+   
+  Module M("test", Ctx);
+  FunctionType *FTy = FunctionType::get(Type::getVoidTy(Ctx), {}, false);
+  Function *Func = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", Func);
+  IRBuilder<> Builder(BB);
+
+   
+  Intrinsic::ID IntrID = Intrinsic::sqrt;  
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {}, "", BB);
+
+   
+  CI->addUse(Func->arg_begin());  
+
+   
+  Func->setDoesNotThrow();
+  Func->setNoUnwind();
+
+   
+  if (auto *II = dyn_cast<AnyMemIntrinsic>(CI)) {
+    Value *NumBytes = ConstantInt::get(Type::getInt64Ty(Ctx), -1);  
+    II->setAtomicOrdering(AtomicOrdering::NotAtomic);
+    if (II->isUnordered()) {
+       
+      if (*NumBytes > 0 && *NumBytes % CI->getType()->getScalarSizeInBits() == 0) {
+        return nullptr;  
+      }
+    }
+  }
+
+   
+  if (CI->getNumUses() > 0 && !CI->use_empty()) {
+     
+  }
+
+  return CI;
+}
+
+int main() {
+  LLVMContext Ctx;
+  generateTestCode(Function(), Ctx);
+  return 0;
+}

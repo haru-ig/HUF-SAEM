@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *func = cast<Function>(module.getOrInsertFunction("testFunc", funcType));
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(Context, "entry", func);
+    IRBuilder<> builder(entryBB);
+
+     
+    Value *arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(func, {arg}, "", entryBB);
+    CI->setDoesNotThrow();  
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    func->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID intrinsicID = CI->getIntrinsicID();
+        if (intrinsicID == Intrinsic::anymemset || intrinsicID == Intrinsic::anymemcpy) {
+             
+        }
+    }
+
+     
+    module.print(errs());
+
+    return 0;
+}

@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::memcpy), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = ICmpInst::create(CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(CI->getType(), CI, FalseVal, TrueVal, "", BB);
+    
+     
+    assert(isa<CallBase>(CI) && "CI must be a CallBase");
+    
+     
+    return 0;
+}

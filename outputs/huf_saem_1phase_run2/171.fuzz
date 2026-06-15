@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::any_mem_intrinsic, Args, "", BB);
+    
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    
+     
+    Function::arg_iterator AI = F->arg_begin();
+    Value *Arg = &*AI;
+    Arg->setAttr(AttributeSet::FunctionIndex, Attribute::Returned);
+    
+     
+    CallBase *CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "Context instruction must be a CallBase");
+    
+     
+    auto IRP = IRPosition::callsite_argument(*CI);
+    assert(IRP.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+    
+     
+    
+    std::cout << "Test case generated successfully!\n";
+    return 0;
+}

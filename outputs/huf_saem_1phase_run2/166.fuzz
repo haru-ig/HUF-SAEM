@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = F->getArg(0);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {Arg}, "", BB);
+
+     
+    CI->addUse(F->getArgNo(0));
+
+     
+    F->setLinkage(GlobalValue::ExternalWeakLinkage);
+    F->setAttributes(AttributeList::get(Context, {Attribute::NoUnwind}));
+
+     
+    CI->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Type *IntTy = IntegerType::get(Context, 32);
+        Value *Zero = ConstantInt::get(IntTy, 0);
+        AtomicRMWInst *ARMI = new AtomicRMWInst(AtomicRMWInst::Xchg, Zero, CI, MemoryOrder::Monotonic, SyncScope::System, BB);
+        Builder.Insert(ARMI);
+    }
+
+     
+    if (CallBase *CB = dyn_cast<CallBase>(BB->getTerminator())) {
+        CB->setCalledFunction(F);
+    }
+
+     
+    M.print(errs());
+
+    return 0;
+}

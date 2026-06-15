@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID ID = Intrinsic::not_an_intrinsic;  
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, ID), {}, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::ExternalLinkage);
+    CI->setDoesNotThrow();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (const auto *AMIntr = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+            unsigned NumBytes = AMIntr->getNumElements() * sizeof(int);
+            if (NumBytes <= 0) {
+                std::cerr << "Invalid number of bytes for intrinsic call." << std::endl;
+                return 1;
+            }
+        }
+    }
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool checkAndUpdate(CallBase &CI) {
+     
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[1] = {ConstantInt::get(Type::getInt32Ty(Context), 42)};
+    CallBase *CI = CallInst::Create(F->getFunctionType(), F, Args, "", BB);
+
+     
+    if (CI->use_empty()) {
+        CI->addUse(*F->arg_begin());
+    }
+
+     
+    bool updated = checkAndUpdate(cast<CallBase>(*CI));
+    if (updated) {
+        errs() << "CallInst updated successfully.\n";
+    } else {
+        errs() << "No changes made to CallInst.\n";
+    }
+
+     
+    Mod->print(errs(), nullptr);
+
+    return 0;
+}

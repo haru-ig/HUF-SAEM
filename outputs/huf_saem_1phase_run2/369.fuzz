@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(nullptr, {nullptr}, "", BB);
+    
+     
+    CI->addUse(F->getArg(0));
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    Intrinsic::ID IntrID = Intrinsic::memcpy;
+    CallInst *IntrCI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), IntrID), {nullptr, nullptr}, "", BB);
+    
+     
+    if (auto *MI = dyn_cast<AnyMemIntrinsic>(IntrCI)) {
+        MI->setVolatile(false);
+        MI->setUnordered(true);
+        MI->setLength(16);  
+    }
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(IntrCI);
+    
+     
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    if (auto Result = simplifyCall(Pos)) {
+        std::cout << "Simplification successful\n";
+    } else {
+        std::cout << "Simplification failed\n";
+    }
+    
+     
+    
+    return 0;
+}

@@ -1,0 +1,111 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Dominators.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value* Arg = &*(F->arg_begin());
+    
+     
+    IRBuilder<> Builder(BB);
+    Value* Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value* Vec = Builder.CreateInsertElement(UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4)), Zero, Zero);
+    
+     
+    CallInst* CI = CallInst::Create(Vec->getType(), Vec, "", BB);
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+    
+     
+    IntrinsicInst* II = Intrinsic::getDeclaration(&M, Intrinsic::anymemintrinsic);
+    assert(dyn_cast<IntrinsicInst>(II) && "Must be an intrinsic call");
+    
+     
+    uint64_t NumBytes = 0;
+    assert(NumBytes <= 0 || NumBytes % sizeof(int32_t) != 0);
+    
+     
+    Loop* L = new LoopInfoWrapperPass(&M).getLoopFor(BB);
+    assert(L->getLoopPreheader() && "Loop must have a preheader");
+    assert(L->getLoopLatch() && "Loop must have a latch");
+    
+     
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken());
+    
+     
+    llvm::UnrollLoopOptions ULO;
+    ULO.Count = 1;
+    assert(ULO.Count > 0);
+    
+     
+    Value* I = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    assert(I && "Instruction must be non-null");
+    Type* IntType = I->getType();
+    assert(IntType->isIntegerTy() || IntType->isVectorTy());
+    
+     
+    unsigned Depth = 0;
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth);
+    
+     
+    FPClassTest DemandedMask;
+    FPClass Known;
+    assert((DemandedMask.getBitWidth() == known.getBitWidth()) && "Bit width must match");
+    
+     
+    unsigned BitWidth = IntType->getScalarSizeInBits();
+    assert(BitWidth == DemandedMask.getBitWidth());
+    
+     
+    unsigned NLZ = 1;
+    assert(NLZ > 0);
+    
+     
+    TreeEntry* TE = new TreeEntry();
+    TE->Idx = 1;
+    TE->UserTreeIndex.EdgeIdx = 0;  
+    assert(TE->Idx != 0 && "Idx must be non-zero");
+    assert(TE->UserTreeIndex.EdgeIdx != UINT_MAX);
+    
+     
+    Value* VL = ConstantInt::get(Type::getInt32Ty(Context), 4);
+    Value* Mask = ConstantInt::get(Type::getInt32Ty(Context), 0xFF);
+    assert(VL && Mask);
+    
+     
+    MinBWsMap.insert({TE, BitWidth});
+    Type* ScalarTy = getTypeForBitwidth(BitWidth, true);
+    assert(isValidElementType(ScalarTy));
+    
+    return 0;
+}

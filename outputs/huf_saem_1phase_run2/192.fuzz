@@ -1,0 +1,78 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    Function* F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::any_mem_intrinsic, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    auto* II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    auto* AMI = cast<AnyMemIntrinsic>(II);
+
+     
+    CallBase* CB = CI;
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    assert(Pos.getKind() == IRP_CALL_SITE_ARGUMENT && "Context instruction must be a CallBase instance");
+
+     
+    bool Simplified = false;
+    if (auto* SI = dyn_cast<SelectInst>(CI)) {
+         
+        Value* CondVal = SI->getCondition();
+        Value* TrueVal = SI->getTrueValue();
+        Value* FalseVal = SI->getFalseValue();
+        Type* SelType = SI->getType();
+        assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst must have valid condition, true and false values");
+
+         
+        if (isa<ConstantInt>(CondVal) && isa<ConstantFP>(TrueVal) && isa<ConstantFP>(FalseVal)) {
+            Value* NewSel = nullptr;
+            if (auto* ICmpInst = dyn_cast<ICmpInst>(CondVal)) {
+                if (ICmpInst->getPredicate() == ICmpInst::ICMP_ULT && isa<ConstantInt>(ICmpInst->getOperand(0)) && isa<ConstantInt>(ICmpInst->getOperand(1))) {
+                    ConstantInt* TrueConst = dyn_cast<ConstantInt>(TrueVal);
+                    ConstantInt* FalseConst = dyn_cast<ConstantInt>(FalseVal);
+                    if (TrueConst && FalseConst) {
+                         
+                        Value* CTPop = CreateCallInst::Create(Intrinsic::ctpop, TrueVal, "", BB);
+                        NewSel = SelectInst::Create(CondVal, CTPop, FalseConst, "", BB);
+                    }
+                }
+            }
+            if (NewSel) {
+                SI->replaceAllUsesWith(NewSel);
+                SI->eraseFromParent();
+                Simplified = true;
+            }
+        }
+    }
+
+     
+    M->print(errs(), nullptr);
+
+    delete M;
+    return 0;
+}

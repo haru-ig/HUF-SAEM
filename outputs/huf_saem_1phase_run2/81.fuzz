@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), false);
+    Function *TheFunction = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", TheFunction);
+
+     
+    ConstantInt *Length = ConstantInt::get(Type::getInt32Ty(Context), -1, true);
+    Value *Args[] = { ConstantExpr::getBitCast(BB, Type::getInt8PtrTy(Context)), Length };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::memset), Args, "", BB);
+
+     
+    CI->addUse("use_me");
+
+     
+    Module->print(outs(), nullptr);
+
+    return 0;
+}

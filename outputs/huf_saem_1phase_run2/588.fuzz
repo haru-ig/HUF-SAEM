@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memcpy), { ConstantInt::get(Type::getInt32Ty(Context), 0), ConstantInt::get(Type::getInt32Ty(Context), 0), ConstantInt::get(Type::getInt32Ty(Context), 4) }, "", BB);
+    assert(!CI->use_empty() && "CI must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CI must be an intrinsic call");
+    assert(II->getIntrinsicID() == Intrinsic::memcpy && "CI must be a memory intrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "CI must be a CallInst");
+
+     
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    Arg->setName("arg");
+    F->arg_begin()->setName("retArg");
+
+     
+    CallInst *CI;
+    if (F->getName() == "testFunc") {
+        CI = CallInst::Create(FTy, Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {Arg}, "", BB);
+    } else {
+         
+        CI = CallInst::Create(Type::getVoidTy(Context), Intrinsic::getDeclaration(&M, Intrinsic::fabs), {Arg}, "", BB);
+    }
+
+     
+    Use &U = F->arg_begin();
+    U.set();
+
+     
+    F->addFnAttr(Attribute::Nounwind);
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+
+     
+    if (II->getIntrinsicID() == Intrinsic::memcpy) {
+        Value *NumBytes = ConstantInt::get(Type::getInt64Ty(Context), 0);
+        II->setArgOperand(2, NumBytes);  
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

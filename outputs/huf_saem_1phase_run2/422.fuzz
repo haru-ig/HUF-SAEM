@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
+#include <iostream>
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "caller", M);
+    
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CallInst = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memcpy), {}, "", BB);
+    
+     
+    F->setDoesNotThrow();
+    
+     
+     
+
+    std::cout << "Module created with intrinsic call: " << *M << std::endl;
+
+    delete M;
+    return 0;
+}

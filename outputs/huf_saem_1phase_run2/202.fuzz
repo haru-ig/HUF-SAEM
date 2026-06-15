@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    
+     
+    IRBuilder<> Builder(BasicBlock::Create(Context, "", F));
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::abs, {Arg->getType()}), {Arg}, "", Builder.GetInsertBlock());
+    
+     
+    CI->addUse(*F);
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is an intrinsic.\n";
+    } else {
+        errs() << "CallInst is not an intrinsic.\n";
+    }
+    
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst has at least one use.\n";
+    } else {
+        errs() << "CallInst does not have any uses.\n";
+    }
+    
+     
+    F->setDoesNotThrow();
+    if (F->doesNotThrow()) {
+        errs() << "Function is marked as nounwind.\n";
+    } else {
+        errs() << "Function is not marked as nounwind.\n";
+    }
+    
+     
+    
+    return 0;
+}

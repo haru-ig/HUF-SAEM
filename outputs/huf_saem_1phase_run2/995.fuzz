@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("testmodule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "myfunc", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CallInst = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::sqrt), {}, "", BB);
+
+     
+    assert(!F->hasFnAttr(Attribute::NoUnwind) && !CallInst->doesNotThrow() && "Function or CallInst should be marked as nounwind");
+    F->addFnAttr(Attribute::NoUnwind);  
+
+     
+    assert(!CallInst->use_empty() && "The CallInst must have at least one use to trigger simplification attempts.");
+
+     
+    M.print(errs());
+
+    return 0;
+}

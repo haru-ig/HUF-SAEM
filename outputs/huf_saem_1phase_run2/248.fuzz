@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+
+     
+    CI->addUse(F->getArg(0));  
+
+    if (!CI->use_empty()) {
+        std::cout << "The CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "The CallInst does not have any uses." << std::endl;
+    }
+
+    return 0;
+}

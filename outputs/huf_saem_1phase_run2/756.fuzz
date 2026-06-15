@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "test_func", &M);
+    Argument* Arg = &*F->arg_begin();
+    Arg->setAttr(AttributeSet::ReturnIndex, Attribute::NoUnwind | Attribute::ReadNone);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    Instruction* InsertPos = &*BB->begin();
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {Arg}, "", InsertPos);
+
+     
+    BB->push_back(CI);
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (auto* IIC = dyn_cast<IntrinsicInst>(CI)) {
+        assert(IIC && "CallInst must be an intrinsic call");
+        assert(IIC->getIntrinsicID() == Intrinsic::memset && "Specific intrinsic must be memset");
+    } else {
+        return 1;  
+    }
+
+     
+    if (CI->getNumOperands() > 0) {
+        Value* MemOp = CI->getOperand(0);
+        assert(MemOp && "Memory operand must be valid");
+
+         
+        if (auto* AII = dyn_cast<AtomicCmpXchgInst>(CI)) {
+            assert(AII && "CallInst must be an AtomicCmpXchgInst");
+            uint64_t NumBytes = 0;  
+            if (NumBytes > 0) {
+                return 1;  
+            }
+        } else if (auto* AUI = dyn_cast<AtomicRMWInst>(CI)) {
+            assert(AUI && "CallInst must be an AtomicRMWInst");
+            uint64_t NumBytes = 0;  
+            if (NumBytes > 0) {
+                return 1;  
+            }
+        }
+    }
+
+     
+
+    std::cout << "Test passed!\n";
+    return 0;
+}

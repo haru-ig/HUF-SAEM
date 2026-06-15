@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testFunction", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setParamAttribute(0, Attribute::Returned);
+
+     
+    CallInst *CI;
+    if (true) {
+        Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 42);
+        CI = CallInst::Create(FuncTy, Callee, "", BB);
+         
+        F->setDoesNotThrow();
+        F->addFnAttr(Attribute::NoUnwind);
+    } else {
+        std::cerr << "Failed to create CallInst" << std::endl;
+        return 1;
+    }
+
+     
+    if (!CI->use_empty()) {
+        CI->addUse(Type::getInt32Ty(Context));
+    } else {
+        std::cerr << "CallInst does not have any uses" << std::endl;
+        return 1;
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

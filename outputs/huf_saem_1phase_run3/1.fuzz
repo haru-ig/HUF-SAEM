@@ -1,0 +1,10 @@
+#include <iostream>
+int main() {
+    auto printResult = [](auto value) noexcept { std::cout << value; };
+    int result = 0;  
+
+     
+    printResult(result);
+
+    return 0;
+}

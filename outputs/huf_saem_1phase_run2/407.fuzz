@@ -1,0 +1,20 @@
+#include <iostream>
+int main() {
+#include <iostream>
+int main() {
+     
+    int x = 42;
+    int y = 99;
+    
+     
+     
+    int result = foo(x, y);
+    std::cout << "Result: " << result << std::endl;
+    
+    return 0;
+}
+
+ 
+int foo(int a, int b) {
+    return a + b;
+}

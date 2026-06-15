@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createExampleFunction(LLVMContext &ctx) {
+    Module mod("example", ctx);
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(ctx), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "exampleFunc", &mod);
+    BasicBlock *entryBB = BasicBlock::Create(ctx, "entry", func);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(ctx), Type::getInt8PtrTy(ctx), ConstantInt::get(Type::getInt64Ty(ctx), 16)}, "", entryBB);
+    CI->setDoesNotThrow();  
+    CI->addUse(func);  
+
+     
+    func->setDoesNotThrow();
+
+     
+    Value *arg = &*(func->args().begin());
+    arg->setName("arg");
+    arg->addAttr(Attribute::Returned);
+
+    return func;
+}
+
+int main() {
+    LLVMContext ctx;
+    Module mod("example", ctx);
+    Function *func = createExampleFunction(ctx);
+
+     
+    mod.print(outs(), nullptr);
+
+    return 0;
+}

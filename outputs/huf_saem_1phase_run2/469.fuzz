@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+    
+     
+    IntrinsicInst *Intr = dyn_cast<IntrinsicInst>(CI);
+    assert(Intr && "CallInst must be an intrinsic");
+    AnyMemIntrinsic *MemIntr = dyn_cast<AnyMemIntrinsic>(Intr);
+    assert(MemIntr && "Intrinsic must be a memory intrinsic");
+    
+     
+    if (MemIntr->isUnordered()) {
+        uint64_t NumBytes = MemIntr->getNumElements();
+        assert(NumBytes <= 0 || !((NumBytes * 8) % MemIntr->getElementSize() == 0) && "Length must be non-positive or not a multiple of the element size");
+    }
+    
+     
+    CallBase *CtxCI = dyn_cast<CallBase>(CI);
+    assert(CtxCI && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRP = IRPosition::callsite_argument(*CtxCI, 0);
+    assert(IRP.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the call site argument kind");
+    
+     
+    Function *Func = F;
+    assert(Func && "Function must be non-null");
+    
+     
+    
+    return 0;
+}

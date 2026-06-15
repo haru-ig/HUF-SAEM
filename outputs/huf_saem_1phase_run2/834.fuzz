@@ -1,0 +1,125 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "func", M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument* Arg = &*F->arg_begin();
+    Arg->setAttr(Attribute::Returned);
+    
+     
+    CallInst* CI = CallInst::Create(FT, F, { Arg }, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwindExceptionHandling();
+    
+     
+    Intrinsic::ID ID = Intrinsic::not_an_intrinsic;  
+    CallInst* IntrCall = CallInst::Create(FT, Intrinsic::getIntrinsic(ID), {}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(IntrCall) && "The call must be an intrinsic call");
+    
+     
+    AnyMemIntrinsic* MemIntr = dyn_cast<AnyMemIntrinsic>(IntrCall);
+    assert(MemIntr && "The intrinsic must be a memory intrinsic");
+    if (MemIntr) {
+        int NumBytes = 0;  
+        MemIntr->setArgOperandNoWrap(NumBytes);
+    }
+    
+     
+    CallBase* CB = dyn_cast<CallBase>(CI);
+    assert(CB && "The context instruction must be a CallBase");
+    
+     
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    assert(Pos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have CALL_SITE_ARGUMENT kind");
+    
+     
+    Function* FAssoc = Pos.getAssociatedFunction();
+    assert(FAssoc && "The function associated with the IRPosition must be non-null");
+    
+     
+    TreeEntry* E = nullptr;  
+    ScalarTypePtr ScalarTy = getElementType(*E->Scalars.begin());
+    assert(isValidElementType(ScalarTy) && "ScalarTy must be a valid element type");
+    
+     
+    DenseMap<TreeEntry*, Type*> MinBWs;
+    if (MinBWs.find(E) != MinBWs.end()) {
+        IntegerType* IntTy = dyn_cast<IntegerType>(MinBWs[E]);
+        assert(IntTy && "Precomputed smaller type must be an integer type");
+    }
+    
+     
+    assert(E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement && "TreeEntry must be in Vectorize state with InsertElement opcode");
+    
+     
+    Value* CondVal = ConstantInt::getTrue(Context);  
+    Value* TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);  
+    Value* FalseVal = CallInst::Create(FT, Intrinsic::ctpop, { TrueVal }, "", BB);  
+    Type* SelType = TrueVal->getType();
+    assert(SelType && "SelectInst type must be correctly retrievable");
+    
+    SelectInst* SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    assert(!SI->isConstantSelectedValue() && !SI->isUndefOrPoison() && "SelectInst should not simplify or transform");
+    
+     
+    assert(isa<FPExtInst>(TrueVal) || isa<FPTruncInst>(TrueVal) || isa<UIToFPInst>(TrueVal) || isa<SIToFPInst>(TrueVal) && "TrueVal must be a fpext, fp trunc, uitofp, or sitofp");
+    
+     
+    Type* CondType = CondVal->getType();
+    assert((CondType->isIntegerTy() || CondType->isVectorTy()) && (SelType->isIntegerTy() || SelType->isVectorTy()) && "SelectInst types must be compatible");
+    
+     
+    unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;  
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed maximum allowed");
+    
+     
+    FPClassTest DemandedMask;
+    assert(DemandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+    
+     
+    Loop* L = nullptr;  
+    assert(L->getLoopPreheader() && L->getLoopLatch() && "Loop must have non-null preheader and latch blocks");
+    
+     
+    UnrollOptions ULO;
+    ULO.Count = 2;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    
+     
+    Instruction* I = nullptr;  
+    Type* Ty = I->getType();
+    unsigned BitWidth = Ty->getScalarSizeInBits();
+    assert(BitWidth == DemandedMask.bitwidth() && BitWidth == SelType->getScalarSizeInBits() && "Instruction type and bit width must match demanded mask and known properties");
+    
+     
+    unsigned NLZ = 1;  
+    assert(NLZ > 0 && "There must be unused high bits for disabling wrap flags");
+    
+     
+    assert(E->Idx != 0 && E->UserTreeIndex.has_value() && "TreeEntry must have a non-zero Idx and valid UserTreeIndex");
+    
+    return 0;
+}

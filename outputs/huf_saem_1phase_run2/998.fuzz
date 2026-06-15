@@ -1,0 +1,7 @@
+#include <iostream>
+int main() {
+   [[clang::optnone]]  
+   void nounwindFunc() {
+        
+   }
+   

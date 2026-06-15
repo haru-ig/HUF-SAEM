@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(F, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    CI->setDoesNotThrow();
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = Intrinsic::memcpy;  
+    CallInst *CI2 = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), II), {}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(CI2) && "CallInst must be an intrinsic call.");
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "Passed: CallInst has at least one use.\n";
+    } else {
+        std::cout << "Failed: CallInst does not have at least one use.\n";
+    }
+
+     
+
+    return 0;
+}

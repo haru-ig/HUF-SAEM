@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createTestModule(LLVMContext &context, Module *module) {
+   
+  FunctionType *funcType = FunctionType::get(Type::getInt32Ty(context), {}, false);
+  Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", module);
+
+   
+  BasicBlock *bb = BasicBlock::Create(context, "", func);
+
+   
+  Intrinsic::ID intrinsicID = Intrinsic::abs;  
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(module, intrinsicID), {}, "", bb);
+
+   
+  CI->addUse(func->arg_begin());
+
+   
+  func->setDoesNotThrow();
+  func->setUnwindDest(nullptr);
+
+   
+  if (dyn_cast<IntrinsicInst>(CI)) {
+    outs() << "The CallInst is an intrinsic call.\n";
+  } else {
+    outs() << "The CallInst is not an intrinsic call.\n";
+  }
+}
+
+int main() {
+  LLVMContext context;
+  Module module("testModule", context);
+
+  createTestModule(context, &module);
+
+  return 0;
+}

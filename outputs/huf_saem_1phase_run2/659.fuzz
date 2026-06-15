@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <iostream>
+
+using namespace llvm;
+
+bool checkCallInstConstraints(const CallInst &CI) {
+     
+    if (CI.use_empty()) return false;
+
+     
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    Intrinsic::ID id = dyn_cast<IntrinsicInst>(&CI)->getIntrinsicID();
+    if (id != Intrinsic::anymemintrinsic) return false;
+
+     
+    if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
+        int NumBytes = MI->getNumMemOperands();
+        if (NumBytes > 0 && !(NumBytes % sizeof(int) == 0)) return false;  
+    }
+
+     
+    return true;
+}
+
+int main() {
+    std::cout << "Starting test generation based on constraints...\n";
+
+     
+    BasicBlock *BB = nullptr;
+    Instruction *I = nullptr;
+    CallInst CI(I, {}, "", BB);
+
+    if (checkCallInstConstraints(CI)) {
+        std::cout << "CallInst satisfies all constraints.\n";
+    } else {
+        std::cout << "CallInst does not satisfy some constraints.\n";
+    }
+
+    return 0;
+}

@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void recursiveFunction(int depth, int maxDepth) {
+  if (depth >= maxDepth) {
+    return;
+  }
+   
+  BasicBlock *BB = BasicBlock::Create(*getContext(), "entry", createFunction("testFunc"));
+  IRBuilder<> builder(BB);
+  Value *Zero = ConstantInt::get(Type::getInt32Ty(*getContext()), 0);
+  Value *One = ConstantInt::get(Type::getInt32Ty(*getContext()), 1);
+  Value *Add = BinaryOperator::CreateAdd(Zero, One, "", BB);
+  builder.CreateBr(BB);  
+  recursiveFunction(depth + 1, maxDepth);
+}
+
+Function *createFunction(const std::string &name) {
+  Module *M = new Module("testModule", getContext());
+  FunctionType *FT = FunctionType::get(Type::getVoidTy(*getContext()), {}, false);
+  Function *F = Function::Create(FT, Function::ExternalLinkage, name, M);
+  BasicBlock *BB = BasicBlock::Create(*getContext(), "entry", F);
+  IRBuilder<> builder(BB);
+  recursiveFunction(0, 10);  
+  return F;
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("testModule", Context);
+  Function *F = createFunction("testFunc");
+  F->dump();
+  return 0;
+}

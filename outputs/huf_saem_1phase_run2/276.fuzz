@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &F->getArgumentList().front();
+    
+     
+    CallBase *CI = CallInst::Create(FuncTy, FunctionCallee("test_func", FuncTy), {Arg}, "", BB);
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    Intrinsic::ID IntrID = Intrinsic::memcpy;
+    CallInst *MemCpyCall = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {Arg}, "", BB);
+    
+     
+    MemCpyCall->addUse(*CI);
+    
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = BinaryOperator::CreateFNeg(TrueVal, "", BB);
+    ICmpInst *Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(Cmp, TrueVal, FalseVal, "", BB);
+    
+     
+    SI->setCondition(Cmp);
+    SI->setTrueValue(TrueVal);
+    SI->setFalseValue(FalseVal);
+    
+     
+    
+    return 0;
+}

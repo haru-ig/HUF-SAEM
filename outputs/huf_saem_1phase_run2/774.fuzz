@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", Mod.get());
+    
+     
+    Value *A = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 5));
+    Value *B = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 10));
+    
+     
+    Instruction *AbsInst = new llvm::FAdd(A, B);  
+    Instruction *NegInst = new llvm::FNeg(AbsInst);  
+    
+     
+    BB->getInstList().push_back(NegInst);
+    
+     
+    assert(!NegInst->use_empty() && "NegInst must have at least one use");
+    
+    std::cout << "Test program executed successfully.\n";
+
+    return 0;
+}

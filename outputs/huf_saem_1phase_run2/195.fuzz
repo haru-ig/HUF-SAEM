@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+    CI->setCalledFunction(F);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = Intrinsic::any_mem_intrinsic;
+    CallInst *CI2 = CallInst::Create(Type::getVoidTy(Context), II, {}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(CI2) && "CallInst must be an intrinsic call");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI2);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+
+    return 0;
+}

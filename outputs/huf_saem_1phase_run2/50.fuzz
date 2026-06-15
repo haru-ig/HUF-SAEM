@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test", Context);
+  
+   
+  FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FT, Function::ExternalLinkage, "testFunc", &M);
+  
+   
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  IRBuilder<> Builder(BB);
+  
+   
+  Value* Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+  std::vector<Value*> Args = {Arg};
+  CallInst *CI = CallInst::Create(F->getFunctionType(), F, Args, "", BB);
+  
+   
+  F->setDoesNotThrow();
+  F->setLinkage(GlobalValue::InternalLinkage);
+  
+   
+  Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 10);
+  Value* FalseVal = Builder.CreateNeg(TrueVal, "neg_true");
+  ICmpInst *Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+  SelectInst *SI = SelectInst::Create(Cmp, TrueVal, FalseVal, "", BB);
+  
+   
+  Type* SelType = SI->getType();
+  assert(SelType->isIntegerTy() && "SelectInst type must be integer");
+  
+   
+  
+  std::cout << "Test function and instructions created successfully.\n";
+  return 0;
+}

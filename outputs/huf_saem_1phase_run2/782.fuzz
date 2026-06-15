@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    std::vector<Value *> Args;
+    Args.push_back(Arg1);
+
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, Args, "", BB);
+
+     
+    CI->addUse(F->getParamType(0));
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindPredecessor(BB);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+            int NumBytes = 0;  
+            if (NumBytes > 0 && !isMultiple(NumBytes, F->getParamType(0)->getScalarSizeInBits())) {
+                 
+            }
+        }
+    }
+
+     
+    if (!CI->use_empty()) {
+        SimplifyCallInst(CI);
+    }
+
+     
+    std::cout << "Generated IR: \n" << *F << "\n";
+
+    return 0;
+}

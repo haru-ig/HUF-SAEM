@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Use.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/Casting.h>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Passes/PassPlugin.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+bool hasAtLeastOneUse(CallInst &CI) {
+  return !CI.use_empty();
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("module", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", &M);
+
+   
+  IRBuilder<> Builder(&M.getContext());
+  CallInst *CI = Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::foo), {}, "");
+
+   
+  bool result = hasAtLeastOneUse(*CI);
+  std::cout << "Has at least one use: " << result << std::endl;
+
+  return 0;
+}

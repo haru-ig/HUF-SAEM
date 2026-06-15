@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FT, GlobalValue::ExternalLinkage, "func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Vec = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    Vec = InsertElementInst::Create(Vec, ConstantInt::get(Type::getInt32Ty(Context), 0), ConstantInt::get(Type::getInt32Ty(Context), 0), "", BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), Vec, ConstantInt::get(Type::getInt64Ty(Context), 0), ConstantInt::get(Type::getInt64Ty(Context), 4), "", BB);
+    assert(!CI->use_empty() && "The CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "The CallInst must be an intrinsic call");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    assert(AMII && "The intrinsic call must be an AnyMemIntrinsic");
+
+     
+    if (AMII->isAtomic() || AMII->hasZeroLength()) {
+        std::cerr << "Error: Atomic or zero-length operation detected\n";
+        return 1;
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "The context instruction must be a CallBase instance");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*CI);
+    assert(IRPos.getKind() == IRPOsition::IRP_CALL_SITE_ARGUMENT && "The IRPosition must have a position kind of IRP_CALL_SITE_ARGUMENT");
+
+     
+    Function *Funct = IRPos.getFunction();
+    assert(Funct && "The function associated with the IRPosition must be non-null");
+
+     
+     
+
+    std::cout << "Test passed successfully!\n";
+    return 0;
+}

@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+ 
+Function* createTestFunction(LLVMContext &Ctx) {
+    Module M("test", Ctx);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    CallInst *CI;
+    if (true) {  
+        std::vector<Value *> Args;
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), Args, "", BB);
+    }
+
+     
+    F->setLinkage(Function::ExternalLinkage);
+    F->addFnAttr(Attribute::NoUnwind);
+    CI->setDoesNotThrow();
+
+     
+
+    return F;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Function *F = createTestFunction(Ctx);
+
+    if (F) {
+        std::cout << "Test function created successfully." << std::endl;
+    } else {
+        std::cout << "Failed to create test function." << std::endl;
+    }
+
+    return 0;
+}

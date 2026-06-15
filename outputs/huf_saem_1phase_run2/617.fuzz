@@ -1,0 +1,102 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = Argument::Create(IntegerType::getInt32Ty(Context), "arg", nullptr, F);
+    Arg->setReturnValue();
+
+     
+    CallInst *CI;
+    if (F->getName() == "testFunc") {
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymem_intrinsic), {}, "", BB);
+    } else {
+         
+        CI = nullptr;
+    }
+
+     
+    if (CI) {
+        Value *User = CI->use_begin();
+        assert(User != CI->use_end() && "CallInst must have at least one use");
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    if (CI) {
+        IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+        assert(II && "CallInst must be an intrinsic");
+        assert(II->getIntrinsicID() == Intrinsic::anymem_intrinsic && "CallInst must be an AnyMemIntrinsic");
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ICmpInst::makeICmp(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(IntegerType::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(FalseVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(TrueVal && "TrueVal must be a valid Value");
+    assert(FalseVal && "FalseVal must be a valid Value");
+    Type *SelType = SI->getType();
+    assert(SelType && "SelectInst type must be correctly retrievable");
+
+     
+    if (SI) {
+        ICmpInst *Cond = new ICmpInst(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(IntegerType::getInt32Ty(Context), 2));
+        Value *CondVal = Cond;
+        assert(CondVal && "CondVal must be a valid Value");
+    }
+
+     
+    LoopInfo LI(*F);
+    if (LI.getLoopsInPreorder().empty()) {
+        BasicBlock *LoopHeader = BasicBlock::Create(Context, "loop.header", F);
+        BasicBlock *LoopLatch = BasicBlock::Create(Context, "loop.latch", F);
+        LoopBlocksDFS LBD(LoopHeader, &LI, LI.getBase());
+        LoopStandardPreheadersGapper PGR(&LBD);
+        if (PGR.preheader() && PGR.latch()) {
+             
+            assert(LoopHeader->getParent() == F && "Loop header must have a non-null parent function");
+            assert(LoopLatch->getParent() == F && "Loop latch must have a non-null parent function");
+        }
+    }
+
+     
+    Loop *L = *(LI.getLoopsInPreorder().begin());
+    if (L) {
+        UnrollLoopOptions ULO;
+        ULO.Count = 2;
+        assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    }
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+
+    return 0;
+}

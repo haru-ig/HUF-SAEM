@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "main", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *IntrinsicArg = UndefValue::get(Type::getInt32Ty(Context));
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::abs), {IntrinsicArg}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II && "CallInst must be an intrinsic call.");
+        if (const auto *AnyMemII = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+            unsigned NumBytes = AnyMemII->getArgOperand(0)->getValue()->getZExtValue();
+            assert(NumBytes <= 0 || (NumBytes % sizeof(int32_t) != 0) && "Length must be non-positive or not a multiple of the element size.");
+        }
+    }
+
+     
+
+    return 0;
+}

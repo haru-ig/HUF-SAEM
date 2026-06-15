@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "func", &M);
+
+     
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+
+     
+    CI->addUse(Value::use_empty() ? 1 : 0);
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (verifyModule(M, &errs())) {
+        errs() << "Error: Module failed verification!\n";
+        return 1;
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

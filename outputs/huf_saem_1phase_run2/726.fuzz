@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = F->addArgument(Type::getInt32Ty(Context), "arg");
+    Arg->setParamAttr(0, Attribute::Returned);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {Arg}, "", BB);
+    CI->addUse(Arg);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    CallInst *AnyMemCI = CallInst::CreateIntrinsic(Intrinsic::pow, {Arg, Arg}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(AnyMemCI) && "CallInst must be an intrinsic call");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(AnyMemCI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+     
+
+    std::cout << "Test program structure is set up according to the given constraints." << std::endl;
+    return 0;
+}

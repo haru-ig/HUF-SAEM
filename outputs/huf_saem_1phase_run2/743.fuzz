@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", Mod.get());
+
+     
+    Argument *Arg = F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *IntrinsicArgs[] = {Arg};
+    CallInst *CI = CallInst::Create(getIntrinsicID(Intrinsic::memcpy), IntrinsicArgs, {}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        CI->addUse(...);  
+    }
+
+     
+    assert(!CI->doesNotThrow() && "CallInst should not be nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "Expected an intrinsic call");
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (II->getIntrinsicID() == Intrinsic::memcpy || II->getIntrinsicID() == Intrinsic::memset) {
+        assert(II->getNumOperands() > 0 && "Expected at least one operand for intrinsic");
+    }
+
+     
+
+    std::cout << "Test case generated successfully!" << std::endl;
+    return 0;
+}

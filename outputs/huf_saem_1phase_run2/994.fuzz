@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+Function *createTestFunction() {
+  LLVMContext Context;
+  Module *M = new Module("testModule", Context);
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+   
+  Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+  CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+  CI->setCalledFunction(M->getOrInsertFunction("llvm.memset.p0i32.i32", FTy));
+
+   
+  F->setDoesNotThrow();
+  F->addFnAttr(Attribute::Nounwind);
+
+  return F;
+}

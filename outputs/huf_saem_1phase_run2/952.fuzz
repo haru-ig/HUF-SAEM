@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+void setupConstraints(LLVMContext &ctx, Module &mod) {
+    Function *func = Function::Create(FunctionType::get(Type::getInt32Ty(ctx), false), GlobalValue::ExternalLinkage, "testFunc", &mod);
+    BasicBlock *entryBB = BasicBlock::Create(ctx, "", func);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&mod, Intrinsic::memset), {}, "", entryBB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    func->addFnAttr(Attribute::NoUnwind);
+    
+     
+    CI->setDoesNotThrow();
+    
+     
+    Value *trueVal = ConstantFP::get(Type::getFloatTy(ctx), 1.0);
+    Value *falseVal = Intrinsic::ctpop(trueVal);
+    SelectInst *SI = new SelectInst(CI->getType(), CI, trueVal, falseVal, "", entryBB);
+    
+     
+    assert(SI->getCondition()->getType() == Type::getInt1Ty(ctx) && "CondVal must be an integer type");
+    
+     
+}
+
+int main() {
+    LLVMContext ctx;
+    Module mod("testModule", ctx);
+    setupConstraints(ctx, mod);
+    return 0;
+}

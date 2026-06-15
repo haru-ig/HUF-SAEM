@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        std::cerr << "CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::ExternalLinkage);
+
+     
+    CallInst *IntrinsicCI = CallInst::create(F->getFunctionType(), Intrinsic::getDeclaration(M, llvm::Intrinsic::memcpy), {Arg}, "", BB);
+
+    if (!dyn_cast<IntrinsicInst>(IntrinsicCI)) {
+        std::cerr << "The instruction is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+    Value *CtxI = CI;
+    if (!isa<CallBase>(CtxI)) {
+        std::cerr << "Context instruction is not a CallBase." << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "Test program successfully created." << std::endl;
+    return 0;
+}

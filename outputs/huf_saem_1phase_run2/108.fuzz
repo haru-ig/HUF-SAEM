@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+using namespace llvm;
+
+void createCallInst(Module &M) {
+    LLVMContext &C = M.getContext();
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(C), {}, false);
+    Function *F = cast<Function>(M.getOrInsertFunction("testFunc", FTy));
+    BasicBlock *BB = BasicBlock::Create(C, "entry", F);
+    
+     
+    CallInst *CI = CallInst::Create(FTy, F, "", BB->getTerminator());
+}

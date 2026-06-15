@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+Function *createTestFunction() {
+  LLVMContext &ctx = getGlobalContext();
+  Module *mod = new Module("test", ctx);
+  FunctionType *fnTy = FunctionType::get(Type::getInt32Ty(ctx), {}, false);
+  Function *fn = Function::Create(fnTy, GlobalValue::ExternalLinkage, "test_function", mod);
+  
+   
+   
+   
+
+   
+  Function::BasicBlockListType &bbList = fn->getBasicBlockList();
+  BasicBlock *entryBB = BasicBlock::Create(ctx, "entry", fn);
+  IRBuilder<> builder(&entryBB->front());
+  
+  CallInst *CI = builder.CreateCall(Intrinsic::getDeclaration(mod, Intrinsic::anymemintrinsic), {});
+
+   
+  fn->setDoesNotThrow();
+
+  return fn;
+}
+
+int main() {
+  Function *fn = createTestFunction();
+  if (fn) {
+    errs() << "Generated test function: " << *fn << "\n";
+  } else {
+    errs() << "Failed to generate test function.\n";
+  }
+  return 0;
+}

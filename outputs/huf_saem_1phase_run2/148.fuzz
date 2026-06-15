@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt32Ty(Context)}, {Constant::getNullValue(Type::getInt32PtrTy(Context)), ConstantInt::get(Type::getInt32Ty(Context), 4)}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    F->setDoesNotThrow(false);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

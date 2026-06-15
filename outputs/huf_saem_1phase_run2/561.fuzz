@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Vec = ConstantVector::getSplat({2}, ConstantInt::get(Type::getInt32Ty(Context), 1));
+    Instruction *InsElt = InsertElementInst::Create(Vec, Vec, ConstantInt::get(Type::getInt32Ty(Context), 0), "", BB);
+
+     
+    assert(InsElt->getType()->isVectorTy() && "Insert element instruction must be a vector");
+
+     
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, InsElt, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), APFloat::fltNaN());  
+    Instruction *SelInst = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SelInst->getType()->isIntegerTy() && "Select instruction must be of integer type");
+
+     
+
+    std::cout << "Test setup completed." << std::endl;
+    return 0;
+}

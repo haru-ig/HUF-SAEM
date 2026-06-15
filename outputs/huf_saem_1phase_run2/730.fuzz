@@ -1,0 +1,77 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("my_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->addAttr(Attribute::Returned);
+
+     
+    Intrinsic::ID IID = Intrinsic::sqrt;  
+    std::vector<Value *> Args = {Arg};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), Args, "", BB);
+
+     
+    CI->addUse(Builder.getInt32Ty());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected a memory intrinsic");
+
+     
+    Value *TrueVal = Builder.getInt32(1);
+    Value *FalseVal = Builder.getInt32(0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Builder.getInt32Ty(), 2), "", BB);
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(TrueVal->getType() == Builder.getInt32Ty());
+    assert(FalseVal->getType() == Builder.getInt32Ty());
+    assert(CondVal->getType() == Builder.getInt1Ty());
+
+     
+    Loop *L = new Loop(&BB, nullptr);
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken());
+
+     
+    assert(CI->getNumUses() > 0 && "CallInst must have at least one use");
+    assert(F->doesNotThrow() && "Function must be nounwind and call does not throw");
+    assert(II->isMemoryInstruction() && "Expected a memory intrinsic");
+    assert(CondVal->getType()->isIntegerTy() && "Condition type must be integer");
+
+     
+    CI->eraseFromParent();
+    SI->eraseFromParent();
+    delete L;
+
+    return 0;
+}

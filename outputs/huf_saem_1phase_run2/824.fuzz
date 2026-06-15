@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function* F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument* Arg = F->getArg(0);
+
+     
+    Value* VecVal = UndefValue::get(VectorType::get(IntegerType::getInt32Ty(Context), 4));
+    ConstantInt* Index = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    Instruction* InsertElem = new InsertElementInst(VecVal, Arg, Index, "", BB);
+
+     
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), nullptr, "call_inst");
+    CI->setOperand(0, InsertElem);  
+
+     
+    Use &U = CI->use_begin();
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    AnyMemIntrinsic* AMI = cast<AnyMemIntrinsic>(II);
+    assert(AMI && "Intrinsic must be a memory intrinsic");
+
+     
+    unsigned NumBytes = 0;  
+    if (NumBytes > 0) {
+         
+    }
+
+     
+    bool BrokenDebugInfo = verifyModule(M, ReturnStatusFlag::ReturnStatus);
+    assert(!BrokenDebugInfo && "Module verification failed");
+
+    std::cout << "Test passed: All constraints satisfied." << std::endl;
+    return 0;
+}

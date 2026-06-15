@@ -1,0 +1,109 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "main", &Mod);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+    CI->setCalledFunction(Intrinsic::getDeclaration(&Mod, Intrinsic::sqrt));
+    assert(!CI->use_empty() && "The CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    assert(!CI->doesNotThrow() && "The CallInst itself must not be marked as nounwind.");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "The CallInst must be an intrinsic call.");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    assert(AMII && "The intrinsic call must be an AnyMemIntrinsic.");
+
+     
+    Value *NumBytes = AMII->getArgOperand(1);
+    int64_t NumBytesVal = cast<ConstantInt>(NumBytes)->getSExtValue();
+    assert(NumBytesVal <= 0 || (NumBytesVal % sizeof(double) != 0) && "The length must be non-positive or not a multiple of the element size.");
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    assert(AI.hasAttr(Attribute::Returned) && "The function must have at least one argument with the returned attribute.");
+
+     
+    CallBase *CB = CI;
+    IRPosition Pos = IRPosition::callsite_argument(*CI);
+    assert(!Pos.getAnchor().isNull() && "The IRPosition obtained from IRSitelArgument must be non-null.");
+
+     
+    Function *FArg = CI->getFunction();
+    assert(FArg && "The function associated with the IRPosition must be non-null.");
+
+     
+    TreeEntry *E = new TreeEntry();
+    E->Scalars.push_back(Type::getFloatTy(Context));
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list.");
+
+     
+    DenseMap<const TreeEntry *, Type *> MinBWs;
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getScalarSizeInBits() > 0 && "MinBWs entry must provide a valid bit width.");
+    }
+
+     
+    assert(E->State == TreeEntry::SplitVectorize && "E->State must be TreeEntry::SplitVectorize.");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices must contain exactly two entries.");
+
+     
+    Value *CondVal = Builder.getInt1(true);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = CallInst::CreateIntrinsic(Intrinsic::ctpop, {TrueVal}, "", BB);
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be created.");
+
+     
+    ICmpInst *ICmp = dyn_cast<ICmpInst>(CondVal);
+    assert(ICmp && ICmp->getPredicate() == ICmpInst::ICMP_ULT && "The condition must be an icmp ult.");
+    ConstantInt *C = dyn_cast<ConstantInt>(ICmp->getOperand(0));
+    assert(C && C->getValue().isPowerOf2() && (C->getSExtValue() & 1) == 0 && "The condition must be fcmp ult with integer constant 2.");
+
+     
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() || SelType->isVectorTy() && "SelectInst must have an integer type or an integer vector type.");
+    Type *CondType = ICmp->getOperand(0)->getType();
+    assert((CondType->isScalarTy() && SelType->isScalarTy()) || (CondType->isVectorTy() && SelType->isVectorTy()) && "The condition type and selection type must both be scalar or vector types.");
+
+     
+    assert(E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement && "E->State must be TreeEntry::Vectorize and E->getOpcode() must be Instruction::InsertElement.");
+    assert(!E->getOperand(1).back()->getType()->isVectorTy() && "The type of the last operand of E->getOperand(1) must not be a vector type.");
+
+     
+    Type *ScalarTy = E->Scalars.front();
+    assert(isValidElementType(ScalarTy) && "ScalarTy derived from VL[0] must be a valid element type.");
+
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getScalarSizeInBits() > 0 && "MinBWs entry must provide a valid bit width.");
+    } else {
+        assert(E->Idx == 0 && E->isReducedBitcastRoot() && "Other preconditions for updating ScalarTy are satisfied.");
+    }
+
+     
+    Instruction *I = Builder.CreateFNeg(Builder.CreateCallInst(...));
+    Value *X = ...;
+    CallInst *Abs = CallInst::Create

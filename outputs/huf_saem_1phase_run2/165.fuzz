@@ -1,0 +1,98 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::not_an_intrinsic;  
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {}, "", BB);
+
+     
+    CI->addUse(Value *v = nullptr);  
+
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    if (IntrinsicID == Intrinsic::memcpy) {
+        Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);  
+        CI->addOperand(NumBytes);
+    }
+
+     
+    SelectInst *SI = new SelectInst(CI, Value::getTrue(), Value::getFalse(), "", BB);
+    SI->setCondition(ConstantInt::get(Type::getInt1Ty(Context), true));  
+
+     
+    if (IntrinsicID == Intrinsic::memcpy) {
+         
+        Value *Dst = ConstantPointerNull::get(Type::getInt32PtrTy(Context));
+        Value *Src = ConstantPointerNull::get(Type::getInt32PtrTy(Context));
+        Value *Size = ConstantInt::get(Type::getInt32Ty(Context), 0);
+        CI->addOperand(Dst);
+        CI->addOperand(Src);
+        CI->addOperand(Size);
+    }
+
+     
+    Loop *L = nullptr;  
+    if (L) {
+        L->setLoopPreheader(BasicBlock::Create(Context, "preheader", F));
+        L->setLoopLatch(BasicBlock::Create(Context, "latch", F));
+    }
+
+     
+    UnrollOption UO = UnrollOption::get(1);  
+    if (UO.Count > 0) {
+        expandUnrollLoops(*L, UO, true);
+    }
+
+     
+    ScalarEvolution SE;  
+    const DataLayout DL = F->getParent()->getDataLayout();
+    Type *Ty = CI->getType();
+    unsigned BitWidth = DL.getTypeSizeInBits(Ty);
+    if (BitWidth > 0) {
+         
+        FPClassTest KnownFPClass;  
+        adjustDemandedMaskFromFlags(KnownFPClass, FPM_Fast);
+    }
+
+     
+    TreeEntry *TE = nullptr;  
+    if (TE && TE->Idx > 0) {
+         
+        Instruction::CastOps Opcode = Instruction::FNeg;
+        Value *Op = nullptr;  
+        FNegInst *FN = new FNegInst(Opcode, Op, "", BB);
+    }
+
+     
+    if (L && L->isSafeToClone() && !L->getHeader()->hasAddressTaken()) {
+        expandLoop(*L, UO, true);
+    }
+
+    return 0;
+}

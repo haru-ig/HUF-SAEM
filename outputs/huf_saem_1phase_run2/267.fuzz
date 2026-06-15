@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *ZeroValue = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    Value *UndefValue = UndefValue::get(VectorType::get(IntegerType::getInt32Ty(Context), 4));
+    InsertElementInst *IEI = new InsertElementInst(UndefValue, ZeroValue, ZeroValue, "", BB);
+
+     
+    assert(IEI->getType()->isVectorTy() && "InsertElementInst must be part of a vector");
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {IEI}, "", BB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::any_mem_intrinsic && "CallInst must be an intrinsic and specific memory intrinsic");
+
+     
+    M.print(errs());
+
+    return 0;
+}

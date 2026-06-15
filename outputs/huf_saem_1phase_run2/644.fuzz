@@ -1,0 +1,72 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("input");
+
+     
+    ConstantInt *ConstVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+
+     
+    Value *Vec[4] = { ConstVal, ConstVal, ConstVal, ConstVal };
+    ArrayType *AType = ArrayType::get(Type::getInt32Ty(Context), 4);
+    Constant *InitVals[] = {ConstVal};
+    GlobalVariable *GV = new GlobalVariable(Mod, AType, false, GlobalValue::InternalLinkage,
+                                             ConstantArray::get(AType, InitVals));
+    Value *Indices[] = {ConstantInt::get(Type::getInt32Ty(Context), 0)};
+    Instruction *Insert = Builder.CreateInsertElement(GV, ConstVal, Indices[0]);
+
+     
+    CallInst *CI = CallInst::Create(F, {Arg}, "", BB);
+    CI->setDoesNotThrow();
+    CI->addUse(F);
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *Intr = dyn_cast<IntrinsicInst>(CI);
+    if (Intr && Intr->getIntrinsicID() == Intrinsic::memcpy) {
+         
+        Value *Ptrs[] = {Arg, Arg};
+        Value *Sizes[] = {ConstantInt::get(Type::getInt32Ty(Context), 4)};
+        CallInst *MemCpy = Builder.CreateMemCpy(Ptrs[0], Ptrs[1], Sizes[0], Align(4));
+    }
+
+     
+    Value *TrueVal = ConstVal;
+    Value *FalseVal = Builder.CreateFNeg(Builder.CreateFAbs(TrueVal));
+    SelectInst *SI = SelectInst::Create(ICmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal);
+
+     
+    SI->setCondition(ICmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)));
+    SI->setTrueValue(TrueVal);
+    SI->setFalseValue(FalseVal);
+
+     
+
+    return 0;
+}

@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttribute(0, Attribute::Returned);
+
+     
+    CallInst *CI;
+    if (true) {
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymem_intrinsic), {Arg}, "", BB);
+    } else {
+         
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::other_intrinsic), {Arg}, "", BB);
+    }
+
+     
+    if (!CI->use_empty()) {
+         
+        F->setDoesNotThrow();
+        F->addFnAttr(Attribute::Nounwind);
+
+         
+        if (dyn_cast<IntrinsicInst>(CI)) {
+             
+            CallBase *CB = dyn_cast<CallBase>(CI);
+            assert(CB && "Context instruction must be a CallBase");
+
+             
+            if (dyn_cast<AnyMemIntrinsic>(CI)) {
+                 
+                Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+                if (!CI->use_empty() && !CI->doesNotThrow()) {
+                     
+                    CI->simplifyCall();
+                }
+            }
+        }
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

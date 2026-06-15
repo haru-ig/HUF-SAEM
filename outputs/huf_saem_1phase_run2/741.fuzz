@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    Argument *Arg = F->getArg(0);
+    Arg->addAttr(Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *VecTy = VectorType::get(Type::getInt32Ty(Context), 4);
+    Instruction *InsertElem = InsertElementInst::Create(UndefValue::get(VecTy), ConstantInt::get(Type::getInt32Ty(Context), 0), ConstantInt::get(Type::getInt32Ty(Context), 0), "", BB);
+
+     
+    assert(InsertElem->getNumOperands() == 3 && "InsertElementInst should have three operands");
+    assert(InsertElem->getOperand(0)->getType()->isVectorTy() && "First operand should be a vector");
+    assert(InsertElem->getOperand(1)->getType()->isIntegerTy(32) && "Second operand should be an integer");
+    assert(InsertElem->getOperand(2)->getType()->isIntegerTy(32) && "Third operand should be an integer");
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {Arg}, "", BB);
+    assert(!CI->use_empty() && "CallInst should have at least one use");
+    assert(!F->hasFnAttr(Attribute::NoUnwind) && !CI->doesNotThrow() && "Function and CallInst must be marked nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memcpy && "CallInst should be an intrinsic call for memory operations");
+
+     
+
+     
+    return 0;
+}

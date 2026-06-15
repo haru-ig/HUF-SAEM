@@ -1,0 +1,97 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/Debug.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test_module", Context);
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "test_function", &module);
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+
+     
+    Value *arg = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    CallInst *CI = CallInst::Create(funcType, Intrinsic::getDeclaration(&module, Intrinsic::abs), {arg}, "", entryBB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    func->setDoesNotThrow();
+    func->setLinkage(GlobalValue::InternalLinkage);
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *anyMemCI = dyn_cast<IntrinsicInst>(CI);
+    assert(anyMemCI && "CallInst must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(anyMemCI) && "CallInst must be an AnyMemIntrinsic");
+
+     
+    BasicBlock *loopHeader = BasicBlock::Create(Context, "", func);
+    BranchInst::Create(loopHeader, entryBB);
+    LoopInfo pass(*func);
+    Loop *L = &pass.getLoopsInPreorder()[0];
+    assert(L->getLoopPreheader() && "Loop must have a preheader block");
+    assert(L->getLoopLatch() && "Loop must have a latch block");
+
+     
+    UnrollOptions UO;
+    UO.Count = 2;
+    LoopUnrollPass *unrollPass = new LoopUnrollPass();
+    unrollPass->doInitialization(L, ScalarEvolution(), &module);
+    unrollPass->runOnLoop(L, UO);
+
+     
+    Instruction *ctxI = CI;
+    assert(isa<CallBase>(ctxI) && "Context instruction must be a CallBase");
+
+     
+    func->addParamAttr(0, Attribute::Returned);
+
+     
+    Value *trueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *falseVal = ICmpInst::create(Instruction::ICmp, CmpInst::ICMP_ULT, trueVal, ConstantInt::get(Type::getInt32Ty(Context), 2), "", entryBB);
+    SelectInst *SI = new SelectInst(falseVal, trueVal, falseVal, "", entryBB);
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    FPClassTest demandedMask;
+    FPC_FMA | FPC_NAN;
+    assert(demandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+
+     
+    Instruction *reductionRoot = BinaryOperator::CreateNeg(UnaryOperator::CreateFABS(arg), "", entryBB);
+    assert(reductionRoot->getParent() && "Reduction root instruction must have a parent block");
+
+     
+    legacy::PassManager PM;
+    PM.add(createPrintModulePass(errs(), "After Optimizations"));
+    PM.run(*func);
+
+    return 0;
+}

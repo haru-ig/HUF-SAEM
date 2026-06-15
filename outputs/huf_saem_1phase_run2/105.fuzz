@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testfunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    IRBuilder<> Builder(BB);
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+
+     
+    CI->addUse(Builder.getInt32Ty(), Zero);
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::not_intrinsic;  
+    CallInst *IntrCI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), IntrID), {}, "", BB);
+    IntrCI->addUse(Builder.getInt32Ty(), Zero);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(IntrCI)) {
+        II->setDoesNotThrow();
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    SelectInst *SI = SelectInst::Create(Builder.getInt1(true), TrueVal, FalseVal, "", BB);
+
+     
+    SI->setOperand(0, Builder.getInt1(true));
+    SI->setOperand(1, TrueVal);
+    SI->setOperand(2, FalseVal);
+
+     
+    Mod->print(errs(), nullptr);
+
+    return 0;
+}

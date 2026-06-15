@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Constants.h"
+#include "gtest/gtest.h"
+
+using namespace llvm;
+
+TEST(LLVMTest, SimplifyCallInst) {
+  LLVMContext Context;
+  std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+   
+  FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *TestFunc = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", Module.get());
+  BasicBlock *BB = BasicBlock::Create(Context, "", TestFunc);
+
+   
+  CallInst *CI = CallInst::Create(FuncTy, TestFunc, {}, "", BB);
+  ASSERT_FALSE(CI->use_empty());  
+
+   
+  LoadInst *LI = new LoadInst(Type::getInt32Ty(Context), CI, "load", BB);
+  LI->setOperand(0, CI);
+
+   
+  ASSERT_TRUE(TestFunc->doesNotThrow());
+  ASSERT_FALSE(CI->doesNotThrow());  
+
+   
+  IntrinsicInst *MemSetIntr = IntrinsicInst::get(Intrinsic::memset, CI, CI->getType(), {CI, ConstantInt::get(Type::getInt8Ty(Context), 0)}, "", BB);
+  ASSERT_TRUE(dyn_cast<IntrinsicInst>(CI));  
+  ASSERT_TRUE(dyn_cast<AnyMemIntrinsic>(CI));  
+}

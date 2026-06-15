@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+
+     
+    Value *User = *(CI->user_begin());
+    if (!CI->use_empty()) {
+        errs() << "CallInst has at least one use.\n";
+    } else {
+        errs() << "CallInst does not have any uses.\n";
+    }
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (II && II->getIntrinsicID() == Intrinsic::memset) {
+        errs() << "Intrinsic call is a memset.\n";
+    } else {
+        errs() << "Not an intrinsic call or not a memset.\n";
+    }
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (AI != F->args().end()) {
+        errs() << "Function has an argument with the returned attribute.\n";
+    } else {
+        errs() << "Function does not have any arguments with the returned attribute.\n";
+    }
+
+    return 0;
+}

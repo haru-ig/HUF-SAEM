@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setParamAttribute(0, Attribute::Returned);
+
+     
+    CallInst *CI;
+    if (Intrinsic::isAnyMaxOrRetMinIntrinsic(F->getIntrinsicID())) {
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, F->getIntrinsicID()), {Arg}, "", BB);
+    } else {
+        std::cerr << "Unsupported intrinsic." << std::endl;
+        return 1;
+    }
+
+     
+    Use &U = CI->getOperandUse(0);
+    Value *UserVal = U.getUser();
+    if (!UserVal) {
+        std::cerr << "CallInst does not have any user." << std::endl;
+        return 1;
+    }
+
+     
+    if (!F->doesNotThrow()) {
+        std::cerr << "Function is not marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

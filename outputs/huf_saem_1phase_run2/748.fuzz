@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test_module", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "test_function", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::anymemset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    assert(Func->doesNotThrow() && "Function must be marked as nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    IntrinsicInst *AII = cast<IntrinsicInst>(CI);
+    assert(AII->getIntrinsicID() == Intrinsic::anymemset && "Must be anymemset intrinsic");
+
+     
+    if (!AII->isZeroLength()) {
+        std::cerr << "Intrinsic call must have a non-zero length" << std::endl;
+        return 1;
+    }
+
+     
+    FunctionType *FTy = cast<FunctionType>(Func->getFunctionType());
+    if (FTy->getNumParams() == 0) {
+        Func->addParamAttr(0, Attribute::Returned);
+    }
+
+    std::cout << "Module: " << Module->getName().str() << std::endl;
+    std::cout << "Function: " << Func->getName().str() << std::endl;
+
+    return 0;
+}

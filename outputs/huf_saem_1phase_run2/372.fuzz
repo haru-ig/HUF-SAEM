@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/InstrTypes.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+
+     
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, FalseVal, "", BB->getTerminator());
+
+     
+    Instruction *SelectI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    BB->getInstList().push_back(SelectI);
+
+     
+    SelectI->addUse(SelectI->getType());
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(SelectI)) {
+        if (II->getIntrinsicID() == Intrinsic::experimental_vector_reduce_fadd) {
+            std::cerr << "Valid vector reduce intrinsic detected." << std::endl;
+        } else {
+            std::cerr << "Not a valid vector reduce intrinsic." << std::endl;
+        }
+    } else {
+        std::cerr << "SelectInst is not an intrinsic call." << std::endl;
+    }
+
+    return 0;
+}

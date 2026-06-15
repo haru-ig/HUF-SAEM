@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::any_mem_intrinsic), {}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+         
+        F->setDoesNotThrow();
+        F->addFnAttr(Attribute::Nounwind);
+
+         
+        if (dyn_cast<IntrinsicInst>(CI)) {
+             
+        }
+    }
+
+     
+    legacy::PassManager PM;
+    PM.add(createSimplifyLibCallsPass());
+    PM.run(*Mod);
+
+    std::cout << "Module after simplification:\n" << *Mod << std::endl;
+
+    return 0;
+}

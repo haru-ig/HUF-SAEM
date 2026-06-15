@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/KnownBits.h>
+
+using namespace llvm;
+
+class Test {
+public:
+    void run() {
+         
+        Function *func = nullptr;  
+        CallBase CI(*func);  
+
+        if (!CI.use_empty()) {
+            std::cout << "CallInst has at least one use.\n";
+        } else {
+            std::cout << "CallInst does not have any uses.\n";
+        }
+
+         
+        if (func->doesNotThrow()) {
+            std::cout << "Function is marked as nounwind.\n";
+        } else {
+            std::cout << "Function is not marked as nounwind.\n";
+        }
+
+         
+        Intrinsic::ID intrinsicType = Intrinsic::not_an_intrinsic;  
+        CallInst *intrinCall = CallInst::Create(Type::getVoidTy(*func->getContext()), intrinsicType, {});
+        if (dyn_cast<IntrinsicInst>(intrinCall)) {
+            std::cout << "CallInst is an intrinsic call.\n";
+        } else {
+            std::cout << "CallInst is not an intrinsic call.\n";
+        }
+
+         
+        Value *TrueVal = ConstantFP::get(Type::getFloatTy(*func->getContext()), 1.0);
+        Value *FalseVal = ConstantFP::get(Type::getFloatTy(*func->getContext()), -1.0);
+        ICmpInst *CondVal = new ICmpInst(ICmpInst::FCMP_ULT, TrueVal, ConstantFP::get(Type::getFloatTy(*func->getContext()), 2.0));
+        SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal);
+
+         
+        Type *SelType = SI->getType();
+        if (SelType->isFloatTy()) {
+            std::cout << "SelectInst type is valid.\n";
+        } else {
+            std::cout << "SelectInst type is not valid.\n";
+        }
+
+         
+    }
+};
+
+int main() {
+    Test t;
+    t.run();
+    return 0;
+}

@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "test_function", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    CallInst* CI = CallInst::Create(FT, F, {Arg}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    Intrinsic::ID ID = Intrinsic::memcpy;
+    CallInst* MemCpyCall = CallInst::Create(Intrinsic::getDeclaration(M, ID), CI, "", BB);
+    assert(dyn_cast<IntrinsicInst>(MemCpyCall) && "Must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(MemCpyCall) && "Must be a memory intrinsic");
+
+     
+    AnyMemIntrinsic* MemIntrinsic = cast<AnyMemIntrinsic>(MemCpyCall);
+    int NumBytes = 0;  
+    assert(NumBytes <= 0 || !((NumBytes % 8) == 0) && "Must be non-positive or not a multiple of element size");
+
+     
+
+    std::cout << "Module: " << *M << std::endl;
+
+    delete M;
+    return 0;
+}

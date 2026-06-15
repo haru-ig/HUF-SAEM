@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    Argument *Arg = F->getArg(0);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(F, {ConstantInt::get(Type::getInt32Ty(Context), 1)}, "call", BB);
+
+     
+    CI->addUse(F->getArgNo());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    Intrinsic::ID IID = Intrinsic::memcpy;
+    Value *Ptr1 = ConstantExpr::getBitCast(CI, Type::getInt8PtrTy(Context));
+    Value *Ptr2 = ConstantExpr::getBitCast(CI, Type::getInt8PtrTy(Context));
+    CallInst *IntrCall = CallInst::Create(Intrinsic::getDeclaration(&M, IID), Ptr1, Ptr2, CI->getNumOperands(), "", BB);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(IntrCall)) {
+        std::cout << "Intrinsic call created successfully." << std::endl;
+    } else {
+        std::cout << "Failed to create an AnyMemIntrinsic." << std::endl;
+        return 1;
+    }
+
+     
+     
+
+     
+
+    return 0;
+}

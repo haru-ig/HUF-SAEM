@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI;
+    if (true) {
+        CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memcpy), {}, "call_inst");
+        CI->setOperand(0, ConstantExpr::getBitCast(ConstantPointerNull::get(Type::getInt8PtrTy(Context)), Type::getInt8PtrTy(Context)));  
+        CI->setOperand(1, ConstantExpr::getBitCast(ConstantPointerNull::get(Type::getInt8PtrTy(Context)), Type::getInt8PtrTy(Context)));  
+        CI->setOperand(2, ConstantInt::get(Type::getInt64Ty(Context), 0));  
+    } else {
+        CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::atomicrmw_add_fetch_8), {}, "call_inst");
+        CI->setOperand(0, ConstantPointerNull::get(Type::getInt8PtrTy(Context)));  
+        CI->setOperand(1, ConstantInt::get(Type::getInt8Ty(Context), 0));  
+    }
+
+     
+    F->arg_begin()->addAttr(Attribute::Returned);
+
+     
+     
+
+     
+    Loop *L = new Loop();
+    L->addBasicBlockToLoop(BB, BB->getDomTree());
+    assert(L->getLoopPreheader() && "Preheader should be set");
+    assert(L->getLoopLatch() && "Latch should be set");
+
+     
+    assert(L->isSafeToClone() && "Loop should be safe to clone");
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    F->setDoesNotThrow();
+
+    return 0;
+}

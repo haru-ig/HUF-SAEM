@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::any_mem_intrinsic, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    Func->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::any_mem_intrinsic) {
+            std::cout << "Intrinsic call detected and verified." << std::endl;
+        }
+    }
+
+     
+    if (auto *MMI = dyn_cast<AnyMemIntrinsic>(CI)) {
+        int NumBytes = MMI->getNumMemOperands();
+        assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes, 1) && "Zero-length or not a multiple of element size");
+    }
+
+     
+    Module->print(errs(), nullptr);
+
+    return 0;
+}

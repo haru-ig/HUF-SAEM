@@ -1,0 +1,112 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), { Arg }, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::Nounwind);
+    CI->setDoesNotThrow();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic call." << std::endl;
+    }
+    
+     
+    if (F->hasFnAttr(Attribute::Nounwind)) {
+        std::cout << "Function is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function is not marked as nounwind." << std::endl;
+    }
+    
+     
+    if (!CI->doesNotThrow()) {
+        std::cout << "CallInst does not throw." << std::endl;
+    } else {
+        std::cout << "CallInst throws." << std::endl;
+    }
+    
+     
+    if (isa<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an AnyMemIntrinsic." << std::endl;
+    }
+    
+     
+    if (isa<CallBase>(CI)) {
+        std::cout << "Context instruction is a CallBase." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase." << std::endl;
+    }
+    
+     
+    if (IRPosition::callsite_argument(CI).getKind() == IRP_CALL_SITE_ARGUMENT) {
+        std::cout << "IRPosition is of call site argument type." << std::endl;
+    } else {
+        std::cout << "IRPosition is not of call site argument type." << std::endl;
+    }
+    
+     
+    if (F) {
+        std::cout << "Function associated with IRPosition exists." << std::endl;
+    } else {
+        std::cout << "Function associated with IRPosition does not exist." << std::endl;
+    }
+    
+     
+     
+    
+     
+    struct TreeEntry {
+        std::vector<Value*> Scalars;
+        int Idx;
+         
+    };
+    
+    TreeEntry TE;
+    TE.Scalars = { ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 0)) };
+    TE.Idx = 1;
+    
+    if (!TE.Scalars.empty() && TE.Idx != -1) {
+        std::cout << "TreeEntry invariants are satisfied." << std::endl;
+    } else {
+        std::cout << "TreeEntry invariants are not satisfied." << std::endl;
+    }
+    
+     
+    
+    return 0;
+}

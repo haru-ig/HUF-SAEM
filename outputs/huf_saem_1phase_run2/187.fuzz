@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    std::vector<Value *> Args{Arg};
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, Args, "", BB);
+
+     
+    CI->addUse(F->getParamType(0));
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (!isa<AnyMemIntrinsic>(II)) {
+            std::cerr << "Not a valid AnyMemIntrinsic" << std::endl;
+            return 1;
+        }
+    } else {
+        std::cerr << "CI is not an intrinsic call" << std::endl;
+        return 1;
+    }
+
+     
+
+    Mod->print(outs(), nullptr);
+    return 0;
+}

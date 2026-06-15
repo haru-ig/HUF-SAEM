@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void generateCallInst(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", &M);
+
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+  Instruction *CI = CallInst::Create(nullptr, {"arg1"}, "", BB);
+
+   
+  CI->addUse(Type::getInt32Ty(Ctx));
+
+   
+  if (dyn_cast<IntrinsicInst>(CI)) {
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+       
+      errs() << "Handling specific memory intrinsic\n";
+    }
+  }
+}
+
+ 
+void generateSelectInst(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", &M);
+
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+  Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Ctx), APInt(32, 1));
+  Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Ctx), APInt(32, 2));
+  Instruction *SI = SelectInst::Create(ICmpInst::ICMP_ULT, TrueVal, FalseVal, "", BB);
+
+   
+  if (SelectInst *Sel = dyn_cast<SelectInst>(SI)) {
+    Value *CondVal = Sel->getCondition();
+    Type *CondType = CondVal->getType();
+    if (CondType->isIntegerTy() && Sel->getType()->isIntegerTy()) {
+       
+      errs() << "Handling specific SelectInst\n";
+    }
+  }
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("testModule", Context);
+
+  generateCallInst(M);
+  generateSelectInst(M);
+
+  return 0;
+}

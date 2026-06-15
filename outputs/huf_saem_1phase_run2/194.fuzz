@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, F, { Arg }, "", BB);
+    CI->setCalledFunction(F);
+
+     
+    Value *User = CI;
+    while (!User->use_empty()) {
+        User = *(User->user_begin());
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected a intrinsic call");
+
+     
+    AnyMemIntrinsic *AMIntr = cast<AnyMemIntrinsic>(CI);
+    if (AMIntr->getIntrinsicID() == Intrinsic::memset) {
+        assert(false && "Zero-length operation not allowed for memset");
+    } else if (AMIntr->getIntrinsicID() == Intrinsic::memcpy || AMIntr->getIntrinsicID() == Intrinsic::memmove) {
+         
+        Value *NumBytes = nullptr;  
+        assert(NumBytes && "Expected NumBytes to be set");
+    }
+
+     
+    M.print(errs());
+
+    return 0;
+}

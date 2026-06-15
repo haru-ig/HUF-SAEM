@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyIndVar.h>
+
+using namespace llvm;
+
+bool testFunction(Module &M) {
+  LLVMContext Context;
+  Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", &M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+   
+  Value *Callee = nullptr;
+  std::vector<Value *> Args;
+  CallInst *CI = CallInst::Create(Callee, Args, "", BB);
+
+   
+  if (CI->use_empty()) {
+    return false;  
+  }
+
+   
+  F->setDoesNotThrow();
+  F->setNoUnwind();
+
+   
+  if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+    switch (II->getIntrinsicID()) {
+      case Intrinsic::memcpy:
+      case Intrinsic::memmove:
+      case Intrinsic::memset:
+         
+        if (atomic_load(const_cast<Value *>(CI->getOperand(0))) != AtomicOrdering::Unordered) {
+          return false;  
+        }
+        break;
+      default:
+        break;
+    }
+  } else {
+    return false;  
+  }
+
+   
+
+  std::cout << "Test function setup completed." << std::endl;
+  return true;
+}

@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        auto *IMI = cast<AnyMemIntrinsic>(CI);
+        std::cout << "Intrinsic call detected: " << IMI->getIntrinsicID() << "\n";
+    } else {
+        std::cerr << "Not an intrinsic call\n";
+    }
+
+     
+    auto *IRP = IRPosition::callsite_argument(CI);
+    if (IRP.isValid()) {
+        std::cout << "IRPosition is valid\n";
+        if (IRP.positionKind() == IRP_CALL_SITE_ARGUMENT) {
+            std::cout << "IRPosition has correct position kind\n";
+        } else {
+            std::cerr << "IRPosition does not have the correct position kind\n";
+        }
+    } else {
+        std::cerr << "IRPosition is invalid\n";
+    }
+
+    return 0;
+}

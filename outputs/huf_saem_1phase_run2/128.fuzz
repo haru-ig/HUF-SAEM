@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, "testFunc", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    IRBuilder<> Builder(BB);
+    Value *Ptr = Builder.CreateAlloca(Type::getInt32Ty(Context));
+    CallInst* CI = Builder.CreateAtomicRMW(AtomicOrdering::Monotonic, AtomicRMWOp::Add, Ptr, ConstantInt::get(Type::getInt32Ty(Context), 1), SynchronizationScope::System, nullptr);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        int NumBytes = 0;  
+        if (NumBytes <= 0 || !((NumBytes % sizeof(int)) == 0)) {
+            std::cout << "Triggering undefined behavior handling for atomic unordered memory intrinsic." << std::endl;
+             
+        }
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+         
+        if (!CI->use_empty()) {
+            CI->simplify();
+        }
+    }
+
+    return 0;
+}

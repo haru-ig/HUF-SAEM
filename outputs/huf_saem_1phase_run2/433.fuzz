@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Value.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), Function::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(nullptr, {Arg}, "", BB);
+
+     
+    assert(!CI->use_empty() && "CI must have at least one use");
+     
+    F->setDoesNotThrow();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II->getIntrinsicID() == Intrinsic::anymemintrinsic && "CI must be an AnyMemIntrinsic");
+    } else {
+        std::cerr << "Not an intrinsic call!" << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "Test passed." << std::endl;
+    return 0;
+}

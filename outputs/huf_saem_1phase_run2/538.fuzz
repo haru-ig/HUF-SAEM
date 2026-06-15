@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "func", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Intrinsic::ID IID = Intrinsic::abs;  
+    Value *Args[] = { ConstantInt::get(Type::getInt32Ty(Context), 1) };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&Mod, IID), Args, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+         
+        unsigned NumBytes = 0;  
+        if (NumBytes > 0 && !isMultiple(NumBytes, sizeof(int))) {
+             
+        }
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Expected a call base instruction");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(*CB);
+    assert(Pos.getKind() == IRP_CALL_SITE_ARGUMENT && "Expected call site argument position");
+
+     
+    Function *Funct = Pos.getFunction();
+    assert(Funct && "Expected a non-null function");
+
+     
+
+    return 0;
+}

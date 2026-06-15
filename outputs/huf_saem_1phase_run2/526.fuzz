@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <iostream>
+
+using namespace llvm;
+
+ 
+void createTestFunction(Module &M) {
+  LLVMContext &C = M.getContext();
+  
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(C), {}, false);
+  
+   
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+  
+   
+  Intrinsic::ID IntrID = Intrinsic::memset;  
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {}, "", F);
+  
+   
+  CI->addUse(F->getValueSymbolTable());
+}
+
+int main() {
+  LLVMContext Ctx;
+  Module M("testModule", Ctx);
+  
+  createTestFunction(M);
+  
+  for (auto &F : M) {
+    if (!F.isIntrinsic()) continue;
+    
+     
+    if (!F.doesNotThrow() && F.getFnAttribute("nounwind").hasAttribute(Attribute::NoUnwind)) {
+      std::cout << "Function contains an intrinsic that does not throw but is not marked as nounwind." << std::endl;
+      return 1;
+    }
+    
+     
+    if (Intrinsic::isMemSet(CI)) {
+      uint64_t NumBytes = getNumElements(CI->getArgOperand(2)) * getTypeStoreSize(CI->getType());
+      if (NumBytes <= 0) {
+        std::cout << "Intrinsic call has zero-length operation or non-positive length." << std::endl;
+        return 1;
+      }
+    }
+  }
+  
+  std::cout << "All constraints satisfied." << std::endl;
+  return 0;
+}

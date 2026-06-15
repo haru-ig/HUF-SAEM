@@ -1,0 +1,70 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test_module", Context);
+    Function *func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "test_function", &module);
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+    
+     
+    std::vector<Type *> argTypes;
+    FunctionType *fnTy = FunctionType::get(Type::getVoidTy(Context), argTypes, false);
+    Function *intrinFunc = Intrinsic::getDeclaration(&module, Intrinsic::not_an_intrinsic, fnTy->params());
+    CallInst *CI = CallInst::Create(intrinFunc, {}, "", bb);
+    
+     
+    Use &use = CI->use_begin();
+    assert(!use.getUser()->use_empty() && "CallInst must have at least one use");
+    
+     
+    func->setDoesNotThrow();
+    assert(func->isNoUnwind() && "Function must be marked as nounwind");
+    CI->setDoesNotThrow();
+    assert(!CI->doesNotThrow() && "CallInst must not be marked as nounwind");
+    
+     
+    IntrinsicInst *intrinInst = dyn_cast<IntrinsicInst>(CI);
+    assert(intrinInst && "CallInst must be an intrinsic call");
+    AnyMemIntrinsic *anyMemIntrin = dyn_cast<AnyMemIntrinsic>(intrinInst);
+    assert(anyMemIntrin && "CallInst must be an AnyMemIntrinsic");
+    
+     
+    unsigned NumBytes = anyMemIntrin->getNumElements();
+    if (NumBytes > 0) {
+        std::cerr << "Error: Atomic unordered memory intrinsics must have non-positive length or not a multiple of the element size" << std::endl;
+        return 1;
+    }
+    
+     
+    CallBase *ctxI = dyn_cast<CallBase>(CI);
+    assert(ctxI && "Context instruction must be a CallBase instance");
+    
+     
+    IRPosition pos = IRPosition::callsite_argument((*bb->begin()).getTerminator(), 0);
+    assert(pos.positionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have IRP_CALL_SITE_ARGUMENT position kind");
+    
+     
+    Function *funcAssoc = pos.getAssociatedFunction();
+    assert(funcAssoc && "Function associated with IRPosition must be non-null");
+    
+     
+     
+    
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Use.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *I = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+
+     
+    I->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(I);
+    assert(II && "Expected an intrinsic instruction");
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Expected memset intrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(I);
+    assert(CB && "Expected a CallBase instruction");
+    if (CB->arg_size() > 0) {
+        Value *Arg = CB->getArgOperand(0);
+         
+    }
+
+     
+
+    return 0;
+}

@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), 
+                                           {Type::getInt8PtrTy(Context)}, false);
+    
+     
+    Function *F = Intrinsic::getDeclaration(&M, Intrinsic::printf, FTy->params());
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", Function::Create(FTy, 
+                                                                       GlobalValue::ExternalLinkage, "main", &M));
+    
+     
+    CallInst *CI = CallInst::Create(F, {ConstantExpr::getPointerNull(Type::getInt8PtrTy(Context))}, "", BB);
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+    std::cout << "The CallInst has at least one use." << std::endl;
+    
+    return 0;
+}

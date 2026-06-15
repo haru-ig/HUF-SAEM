@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+ 
+Module* createModule() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "dummy", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::sqrt), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = CallInst::Create(Intrinsic::sqrt, TrueVal, "", BB);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1)), TrueVal, "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindPredecessor(BB);
+
+    return M;
+}
+
+int main() {
+    Module *M = createModule();
+    std::cout << "Module created successfully with a function containing a CallInst and SelectInst." << std::endl;
+    delete M;
+    return 0;
+}

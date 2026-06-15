@@ -1,0 +1,79 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+#include <iostream>
+
+using namespace llvm;
+
+ 
+void createTestModule(LLVMContext &Ctx, Module *M) {
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test", M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::abs), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::abs) {
+             
+        } else if (II->getIntrinsicID() == Intrinsic::memset || II->getIntrinsicID() == Intrinsic::memcpy) {
+             
+            Value *Ptr = nullptr, *Val = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
+            uint64_t NumBytes = 16;  
+            if (NumBytes <= 0 || NumBytes % sizeof(uintptr_t) != 0) {
+                 
+            }
+        }
+    }
+
+     
+    auto *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Ctx), true);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Ctx), 42);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (auto *SelType = SI->getType(); SelType->isIntegerTy()) {
+        Value *CTop = CastInst::create(Instruction::CastOps::FPToSI, TrueVal, Type::getInt32Ty(Ctx));
+        Value *CondType = CondVal->getType();
+        if (CondType->isIntegerTy() && SelType->getScalarSizeInBits() == 32) {
+             
+        }
+    }
+
+     
+    Type *ScalarTy = Type::getInt32Ty(Ctx);
+    if (SI->getType()->isVectorTy()) {
+        ScalarTy = SI->getType()->getVectorElementType();
+    }
+
+     
+     
+
+    std::cout << "Module created successfully with necessary instructions." << std::endl;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("test", Ctx);
+    createTestModule(Ctx, &M);
+    return 0;
+}

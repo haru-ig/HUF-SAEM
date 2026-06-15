@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = cast<Function>(M.getOrInsertFunction("foo", FTy));
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 1)};
+    CallInst *CI = CallInst::Create(F->getName(), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    if (!isa<IntrinsicInst>(CI)) {
+        std::cerr << "Expected an intrinsic call, but got a different instruction." << std::endl;
+        return 1;
+    }
+
+     
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (!II->isAnyMemory()) {
+        std::cerr << "Expected an AnyMemIntrinsic, but got a different intrinsic." << std::endl;
+        return 1;
+    }
+
+     
+    M.print(llvm::outs(), nullptr);
+
+    return 0;
+}

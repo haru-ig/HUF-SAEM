@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Intrinsic::ID intrinsicId = Intrinsic::sqrt;
+    std::vector<Value *> args;
+    Value *arg0 = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    args.push_back(arg0);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, intrinsicId), args, "", BB);
+    
+     
+    CI->addUse(F->getArgList().front());
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwindFunc(nullptr);
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        AnyMemIntrinsic *anyMemIntrin = dyn_cast<AnyMemIntrinsic>(CI);
+        if (anyMemIntrin) {
+            errs() << "CallInst is an AnyMemIntrinsic\n";
+            
+             
+            uint64_t NumBytes = anyMemIntrin->getNumMemOperands();
+            if (NumBytes > 0) {
+                errs() << "Number of bytes: " << NumBytes << "\n";
+                
+                 
+                if (anyMemIntrin->isAtomic()) {
+                    if (NumBytes <= 0 || NumBytes % anyMemIntrin->getMemoryType()->getPrimitiveSizeInBits() != 0) {
+                        errs() << "Handling atomic unordered memory intrinsic with undefined behavior\n";
+                    }
+                }
+            }
+        }
+    }
+    
+     
+    if (!F->doesNotThrow()) {
+        errs() << "Function does not have nounwind attribute set\n";
+    }
+    
+    return 0;
+}

@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace llvm;
+
+ 
+Value* createInsertElement(LLVMContext &Ctx) {
+    Module M("module", Ctx);
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Value *Vec = UndefValue::get(ArrayType::get(IntegerType::getInt32Ty(Ctx), 2));
+    Value *Element = ConstantInt::get(IntegerType::getInt32Ty(Ctx), 1);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, "test_call", BB);
+    InsertElementInst *Insert = new InsertElementInst(Vec, Element, ConstantInt::get(IntegerType::getInt32Ty(Ctx), 0), "", CI);
+
+    return Insert;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("module", Ctx);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Value *Insert = createInsertElement(Ctx);
+    CallInst *CI = CallInst::Create(nullptr, "test_call", BB);
+    Insert->setOperand(0, CI);  
+
+     
+    if (Insert->use_empty() || F->doesNotThrow()) {
+        errs() << "Constraints not satisfied!\n";
+        return 1;
+    }
+
+     
+     
+
+    if (!isa<IntrinsicInst>(Insert) || !cast<IntrinsicInst>(Insert)->isAnyMemIntrinsic()) {
+        errs() << "Not an AnyMemIntrinsic!\n";
+        return 1;
+    }
+
+     
+    F->print(errs());
+
+    return 0;
+}

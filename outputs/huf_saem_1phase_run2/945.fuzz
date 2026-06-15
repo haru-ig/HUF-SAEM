@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testFunction", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    BB->addArgument(Type::getInt32Ty(Context), false);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, F, { Arg }, "", BB);
+    CI->setDoesNotThrow();
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *AnyMemCI = dyn_cast<IntrinsicInst>(CI);
+    if (!AnyMemCI || !AnyMemCI->isMemory()) {
+        errs() << "Error: CallInst is not a memory intrinsic!\n";
+        return 1;
+    }
+
+     
+    if (CI->use_empty()) {
+        errs() << "Error: CallInst does not have any uses!\n";
+        return 1;
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

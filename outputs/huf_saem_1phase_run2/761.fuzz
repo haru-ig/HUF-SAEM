@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "myfunc", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::my_intrinsic), {});
+    
+     
+    CI->addUse(...);  
+    
+     
+    assert(!CI->getFunction()->hasFnAttribute(Attribute::NoUnwind) && "Function should be nounwind");
+    assert(!CI->doesNotThrow() && "CallInst should not throw");
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+         
+    }
+    
+     
+    M.print(outs(), nullptr);
+    
+    return 0;
+}

@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+  
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *One = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Vec = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    Instruction *InsertElem = InsertElementInst::Create(Vec, One, Zero, "", BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), nullptr, "", BB);
+    CI->addOperand(InsertElem);
+
+     
+    assert(!F->doesNotThrow() && "Function should not be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "CallInst should be a memset intrinsic");
+
+     
+    simplifyCall(CI,  );
+
+     
+     
+
+    return 0;
+}

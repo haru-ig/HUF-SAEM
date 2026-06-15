@@ -1,0 +1,125 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallBase *CI = CallBase::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II->getIntrinsicID() == Intrinsic::any_mem_intrinsic && "CallInst must be an AnyMemIntrinsic");
+        
+         
+        if (AtomicOrdering ord = II->getAtomicOrdering()) {
+            assert(ord == AtomicOrdering::NotAtomic || !isMultipleOfElementSize(II->getNumOperands()));
+        }
+    }
+    
+     
+    CallBase *CtxI = dyn_cast<CallBase>(CI);
+    assert(CtxI && "Context instruction must be a CallBase instance");
+    
+     
+    IRPosition Pos = IRPosition::callsite_argument(CtxI);
+    assert(Pos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct kind");
+    
+     
+    Function *Func = Pos.getFunction();
+    assert(Func && "Function associated with IRPosition must be non-null");
+    
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<TreeEntry *, Type *> MinBWs;  
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getIntegerBitWidth() > 0 && "MinBWs entry must provide a valid bit width");
+    }
+    
+     
+    if (E->State == TreeEntry::SplitVectorize) {
+        assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+    } else if (E->isGather() || E->in(TransformedToGatherNodes)) {
+         
+    }
+    
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = Intrinsic::ctpop(TrueVal);
+    Type *SelType = TrueVal->getType();
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(!isSimplified(SI) && !isTransformedToShuffleOrScalarOfVecs(SI) && "SelectInst should not be simplified or transformed");
+    
+     
+    Value *X = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *AbsVal = CallInst::Create(Intrinsic::fabs, X, "", BB);
+    Value *NegVal = CallInst::Create(Intrinsic::fneg, AbsVal, "", BB);
+    
+     
+    FPClassTest KnownFPClass();  
+    assert(KnownFPClass.isUninit() && "Known must be in an uninitialized state");
+    
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;  
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest DemandedMask();  
+    assert(DemandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+    
+     
+    Loop *L = nullptr;  
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop must be safe to clone and header address must not be taken");
+    
+    unsigned UnrollCount = 2;  
+    assert(UnrollCount > 0 && "Unroll count must be greater than zero");
+    
+     
+    Instruction *I = new CallInst(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+    assert(I->getType()->isIntegerTy() && "Instruction must be of an integer or integer vector type");
+    
+     
+    Type *ScalarTy = I->getType();
+    assert(isValidElementType(ScalarTy) && "ScalarTy derived from VL[0] must be a valid element type");
+    
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getIntegerBitWidth() > 0 && "MinBWs entry must provide a valid bit width");
+    } else {
+        ReductionRoot *RR = nullptr;  
+        assert(RR->getParent() && "ReductionRoot must have a non-null parent block");
+    }
+    
+     
+    VectorValuesAndScalesType VVAS;  
+    assert(!VVAS.empty() && "VectorValuesAndScales must be a valid array reference");
+    
+    return 0;
+}

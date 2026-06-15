@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+void generateTestCode(LLVMContext &context, Module &module) {
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(context), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", module);
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(context, "", func);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(context)}, {}, "", entryBB);
+
+     
+    if (CI->use_empty()) {
+        CI->addUse(Type::getInt32Ty(context));
+    }
+
+     
+    func->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        AnyMemIntrinsic *anyMem = dyn_cast<AnyMemIntrinsic>(CI);
+        if (anyMem) {
+            int NumBytes = 0;  
+            if (NumBytes > 0 && !isMultipleOfElementSize(NumBytes, elementSize)) {
+                 
+                CI->setArgOperand(2, ConstantInt::get(Type::getInt32Ty(context), NumBytes));
+            }
+        }
+    }
+
+     
+    Argument *arg = func->args().begin();
+    arg->addAttr(Attribute::Returned);
+
+     
+}
+
+int main() {
+    LLVMContext context;
+    Module module("testModule", context);
+    generateTestCode(context, module);
+    return 0;
+}

@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(FTy, F, {Arg}, "", BB->getTerminator());
+    CI->setDoesNotThrow();  
+
+     
+    if (CI->use_empty()) {
+        errs() << "CallInst does not have any uses. Aborting.\n";
+        return 1;
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    SelectInst *SI = new SelectInst(Builder.CreateICmpULT(CI, Builder.getInt32(2)), TrueVal, FalseVal, "", BB->getTerminator());
+
+     
+    if (!TrueVal || !FalseVal || SI->getType()->isVectorTy()) {
+        errs() << "Invalid SelectInst operands or type. Aborting.\n";
+        return 1;
+    }
+
+     
+    F->print(errs());
+    CI->print(errs());
+    SI->print(errs());
+
+    return 0;
+}

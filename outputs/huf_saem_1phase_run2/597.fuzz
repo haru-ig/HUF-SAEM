@@ -1,0 +1,96 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+    Function *F = nullptr;  
+    CallInst *CI = nullptr;  
+    Value *CondVal = nullptr, *TrueVal = nullptr, *FalseVal = nullptr;  
+
+    if (!CI->use_empty()) {
+         
+        CI->addUse(Type::getFloatTy(*F->getContext()), "example_use");
+    }
+
+    if (F && !F->doesNotThrow()) {
+         
+        F->setDoesNotThrow();
+    }
+
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+            if (!AMII->isZeroLength()) {
+                 
+                errs() << "Zero-length operation detected.\n";
+            }
+        }
+    }
+
+     
+    if (AtomicRMWInst *ARMI = dyn_cast<AtomicRMWInst>(CI)) {
+        int NumBytes = ARMI->getSizeInBytes();
+        if (NumBytes > 0 && NumBytes % getElementTypeByteWidth(ARMI->getType()) != 0) {
+             
+            errs() << "Atomic unordered memory intrinsic with undefined behavior.\n";
+        }
+    }
+
+     
+    if (SelectInst *SI = dyn_cast<SelectInst>(CI)) {
+        Type *SelType = SI->getType();
+        Value *CondType = SI->getCondition()->getType();
+        if ((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondType->isIntegerTy() || CondType->isVectorTy())) {
+             
+            errs() << "Select instruction has valid properties.\n";
+        }
+    }
+
+     
+    if (FNegInst *FNI = dyn_cast<FNegInst>(CI)) {
+        Value *Op = FNI->getOperand(0);
+        if (BinaryOperator *BO = dyn_cast<BinaryOperator>(Op)) {
+            if (BO->getOpcode() == Instruction::FAbs) {
+                Value *X = BO->getOperand(0);
+                if (X->hasOneUse()) {
+                     
+                    errs() << "Valid fneg(fabs(x)) pattern detected.\n";
+                }
+            }
+        }
+    }
+
+     
+    Loop *L = nullptr;  
+    if (L && L->getLoopPreheader() && L->getLoopLatch()) {
+         
+        errs() << "Loop has valid preheader and latch blocks.\n";
+    }
+
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;  
+    if (ULO.Count > 0) {
+         
+        errs() << "Unroll count is valid.\n";
+    }
+
+     
+    Value *I = nullptr;  
+    Type *Ty = I->getType();
+    if (Ty->isIntegerTy() && Ty->getScalarSizeInBits() == getBitWidth(KnownFPClass())) {
+         
+        errs() << "Instruction type and bit width are valid.\n";
+    }
+
+    return 0;
+}

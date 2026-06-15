@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg1 = ConstantInt::get(IntegerType::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, {Arg1}, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::ExternalLinkage);
+
+     
+    SimplifyCFGOptions Options;
+    FunctionPassManager FPM;
+    PassBuilder PB;
+    PB.registerFunctionAnalyses(FPM);
+    FPM.addPass(createSimplifyCFGPass(Options));
+    FPM.run(*F);
+
+     
+    if (!CI->use_empty() && dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst meets constraints." << std::endl;
+    } else {
+        std::cout << "CallInst does not meet constraints." << std::endl;
+    }
+
+    return 0;
+}

@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    
+     
+    Intrinsic::ID IntrinsicId = Intrinsic::sqrt;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), IntrinsicId), {}, "", Func->getEntryBlock().getFirstInsertionPt());
+    
+     
+    CI->addUse(Type::getInt32Ty(Context));
+    
+     
+    Func->setDoesNotThrow();
+    Func->setLinkage(GlobalValue::ExternalLinkage);
+    
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (AnyMemIntrinsic *AMIntr = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+            uint64_t NumBytes = 0;  
+            if (NumBytes > 0 && !isMultiple(NumBytes, Func->getFunctionType()->getParamType(0)->getScalarSizeInBits())) {
+                errs() << "Intrinsic call meets constraints.\n";
+            } else {
+                errs() << "Intrinsic call does not meet atomic unordered memory intrinsic conditions.\n";
+            }
+        }
+    }
+    
+     
+    Module->print(errs(), nullptr);
+    
+    return 0;
+}

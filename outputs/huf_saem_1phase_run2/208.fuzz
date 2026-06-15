@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Args[] = { Arg1 };
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, Args, "", BB);
+    
+     
+    User *U = (User *)CI;
+    if (!U->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+    
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function is not marked as nounwind." << std::endl;
+    }
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI) && dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is an intrinsic call and AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic call or not AnyMemIntrinsic." << std::endl;
+    }
+    
+     
+    if (isa<CallBase>(CI)) {
+        std::cout << "Context instruction is a CallBase." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase." << std::endl;
+    }
+    
+     
+    
+    return 0;
+}

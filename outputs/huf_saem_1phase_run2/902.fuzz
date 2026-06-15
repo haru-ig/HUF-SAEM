@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::abs), {Arg}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

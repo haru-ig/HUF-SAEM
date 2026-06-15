@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    CI->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+            Loop *L = new Loop({}, BB);
+            L->initializeLoopInfo();
+            L->getLoopPreheader()->setName("preheader");
+            L->getLoopLatch()->setName("latch");
+
+             
+            UnrollOption ULO;
+            ULO.Count = 2;
+            if (ULO.Count > 0) {
+                LoopUnrollPass LUP(ULO);
+                LUP.runOnFunction(*F);
+            }
+
+             
+            if (II->getType()->isIntegerTy()) {
+                IntegerType *ITy = dyn_cast<IntegerType>(II->getType());
+                unsigned BitWidth = ITy->getBitWidth();
+
+                 
+                Type *ScalarTy = Type::getInt32Ty(Context);
+                if (isValidElementType(ScalarTy)) {
+                     
+                }
+            }
+        }
+    }
+
+    return 0;
+}

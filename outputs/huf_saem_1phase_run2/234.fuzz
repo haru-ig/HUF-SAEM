@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &Mod);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 5);
+    F->arg_begin()->setName("arg");
+    
+     
+    CallInst *CI = CallInst::Create(FTy, F, { Arg }, "", BB);
+    CI->setDoesNotThrow();  
+    CI->takeName(F->arg_begin());
+    
+     
+    F->setFnAttr("nounwind");
+    
+     
+    Intrinsic::ID IID = Intrinsic::anymemintrinsic;  
+    CallInst *IntrCI = CallInst::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), Intrinsic::getDeclaration(&Mod, IID), {}, "", BB);
+    
+     
+    BB->push_back(CI);
+    BB->push_back(IntrCI);
+    
+     
+    IntrCI->addUse(CI);
+    
+     
+    std::cout << "Module: " << Mod.getName() << "\n";
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "Basic Block: " << BB->getName() << "\n";
+    std::cout << "Call Instruction: " << *CI << "\n";
+    std::cout << "Intrinsic Call: " << *IntrCI << "\n";
+    
+     
+    return 0;
+}

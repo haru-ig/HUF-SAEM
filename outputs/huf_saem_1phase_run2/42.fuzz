@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    std::vector<Value *> Args;
+    Args.push_back(Arg);
+    CallInst *CI = CallInst::Create(F, Args, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+    
+     
+    IntrinsicInst *AII = IntrinsicInst::Create(M, Intrinsic::anymemintrinsic, {CI}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(AII) && "Must be an intrinsic call");
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(AII);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

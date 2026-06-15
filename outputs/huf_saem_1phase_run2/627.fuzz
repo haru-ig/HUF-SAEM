@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+ 
+void createTestFunction(Module &M) {
+    LLVMContext &C = M.getContext();
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(C), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(C, "", F);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(C), 10);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(C), -10);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(C), 2));
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(!SI->use_empty() && "SelectInst must have at least one use");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(isa<IntrinsicInst>(SI) && isa<AnyMemIntrinsic>(SI) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+     
+
+     
+    BB->getInstList().push_back(SI);
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+    createTestFunction(M);
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

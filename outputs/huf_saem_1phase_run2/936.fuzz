@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/InstrTypes.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    ConstantInt *CI0 = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Args[] = { CI0 };
+    CallInst *CI = CallInst::Create(FTy, F, Args, "", BB);
+
+     
+    CI->addUse(CI->getType());
+
+     
+    Intrinsic::ID IntrID = Intrinsic::not_an_intrinsic;  
+    CallInst *IntrCI = CallInst::Create(Type::getVoidTy(Context), Intrinsic::getIntrinsic(IntrID, {}), {}, "", BB);
+
+     
+    CallBase *CtxI = CI;
+
+     
+     
+     
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

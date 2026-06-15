@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+
+using namespace llvm;
+
+ 
+void createIntrinsicCall(Module &M) {
+    LLVMContext &C = M.getContext();
+    Function *F = Intrinsic::getDeclaration(&M, Intrinsic::sqrt, {});
+    CallInst *CI = CallInst::Create(F, {}, "", nullptr);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Function *func = CI->getFunction();
+    assert(func && "Function should be non-null");
+    func->setDoesNotThrow();
+    func->setNoUnwind();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cerr << "Expected an intrinsic call, but found a different instruction." << std::endl;
+    }
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    createIntrinsicCall(M);
+    return 0;
+}

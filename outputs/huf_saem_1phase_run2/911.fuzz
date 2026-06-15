@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createTestCallInst(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {Type::getInt32Ty(Ctx)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {ConstantInt::get(Type::getInt32Ty(Ctx), 0)}, "", BB);
+
+     
+    F->addFnAttr(Attribute::NoUnwind);
+    CI->setDoesNotThrow();
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    Value *Arg = &*AI;
+    Arg->setParamAttr(0, Attribute::Returned);
+
+     
+    assert(isa<CallBase>(CI) && "CI must be a CallBase");
+
+     
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+
+    createTestCallInst(M);
+
+    return 0;
+}

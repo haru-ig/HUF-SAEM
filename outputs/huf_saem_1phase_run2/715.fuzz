@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI;
+    if (true) {   
+        CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+    } else {
+        CI = CallInst::CreateCall({}, "someOtherInstr", BB);
+    }
+
+     
+    if (!CI->use_empty()) {
+        std::cerr << "CallInst must have at least one use to trigger simplification.\n";
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic.\n";
+    } else {
+        std::cerr << "CallInst is not an intrinsic.\n";
+        return 1;
+    }
+
+     
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "BasicBlock: " << BB->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+    return 0;
+}

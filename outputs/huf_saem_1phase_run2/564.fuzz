@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *I = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::memset), {Constant::getNullValue(Type::getInt8PtrTy(Context))}, {}, BB);
+    assert(!I->use_empty() && "CallInst must have at least one use");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    IntrinsicInst *CI = dyn_cast<IntrinsicInst>(I);
+    assert(CI && CI->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    if (CI->getIntrinsicID() == Intrinsic::memset) {
+        uint64_t NumBytes = 0;  
+        assert(NumBytes <= 0 || NumBytes % sizeof(uint8_t) != 0, "Length must be non-positive or not a multiple of the element size");
+    }
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (AI != F->arg_end()) {
+        AI->addAttr(Attribute::Returned);
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(I);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+
+    return 0;
+}

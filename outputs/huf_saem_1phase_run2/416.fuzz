@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), Builder.getInt64(1)}, "", BB);
+    CI->setDoesNotThrow();
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->addFnAttr(Attribute::NoUnwind);
+    assert(!CI->doesNotThrow() && "CallInst itself must not be nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*F, 0);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have a position kind of IRP_CALL_SITE_ARGUMENT");
+
+     
+    Function *Func = F;
+    assert(Func && "Function associated with the IRPosition must be non-null");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

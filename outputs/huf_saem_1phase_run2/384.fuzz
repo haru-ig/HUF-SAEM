@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setReturnValue(true);
+
+     
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memcpy.p0i8.p0i8.i32", FTy);
+    std::vector<Value *> Args = { ConstantPointerNull::get(Type::getInt8PtrTy(Context)), Arg, ConstantInt::get(Type::getInt32Ty(Context), 4) };
+    CallInst *CI = CallInst::Create(Callee, Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    IntrinsicInst *Intr = dyn_cast<IntrinsicInst>(CI);
+    assert(Intr && "Expected an intrinsic instruction");
+    AnyMemIntrinsic *AnyMI = cast<AnyMemIntrinsic>(Intr);
+    assert(AnyMI && "Expected a memory intrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Expected a call base instruction");
+    IRPosition Pos = IRPosition::callsite_argument(*CB);
+    assert(!Pos.isNull() && "IRPosition should not be null");
+
+     
+     
+    Function *Func = F;
+    if (Func) {
+         
+    }
+
+     
+    M.print(llvm::outs(), nullptr);
+
+    return 0;
+}

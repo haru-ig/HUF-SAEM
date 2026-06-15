@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::memcpy;
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 4);
+    Value *Arg2 = ConstantInt::get(Type::getInt32Ty(Context), 8);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {Arg1, Arg2}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memcpy || II->getIntrinsicID() == Intrinsic::memmove) {
+             
+            Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+            assert(cast<ConstantInt>(NumBytes)->isNonPositive() || cast<ConstantInt>(NumBytes)->getValue().ugt(1) && "NumBytes must be non-positive or not a multiple of the element size");
+        } else if (II->getIntrinsicID() == Intrinsic::atomic_load || II->getIntrinsicID() == Intrinsic::atomic_store) {
+             
+            Value *Ptr = ConstantInt::get(Type::getInt32Ty(Context), 0);
+            Type *IntPtrTy = PointerType::get(Type::getInt32Ty(Context), 0);
+            Ptr = CastInst::Create(Instruction::BitCast, Ptr, IntPtrTy, "", BB);
+            CI->setArgOperand(0, Ptr);
+        }
+    }
+
+     
+    assert(isa<CallBase>(CI) && "Context instruction must be a CallBase");
+    assert(!CI->use_empty() && "Context instruction must have at least one use");
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

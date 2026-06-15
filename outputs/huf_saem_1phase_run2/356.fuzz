@@ -1,0 +1,125 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setParamAttr(0, Attribute::Returned);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Arg->getType(), Arg->getType()}, {Arg, Arg, ConstantInt::get(Type::getInt32Ty(Context), 4)}, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+        
+         
+        if (AtomicOrdering AO = MemoryAtomic) {
+            uint64_t NumBytes = 0;  
+            if (NumBytes <= 0 || !isMultiple(NumBytes, F->arg_begin()->getType()->getPrimitiveSizeInBits())) {
+                std::cout << "Atomic unordered memory intrinsic conditions are met." << std::endl;
+                
+                 
+                if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+                    std::cout << "Context instruction is a CallBase instance." << std::endl;
+                    
+                     
+                    if (IRPosition Pos = IRPosition::callsite_argument(CB, 0)) {
+                        std::cout << "IRPosition is correctly set." << std::endl;
+                        
+                         
+                        Function *Funct = Pos.getFunction();
+                        if (Funct) {
+                            std::cout << "Associated function exists." << std::endl;
+                            
+                             
+                            TreeEntry *E = nullptr;  
+                            assert(!E->Scalars.empty() && "TreeEntry does not have a non-empty Scalars list");
+                            
+                             
+                            if (MinBWs.find(E) != MinBWs.end()) {
+                                std::cout << "MinBWs map entry for E is valid." << std::endl;
+                                
+                                 
+                                if (E->State == TreeEntry::SplitVectorize && E->CombinedEntriesWithIndices.size() == 2) {
+                                    std::cout << "TreeEntry split vectorization conditions are met." << std::endl;
+                                    
+                                     
+                                    if (!E->isGather() && E->getOpcode() != Instruction::InsertElement) {
+                                        std::cout << "Split vectorization path is taken." << std::endl;
+                                        
+                                         
+                                        Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+                                        Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(0.0));
+                                        Value *FalseVal = CallInst::CreateFNeg(CallInst::CreateFAbs(CI->getOperand(0)), "", BB);
+                                        SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+                                        
+                                         
+                                        if (SI && SI->getType()->isIntegerTy() && SI->getCondition()->getType()->isIntegerTy()) {
+                                            std::cout << "SelectInst meets specific folding pattern and type constraints." << std::endl;
+                                            
+                                             
+                                            const unsigned MaxAnalysisRecursionDepth = 10;
+                                            unsigned Depth = 5;  
+                                            assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth exceeds limit");
+                                            
+                                             
+                                            FPClassTest DemandedMask = FPClassTest::Zero;  
+                                            KnownFPClass Known = KnownFPClass::Zero;  
+                                            assert(DemandedMask.getBitWidth() == Known.getBitWidth() && "Demanded mask and known FP class do not match in bit width");
+                                            
+                                             
+                                            Loop *L = nullptr;  
+                                            assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop is not safe to clone or has address taken");
+                                            
+                                             
+                                            LoopUnrollOptions ULO;
+                                            ULO.Count = 2;  
+                                            assert(ULO.Count > 0 && "Unroll count is not greater than zero");
+                                            
+                                             
+                                            Instruction *I = CI;  
+                                            assert(I->getType()->isIntegerTy() && I->getType()->getScalarSizeInBits() == DemandedMask.getBitWidth() && "Instruction type or bit width does not meet constraints");
+                                            
+                                            std::cout << "All constraints are satisfied." << std::endl;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return 0;
+}

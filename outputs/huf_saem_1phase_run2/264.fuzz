@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), false), GlobalValue::ExternalLinkage, "foo", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(nullptr, {Arg}, "", BB);
+    
+     
+    CI->addUse(F->getReturnType());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+    assert(II->getIntrinsicID() == llvm::Intrinsic::memset && "Expected a memset intrinsic");
+
+     
+    int NumBytes = 0;
+    assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes, F->getFunctionType()->getReturnType()->getScalarSizeInBits()) && "Expected non-positive or not a multiple of element size");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Expected a CallBase instruction");
+
+     
+    IRPosition Pos(CB, IRPosition::callsite_argument());
+    assert(Pos.isCallSiteArgument() && "Expected IRP_CALL_SITE_ARGUMENT");
+
+     
+    Value *SimplifiedValue = simplifyCallInst(*CI);
+    if (SimplifiedValue) {
+        CI->replaceAllUsesWith(SimplifiedValue);
+    }
+
+     
+    F->print(errs());
+    BB->print(errs());
+    CI->print(errs());
+
+    return 0;
+}

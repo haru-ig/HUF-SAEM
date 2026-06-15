@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::sqrt;   
+    std::vector<Value *> Args = {Arg};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+
+     
+    Value *NumBytes = AMII->getArgOperand(1);   
+    assert(!NumBytes || isa<ConstantInt>(NumBytes) && cast<ConstantInt>(NumBytes)->isZero(), "Expected zero-length operation");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Expected a call base instruction");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*CI);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "Expected call site argument position");
+
+     
+    Function *Func = F;   
+    assert(Func && "Expected a valid function");
+
+     
+    std::cout << "Function: " << Func->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+    return 0;
+}

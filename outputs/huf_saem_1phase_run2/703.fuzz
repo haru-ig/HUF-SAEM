@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Instruction *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::Nounwind);
+
+     
+    auto *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    auto *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "The intrinsic call must be AnyMemIntrinsic");
+
+     
+     
+
+     
+    Loop *L = nullptr;  
+    bool canClone = true;  
+    if (canClone && !L->getHeader()->hasAddressTaken()) {
+        UnrollLoopOptions ULO;
+        ULO.Count = 4;  
+        unroll_loop(L, &ULO);
+    }
+
+     
+     
+
+    std::cout << "Test program structure completed.\n";
+    return 0;
+}

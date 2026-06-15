@@ -1,0 +1,5 @@
+#include <iostream>
+int main() {
+ It seems like you're trying to generate a C++ program based on specific constraints for test generation related to LLVM IR simplification. However, the provided text is more of a documentation style description rather than a complete C++ program or even a coherent set of requirements. To assist you effectively, I would need a clearer and more structured input that specifies what exactly you want to achieve programmatically.
+
+If you can provide a specific task or problem you're trying to solve with code, along with any relevant data structures or context, I might be able to help you write a C++ program or function that meets those requirements. For example, if you need to generate LLVM IR and apply certain transformations based on the constraints provided, please let me know!

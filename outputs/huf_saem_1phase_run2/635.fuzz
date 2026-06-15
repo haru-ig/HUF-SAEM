@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    AllocaInst *Alloca = new AllocaInst(Type::getInt32Ty(Context), 0, "arg_alloca", BB->getFirstInsertionPt());
+
+     
+    LoadInst *Load = new LoadInst(Type::getInt32Ty(Context), Alloca, "load_from_arg", false, BB);
+
+     
+    CallInst *CI = CallInst::Create(Func, { Load }, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::Nounwind);
+
+     
+    IntrinsicInst *II = IntrinsicInst::Create(Intrinsic::anymemintrinsic, { CI }, "", BB);
+    assert(dyn_cast<IntrinsicInst>(&CI) && "CallInst must be an intrinsic call");
+
+     
+    Function *FuncFromCI = CI->getFunction();
+    assert(FuncFromCI && "Function containing CallInst must exist");
+    FuncFromCI->addFnAttr(Attribute::Nounwind);
+    FuncFromCI->setDoesNotThrow();
+
+     
+    Module->print(outs(), nullptr);
+
+    return 0;
+}

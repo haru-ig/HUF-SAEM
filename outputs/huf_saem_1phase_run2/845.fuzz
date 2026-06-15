@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Type *IntTy = Type::getInt32Ty(Context);
+
+     
+    Value *TrueVal = ConstantInt::get(IntTy, 1);
+    Value *FalseVal = ConstantInt::get(IntTy, 2);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, FalseVal, "", BB->getTerminator());
+
+     
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB->getTerminator());
+
+     
+    assert(SI && "Select instruction creation failed");
+    assert(SI->getType() == IntTy && "Select instruction type mismatch");
+    assert(SI->getTrueValue()->getType() == IntTy && "True value type mismatch");
+    assert(SI->getFalseValue()->getType() == IntTy && "False value type mismatch");
+
+     
+    assert(isa<ICmpInst>(CondVal) && "Condition must be an ICMP_ULT instruction");
+    auto *ICI = cast<ICmpInst>(CondVal);
+    assert(ICI->getOperand(0) == TrueVal && "First operand of ICMP_ULT must be TrueVal");
+    assert(isa<ConstantInt>(ICI->getOperand(1)) && "Second operand of ICMP_ULT must be a constant integer");
+    auto *CII = cast<ConstantInt>(ICI->getOperand(1));
+    assert(CII->getValue() == 2 && "Second operand of ICMP_ULT must be the integer value 2");
+
+     
+    assert(SI->isConditional() && "Select instruction must have a conditional structure");
+
+    std::cout << "All assertions passed!" << std::endl;
+
+    return 0;
+}

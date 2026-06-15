@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    Argument *Arg = F->arg_begin();
+    Arg->setAttr(Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Arg, ConstantInt::get(Type::getInt8Ty(Context), 4)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+    assert(!CI->doesNotThrow() && "CallInst must not be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "The CallInst must be an intrinsic call");
+    AnyMemIntrinsic *AMIntr = cast<AnyMemIntrinsic>(II);
+    assert(AMIntr && "The intrinsic call must be an AnyMemIntrinsic");
+
+     
+    uint64_t NumBytes = 0;  
+    assert(NumBytes <= 0 || (NumBytes % 8 != 0) && "Length must be non-positive or not a multiple of the element size");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(CB);
+    assert(Pos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have position kind of IRP_CALL_SITE_ARGUMENT");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+
+ 
+void printEvenNumbers(int n) {
+    std::vector<int> evenNumbers;
+    for (int i = 0; i <= n; ++i) {
+        if (i % 2 == 0) {
+            evenNumbers.push_back(i);
+        }
+    }
+     
+    std::cout << "Even numbers up to " << n << ": ";
+    for (int num : evenNumbers) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+}
+
+ 
+void greet(const std::string& name) {
+    if (!name.empty()) {
+        std::cout << "Hello, " << name << "!" << std::endl;
+    } else {
+        std::cout << "Hello, World!" << std::endl;
+    }
+}
+
+int main() {
+    int number = 20;  
+    printEvenNumbers(number);
+    
+    std::string userName = "Alice";  
+    greet(userName);
+
+    return 0;
+}

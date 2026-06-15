@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+    Argument *Arg = F->getArg(0);
+    Arg->addAttr(Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID ID = Intrinsic::memcpy;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, ID), {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "The CallInst is an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "The CallInst is not an AnyMemIntrinsic." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow() && !CI->doesNotThrow()) {
+        std::cout << "Function is marked as nounwind, but CallInst does not have a noexcept attribute." << std::endl;
+    } else {
+        std::cout << "Function or CallInst does not meet the specified conditions." << std::endl;
+    }
+
+     
+    if (dyn_cast<CallBase>(CI)) {
+        std::cout << "The context instruction is a CallBase." << std::endl;
+    } else {
+        std::cout << "The context instruction is not a CallBase." << std::endl;
+    }
+
+     
+    F->dump();
+    CI->dump();
+
+    return 0;
+}

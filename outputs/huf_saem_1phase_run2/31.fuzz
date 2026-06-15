@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Use.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(nullptr, Callee, {}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst has uses.\n";
+    } else {
+        errs() << "CallInst does not have any uses.\n";
+    }
+
+     
+    assert(F->doesNotThrow());
+    assert(F->isNoUnwind());
+
+     
+    Intrinsic::ID IID = Intrinsic::not_an_intrinsic;  
+    CallInst *IntrCI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), {}, "", BB);
+
+     
+    if (dyn_cast<IntrinsicInst>(IntrCI)) {
+        errs() << "Intrinsic call detected.\n";
+    } else {
+        errs() << "Not an intrinsic call.\n";
+    }
+
+     
+    CI->simplify();
+
+    return 0;
+}

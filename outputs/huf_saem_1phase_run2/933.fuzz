@@ -1,0 +1,132 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *ZeroVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *VecVal = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    Value *InsertedVal = InsertElementInst::Create(VecVal, ZeroVal, ZeroVal, "", BB);
+    
+     
+    CallBase* CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {InsertedVal}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    AnyMemIntrinsic* AMI = cast<AnyMemIntrinsic>(II);
+    assert(AMI && "CallInst must be an AnyMemIntrinsic");
+    
+     
+    if (AMI->isAtomic() || AMI->hasZeroLength()) {
+         
+    }
+    
+     
+    CallBase* CBC = dyn_cast<CallBase>(CI);
+    assert(CBC && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRPos = IRPosition::callsite_argument(CB);
+    assert(IRPos.getPositionKind() == IRPosition::CallSiteArgument && "IRPosition must have the correct position kind");
+    
+     
+    Function* Funct = IRPos.getAnchorScope();
+    assert(Funct && "Function associated with IRPosition must be non-null");
+    
+     
+    TreeEntry* E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<TreeEntry*, IntegerType*> MinBWs;  
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getBitWidth() > 0 && "MinBWs entry must provide a valid bit width");
+    }
+    
+     
+    assert(E->State == TreeEntry::SplitVectorize && E->CombinedEntriesWithIndices.size() == 2 && "TreeEntry must be in SplitVectorize state with exactly two combined entries");
+    
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = CallInst::Create(Intrinsic::fabs, {TrueVal}, "", BB);  
+    FalseVal = CallInst::Create(Intrinsic::ctpop, {TrueVal}, "", BB);  
+    Type *SelType = TrueVal->getType();
+    
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be valid");
+    
+     
+    unsigned Depth = 0;  
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest *DemandedMask = nullptr;  
+    FPMathOperator *I = nullptr;  
+    assert(DemandedMask && "DemandedMask must be a valid FPClassTest value");
+    
+     
+    DenseMap<BasicBlock*, BlockEdge*> BlocksSchedules;  
+    assert(!BlocksSchedules.empty() && "BlocksSchedules map must contain valid entries");
+    
+     
+    std::vector<TreeEntry*> VectorizableTree;  
+    assert(!VectorizableTree.empty() && "VectorizableTree must contain non-gathered, non-deleted TreeEntry objects");
+    
+     
+    Instruction *ReductionRoot = nullptr;  
+    assert(ReductionRoot && "ReductionRoot must be a valid Instruction object with a parent block");
+    
+     
+    std::vector<std::pair<Value*, APFloat>> VectorValuesAndScales;  
+    assert(!VectorValuesAndScales.empty() && "VectorValuesAndScales parameter must be well-formed");
+    
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() && "Loop must have a valid preheader block");
+    assert(L->getLoopLatch() && "Loop must have a valid latch block");
+    
+     
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop must be safe to clone and header's address must not be taken");
+    
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 1;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    
+     
+    Instruction *InstrI = nullptr;  
+    Type *InstrType = InstrI->getType();
+    assert(InstrI && InstrType->isIntegerTy() && InstrType->getScalarSizeInBits() == DemandedMask->getBitWidth());
+    
+    return 0;
+}

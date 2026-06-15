@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+    F->setCallingConv(CallingConv::C);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg1 = new Argument(Type::getInt32Ty(Context), "arg1", (Value *)F);
+    Arg1->addAttr(AttributeForCallSite(&M));
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    BB->insertInstrBefore(CI, BB->begin());
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is an intrinsic call\n";
+    } else {
+        errs() << "CallInst is not an intrinsic call\n";
+    }
+
+     
+    if (F->hasFnAttr(Attribute::NoUnwind)) {
+        errs() << "Function is marked as nounwind\n";
+    } else {
+        errs() << "Function is not marked as nounwind\n";
+    }
+
+     
+    if (!CI->doesNotThrow()) {
+        errs() << "CallInst is marked as doesNotThrow\n";
+    } else {
+        errs() << "CallInst is not marked as doesNotThrow\n";
+    }
+
+     
+
+    return 0;
+}

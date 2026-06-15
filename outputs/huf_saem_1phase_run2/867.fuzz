@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+bool generateTest(LLVMContext &Ctx, Module &M) {
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Value *Args[1] = {ConstantInt::get(Type::getInt32Ty(Ctx), 5)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::abs), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setCallingConv(CallingConv::C);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        return false;
+    }
+
+     
+     
+
+     
+    if (!isa<CallBase>(CI)) {
+        return false;
+    }
+
+     
+
+    std::cout << "Test generation complete." << std::endl;
+    return true;
+}

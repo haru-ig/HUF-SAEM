@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+ 
+void createModuleWithIntrinsicCall(LLVMContext &Ctx, Module *M) {
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::memcpy;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, IntrID), {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Ctx));
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("module", Ctx);
+
+    createModuleWithIntrinsicCall(Ctx, &M);
+
+     
+    std::cout << "Module:\n" << M;
+
+    return 0;
+}

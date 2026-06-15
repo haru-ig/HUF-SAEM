@@ -1,0 +1,69 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    auto *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    auto *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "The intrinsic call must be an AnyMemIntrinsic");
+    
+     
+    IRPosition Pos = IRPosition::callsite_argument(*CI);
+    auto *CB = dyn_cast<CallBase>(Pos.getCtxI());
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    Function *Func = Pos.getAnchorScope();
+    assert(Func && "Function associated with the IRPosition must be non-null");
+    
+     
+     
+    
+     
+     
+    
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = Instruction::Create(Instruction::FNeg, TrueVal, "", BB)->getOperand(0);  
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(TrueVal && "TrueVal must be a valid Value");
+    assert(FalseVal && "FalseVal must be a valid Value");
+    assert(CondVal && "CondVal must be a valid Value");
+    Type *SelType = SI->getType();
+    assert(SelType && "SelType must be correctly retrievable");
+    
+     
+     
+
+    return 0;
+}

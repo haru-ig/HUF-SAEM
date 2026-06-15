@@ -1,0 +1,115 @@
+#include <iostream>
+int main() {
+ 
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool checkConstraints(CallInst &CI) {
+     
+    if (CI.use_empty()) return false;
+
+    Function *func = CI.getFunction();
+     
+    if (!func->doesNotThrow() || func->isNounwind()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    if (!II->isAnyMemory()) return false;
+
+     
+    uint64_t NumBytes = II->getArgOperand(0)->getZExtValue();
+    if (NumBytes > 0 && !(NumBytes % 16 == 0)) return false;  
+
+     
+    Function::arg_iterator AI = func->arg_begin();
+    for (auto &Arg : func->args()) {
+        if (Arg.hasParamAttribute(0, Attribute::Returned)) return true;
+    }
+    return false;
+}
+
+bool checkLoopConstraints(Loop *L) {
+     
+    if (!L->getLoopPreheader() || !L->getLoopLatch()) return false;
+
+     
+    if (!L->isSafeToClone()) return false;
+
+     
+    if (L->getHeader()->hasAddressTaken()) return false;
+
+    return true;
+}
+
+bool checkSelectConstraints(SelectInst &SI) {
+    Value *CondVal = SI.getCondition();
+    Value *TrueVal = SI.getTrueValue();
+    Value *FalseVal = SI.getFalseValue();
+    Type *SelType = TrueVal->getType();
+
+     
+    if (!CondVal || !TrueVal || !FalseVal || !SelType) return false;
+    if (SelType != FalseVal->getType()) return false;
+
+     
+    if (!isa<ICmpInst>(CondVal) || !cast<ICmpInst>(CondVal)->isEquality()) return false;
+    ICmpInst *Cmp = cast<ICmpInst>(CondVal);
+    if (Cmp->getPredicate() != CICMP_ULT || Cmp->getOperand(0) != TrueVal || Cmp->getOperand(1)->getZExtValue() != 2) return false;
+
+     
+    Type *CondType = CondVal->getType();
+    if (!CondType->isIntegerTy() || !SelType->isVectorTy()) return false;
+
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", Func);
+    IRBuilder<> Builder(BB);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), false);
+    Value *Callee = Constant::getNullValue(PointerType::get(FTy, 0));
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+
+     
+    if (checkConstraints(*CI)) {
+        std::cout << "Constraints satisfied!" << std::endl;
+    } else {
+        std::cout << "Constraints not satisfied." << std::endl;
+    }
+
+     
+    Loop *L = new Loop();
+    if (checkLoopConstraints(L)) {
+        std::cout << "Loop constraints satisfied!" << std::endl;
+    } else {
+        std::cout << "Loop constraints not satisfied." << std::endl;
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *SI = SelectInst::Create(ConstantInt::get(Type::getInt1Ty(Context), true), TrueVal, FalseVal, "", BB);
+
+    if (checkSelectConstraints(*SI)) {
+        std::cout << "Select constraints satisfied!" << std::endl;
+    } else {
+        std::cout << "Select constraints not satisfied." << std::endl;
+    }
+
+    return 0;
+}

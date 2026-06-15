@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    IRBuilder<> Builder(BB);
+    Value* Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallBase* CI = CallInst::Create(FT, F, {Arg}, "", BB);
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    assert(F->doesNotThrow() && "Function should be marked as nounwind");
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+    
+     
+    if (auto* II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+            Value* NumBytes = nullptr;  
+            assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes, ElementSize) && "Atomic unordered memory intrinsics must have non-positive length or not a multiple of element size");
+        }
+    } else {
+        assert(false && "CallInst must be an intrinsic call");
+    }
+    
+     
+    
+    return 0;
+}

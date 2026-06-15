@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(IntegerType::getInt32Ty(Context), APInt(32, 1));
+    std::vector<Value *> Args;
+    Args.push_back(Arg1);
+
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, Args, "", BB);
+
+     
+    CI->addUse(0);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = IntrinsicInst::get(CI, Intrinsic::anymemintrinsic, CI->getNumOperands(), "");
+
+     
+    SimplifyCFGOptions Options;
+    SimplifyCFG(BB, Options);
+
+    return 0;
+}

@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, "func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    Value* Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 1)};
+    CallInst *CI = CallInst::Create(FT, F, makeArrayRef(Args), "", nullptr);
+    CI->addUse(0);  
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Intrinsic::ID ID = Intrinsic::memcpy;
+    IntrinsicInst *II = IntrinsicInst::Create(Type::getVoidTy(Context), ID, makeArrayRef({CI}), "", nullptr);
+
+     
+    assert(isa<CallBase>(CI) && "CI must be a CallBase");
+    CallBase *CB = cast<CallBase>(CI);
+
+     
+    if (ID == Intrinsic::memcpy || ID == Intrinsic::memmove) {
+        int NumBytes = 0;  
+        if (NumBytes > 0 && !isMultiple(NumBytes, 4)) {
+             
+        }
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

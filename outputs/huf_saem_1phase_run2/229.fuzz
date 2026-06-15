@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    std::vector<Value *> Args;
+    Args.push_back(ConstantInt::get(Type::getInt32Ty(Context), 0));
+    CallInst *CI = CallInst::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), Intrinsic::getDeclaration(M, llvm::Intrinsic::memcpy), Args, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic call." << std::endl;
+    }
+    
+     
+    F->print(outs());
+    CI->print(outs());
+    
+    return 0;
+}

@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+    
+     
+    CI->addUse(Type::getInt32Ty(Context));
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memcpy || II->getIntrinsicID() == Intrinsic::memset) {
+             
+             
+            if (II->getIntrinsicID() == Intrinsic::memcpy) {
+                Value *Length = ConstantInt::get(Type::getInt32Ty(Context), 0);
+                II->setArgOperand(2, Length);  
+            }
+        }
+    }
+    
+     
+     
+    
+    return 0;
+}

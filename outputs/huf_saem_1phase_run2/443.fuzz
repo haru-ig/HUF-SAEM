@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+
+     
+    F->addFnAttr(Attribute::Nounwind);
+    CI->setDoesNotThrow();
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "The intrinsic call is a memory operation." << std::endl;
+    } else {
+        std::cout << "The intrinsic call is not a memory operation." << std::endl;
+    }
+
+     
+    return 0;
+}

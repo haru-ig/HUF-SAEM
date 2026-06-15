@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "main", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindPredecessor(BB);
+
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be created successfully.");
+
+     
+    Loop *L = nullptr;
+    if (LoopInfo LI(*F)) {
+        L = &*LI.begin();
+    }
+    assert(L && "Loop must exist in the function.");
+
+     
+    BasicBlock *PreHeaderBB = BasicBlock::Create(Context, "", F);
+    BasicBlock *LatchBB = BasicBlock::Create(Context, "", F);
+    L->setLoopLatch(LatchBB);
+    L->addPredecessor(PreHeaderBB);
+    L->addSuccessor(LatchBB);
+    assert(L->getLoopPreheader() && "Loop must have a preheader block.");
+    assert(L->getLoopLatch() && "Loop must have a latch block.");
+
+     
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop must be safe to clone and header should not have its address taken.");
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

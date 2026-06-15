@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+using namespace llvm;
+
+ 
+void ensureNounwindAttribute(Function &F, CallInst &CI) {
+     
+    bool hasNounwind = F.hasFnAttr(llvm::Attribute::NoUnwind);
+    
+     
+    bool throws = !CI.doesNotThrow();
+    
+     
+    if (!hasNounwind && throws) {
+        F.addFnAttr(llvm::Attribute::NoUnwind);
+    }
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+    
+     
+    ensureNounwindAttribute(*F, *CI);
+    
+     
+    F->print(outs());
+    
+    return 0;
+}

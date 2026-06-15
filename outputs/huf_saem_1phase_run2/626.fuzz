@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    CI->setDoesNotThrow();
+
+     
+    CallInst *AnyMemIntrinsicCI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {}, {ConstantInt::get(Type::getInt64Ty(Context), 10)}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(AnyMemIntrinsicCI) && "CallInst must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(AnyMemIntrinsicCI) && "CallInst must be an AnyMemIntrinsic");
+
+     
+    BB->insert(BB->begin(), AnyMemIntrinsicCI);
+
+     
+    legacy::PassManager PM;
+    PM.add(createPrintModulePass([](raw_ostream &OS, const Module &M) { OS << M; }));
+    PM.run(*F->getParent());
+
+    return 0;
+}

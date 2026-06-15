@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setAttr(Attribute::Returned);
+    
+     
+    CallBase *CI;
+    if (F->isIntrinsic()) {
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymem_intrinsic), {}, "", BB);
+    } else {
+        std::cerr << "Function is not an intrinsic!" << std::endl;
+        return 1;
+    }
+    
+     
+    CI->addUse(F->getArgNo());
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(&*F->begin()->begin());
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !isa<AnyMemIntrinsic>(II)) {
+        std::cerr << "CallInst is not an AnyMemIntrinsic!" << std::endl;
+        return 1;
+    }
+    
+     
+    if (!F->doesNotThrow()) {
+        std::cerr << "Function does not have 'nounwind' attribute set correctly!" << std::endl;
+        return 1;
+    }
+    
+     
+    std::cout << "Module: " << M.getName() << std::endl;
+    std::cout << "Function: " << F->getName() << std::endl;
+    std::cout << "CallInst is an intrinsic and has at least one use." << std::endl;
+    std::cout << "Function marked as nounwind and does not throw." << std::endl;
+    
+    return 0;
+}

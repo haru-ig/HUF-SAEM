@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+  
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context)}, {}, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ICmpInst::create(ICmpInst::ICMP_ULT, Builder.CreateLoad(F->getArg(0)), ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(CI->getType(), FalseVal, TrueVal, "", BB);
+
+     
+    SI->setCondition(FalseVal);
+    SI->setTrueValue(TrueVal);
+    SI->setFalseValue(FalseVal);
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Expected a CallBase instruction");
+
+     
+    if (dyn_cast<IntrinsicInst>(CB)) {
+        IntrinsicInst *II = cast<IntrinsicInst>(CB);
+        if (auto *AMI = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+            if (AMI->getNumOperands() == 0) {
+                 
+            }
+        }
+    }
+
+     
+    M->print(errs());
+
+    delete M;
+    return 0;
+}
+ 

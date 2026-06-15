@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    F->arg_begin()->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, F, {Arg}, "", BB);
+    CI->setDoesNotThrow();
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setSubprogram(nullptr);
+    F->setPersonalityFn(nullptr);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    FunctionType *AnyMemIntrinsicTy = FunctionType::get(IntegerType::getInt32Ty(Context), {PointerType::get(IntegerType::getInt32Ty(Context), 0)}, true);
+    Intrinsic::ID AnyMemIntrinsicID = Intrinsic::experimental_memcpy;  
+    CallInst *IntrinsicCI = CallInst::Create(AnyMemIntrinsicTy, Intrinsic::getDeclaration(&M, AnyMemIntrinsicID), {}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(IntrinsicCI) && "CallInst must be an intrinsic call");
+
+     
+    BB->insert(BB->begin(), IntrinsicCI);
+
+     
+     
+    if (!CI->use_empty()) {
+        CI->setOperand(0, ConstantInt::get(IntegerType::getInt32Ty(Context), 1));
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

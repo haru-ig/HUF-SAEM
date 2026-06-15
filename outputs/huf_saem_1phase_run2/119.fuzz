@@ -1,0 +1,70 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool checkConstraints(CallInst &CI) {
+     
+    if (CI.use_empty()) return false;
+
+     
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    Intrinsic::ID id = static_cast<IntrinsicInst*>(&CI)->getIntrinsicID();
+    if (!(id == Intrinsic::memcpy || id == Intrinsic::memmove || id == Intrinsic::memset || id == Intrinsic::atomic_load || id == Intrinsic::atomic_store)) return false;
+
+     
+    Value *length = nullptr;
+    if (id == Intrinsic::atomic_load || id == Intrinsic::atomic_store) {
+        length = CI.getArgOperand(1);
+    } else {
+        return false;  
+    }
+
+    APInt numBytesAP(64, 0);
+    if (length->getType()->isVectorTy()) {
+        ConstantInt *constLength = dyn_cast<ConstantInt>(length);
+        if (!constLength) return false;  
+        numBytesAP = constLength->getValue();
+    } else {
+        APInt elementSize(64, 1);  
+        numBytesAP = elementSize * length->getType()->getScalarSizeInBits() / 8;
+    }
+
+    if (numBytesAP.isNegative() || !numBytesAP.isMultipleOf(length->getType()->getScalarSizeInBits() / 8)) return false;  
+
+     
+
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::memset), {ConstantExpr::getPointerNull(Type::getInt8PtrTy(Context)), Builder.getInt8(0), Builder.getInt64(10)});
+
+     
+    if (checkConstraints(*CI)) {
+        std::cout << "Constraints satisfied." << std::endl;
+    } else {
+        std::cout << "Constraints not satisfied." << std::endl;
+    }
+
+    return 0;
+}

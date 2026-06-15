@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Args[1] = { ConstantInt::get(Type::getInt32Ty(Context), 0) };
+    CallBase *CI = CallBase::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), Intrinsic::memset, Args, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !II->isAnyMemory()) {
+        std::cerr << "Failed to create a valid AnyMemIntrinsic" << std::endl;
+        return 1;
+    }
+    
+     
+    if (!F->doesNotThrow() || F->isUnwindEnabled()) {
+        std::cerr << "Function marking failed" << std::endl;
+        return 1;
+    }
+    
+     
+    F->print(llvm::outs());
+    
+    return 0;
+}

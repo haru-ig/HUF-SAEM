@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", Mod.get());
+  BasicBlock *EntryBB = BasicBlock::Create(Context, "entry", F);
+  BasicBlock *LoopBB = BasicBlock::Create(Context, "loop", F);
+  BranchInst::Create(LoopBB, EntryBB);
+
+   
+  Value *Cond = ConstantInt::get(Type::getInt1Ty(Context), true);
+  ICmpInst *ICmp = new ICmpInst(*EntryBB, ICmpInst::FCMP_OLT, ConstantFP::get(Type::getFloatTy(Context), 0.0), ConstantFP::get(Type::getFloatTy(Context), 1.0));
+  LoopVectorizationPlan Plan;
+  if (!LoopUnrollPass(*EntryBB->getParent(), &Plan)) {
+    std::cerr << "Loop unrolling failed!" << std::endl;
+    return -1;
+  }
+
+   
+  unsigned int MaxAnalysisRecursionDepth = 10;
+  LoopInfo LI(*F);
+  for (auto &BB : *F) {
+    if (LI.isLoopHeader(&BB)) {
+      Loop *L = LI.getLoopFor(&BB);
+      if (L && L->isVectorized()) {
+        unsigned Count = 4;  
+        LoopUnrollResult ULO(Count, LoopUnrollCost::Exact);
+        if (!L->unroll<ULO>()) {
+          std::cerr << "Loop unrolling failed for some reason!" << std::endl;
+          return -1;
+        }
+      }
+    }
+  }
+
+   
+  Mod->print(outs(), nullptr);
+
+  return 0;
+}

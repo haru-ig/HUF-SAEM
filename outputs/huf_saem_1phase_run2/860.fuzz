@@ -1,0 +1,81 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *EntryBB = BasicBlock::Create(Context, "", Func);
+    IRBuilder<> Builder(EntryBB);
+
+     
+    FunctionCallee Callee = Intrinsic::getDeclaration(Module.get(), Intrinsic::any_mem_intrinsic);
+    CallBase *CI = CallInst::Create(Callee, {}, "", EntryBB);
+
+     
+    if (CI->use_empty()) {
+        return 1;
+    }
+
+     
+    if (!Func->doesNotThrow()) {
+        return 2;
+    }
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        return 3;
+    }
+
+     
+    auto *L = new LoopInfoWrapperPass();
+    L->doInitialization(*Func);
+    for (auto &BB : *Func) {
+        L->runOnFunction(BB.getParent());
+    }
+
+     
+    if (!isa<CallBase>(CI)) {
+        return 4;
+    }
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(1.0));
+    Value *FalseVal = CallInst::Create(Callee, {}, "", EntryBB);
+    Type *SelType = TrueVal->getType();
+    SelectInst *SI = new SelectInst(Builder.getInt1(true), TrueVal, FalseVal, "", EntryBB);
+
+     
+    if (!TrueVal || !FalseVal || !SelType) {
+        return 5;
+    }
+
+     
+    auto *E = new TreeEntry();
+    E->State = TreeEntry::SplitVectorize;
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 0));
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 1));
+
+     
+    if (E->State != TreeEntry::SplitVectorize || E->CombinedEntriesWithIndices.size() != 2) {
+        return 6;
+    }
+
+     
+     
+
+    std::cout << "Test passed successfully!" << std::endl;
+    return 0;
+}

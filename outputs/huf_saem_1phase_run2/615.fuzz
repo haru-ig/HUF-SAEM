@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *EntryBB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(EntryBB);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(nullptr, Callee, "", EntryBB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+    assert(!CI->doesNotThrow() && "CallInst must not be marked as nounwind");
+
+     
+    Value *CondVal = Builder.CreateICmpULT(Builder.getInt32(1), Builder.getInt32(2));
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", EntryBB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+    assert(SI->getTrueValue()->getType() == SI->getFalseValue()->getType() && "TrueVal and FalseVal must have same type");
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Builder.SetInsertPoint(BB);
+    BB->getInstList().push_back(SI);
+
+     
+     
+
+    return 0;
+}

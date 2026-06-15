@@ -1,0 +1,136 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    IRBuilder<> Builder(BB);
+    Value *CallInst = Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::abs), { Arg });
+
+     
+    CallInst->addUse(*F);
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    CallInst = Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), { Arg });
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CallInst)) {
+        if (II->getIntrinsicID() == Intrinsic::any_mem_intrinsic) {
+            int NumBytes = 0;  
+            if (NumBytes <= 0 || !isMultiple(NumBytes, sizeof(int))) {
+                 
+            }
+        }
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    auto *CI = dyn_cast<CallBase>(CallInst);
+    assert(CI && "Expected a CallBase instruction");
+
+     
+    auto *IRP = CI.getFunction()->arg_begin();
+    assert(IRP && "Expected a non-null IRPosition");
+
+     
+    TreeEntry E;
+    E.Scalars.push_back(Type::getInt32Ty(Context));
+    E.State = TreeEntry::Vectorize;
+    E.getOperand(1).back()->getType()->isVectorTy();
+
+     
+    DenseMap<TreeEntry*, int> MinBWs;
+    if (MinBWs.find(&E) != MinBWs.end()) {
+        assert(MinBWs[&E] > 0 && "Expected a valid bit width");
+    }
+
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() != nullptr && "Expected non-null preheader");
+    assert(L->getLoopLatch() != nullptr && "Expected non-null latch");
+
+     
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken());
+
+     
+    Value *CondVal = Builder.CreateICmpULT(Arg, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    Value *TrueVal = Arg;
+    Value *FalseVal = Builder.CreateCall("ctpop", { TrueVal });
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal);
+
+     
+    assert(SI->getType()->isIntegerTy() && "Expected an integer type");
+    assert(SI->getCondition()->getType() == SI->getType() && "Expected condition and select types to match");
+
+     
+    Value *X = Arg;
+    Value *FABS = Builder.CreateCall("fabs", { X });
+    Value *FNEG = Builder.CreateFNeg(FABS);
+
+     
+    KnownFPClass Known;
+    assert(Known == KnownFPClass() && "Expected uninitialized Known");
+
+     
+    unsigned Depth = 0;
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Expected recursion depth within limits");
+
+     
+    FPClassTest DemandedMask;
+    assert(DemandedMask.isValid() && "Expected a valid FPClassTest value");
+    adjustDemandedMaskFromFlags(DemandedMask,  );
+
+     
+    Value *I = FNEG;
+    assert(I != nullptr && I->getType()->isIntegerTy() && "Expected a valid integer or vector type");
+    assert(I->getType()->getScalarSizeInBits() == DemandedMask.bitWidth() && "Expected matching bit width");
+
+     
+    if (NLZ > 0) {
+         
+    }
+
+     
+    assert(TE->Idx != 0 && "Expected non-zero Idx");
+    assert(TE->UserTreeIndex.EdgeIdx != UINT_MAX && "Expected valid UserTreeIndex");
+
+    return 0;
+}

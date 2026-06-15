@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(FTy, F, {Arg}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        std::cerr << "Error: CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    CI->setDoesNotThrow();
+
+     
+    Intrinsic::ID ID = Intrinsic::memcpy;
+    CallInst *MI = CallInst::Create(Intrinsic::getDeclaration(&M, ID), {CI}, "", BB);
+
+    if (!dyn_cast<IntrinsicInst>(MI)) {
+        std::cerr << "Error: The instruction is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "Test program generated successfully!" << std::endl;
+    return 0;
+}

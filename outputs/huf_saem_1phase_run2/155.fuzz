@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context), Type::getInt64Ty(Context), Constant::getNullValue(Type::getInt8Ty(Context))}, "", BB);
+    CI->setDoesNotThrow();  
+    
+     
+    F->addAttribute(0, Attribute::NoUnwind);  
+    BB->push_back(CI);
+    
+     
+    M.print(outs(), nullptr);
+    
+    return 0;
+}

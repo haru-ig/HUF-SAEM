@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+    CI->setTailCall();  
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    BinaryOperator *BO = BinaryOperator::CreateAdd(CI, CI, "", BB);
+    ReturnInst::Create(Context, BO, BB);
+
+     
+    legacy::PassManager PM;
+    PM.add(createCFGSimplificationPass());
+    PM.run(M);
+
+    std::cout << "Module after simplification:\n" << M << "\n";
+
+    return 0;
+}

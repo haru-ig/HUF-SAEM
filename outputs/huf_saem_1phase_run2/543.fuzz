@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+#include <cassert>
+
+using namespace std;
+
+ 
+void manipulateCFG(vector<vector<int>> &graph, int node) {
+    assert(!graph.empty() && "Graph should not be empty");
+    assert(node >= 0 && node < graph.size() && "Node should be within the bounds of the graph");
+
+     
+    if (graph[node].size() == 1) {
+         
+        int next_node = graph[node][0];
+        cout << "Adding unconditional jump from node " << node << " to node " << next_node << endl;
+    } else if (graph[node].size() > 1) {
+         
+        int true_branch = graph[node][0];
+        int false_branch = graph[node][1];
+        cout << "Adding conditional jump from node " << node << " to nodes " << true_branch << " and " << false_branch << endl;
+    } else {
+         
+        cout << "Node " << node << " is a terminal block." << endl;
+    }
+}
+
+int main() {
+    vector<vector<int>> graph = {{1}, {2}, {3}, {}, {}};
+
+     
+    for (size_t i = 0; i < graph.size(); ++i) {
+        manipulateCFG(graph, i);
+    }
+
+    return 0;
+}

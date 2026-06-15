@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "exampleFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallBase *CI = CallBase::Create(Intrinsic::memset, {Value::get(Type::getInt8PtrTy(Context), 0, false)}, {}, "", BB);
+
+     
+    CI->addUse(...);  
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+        }
+    }
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), 1);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(1.0));
+    Value *FalseVal = TrueVal->clone();  
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (SelectInst *Sel = dyn_cast<SelectInst>(SI)) {
+        Value *CTPop = Intrinsic::ctpop(TrueVal);
+        Sel->setOperand(2, CTPop);
+    }
+
+     
+    M.print(outs(), false);
+
+    return 0;
+}

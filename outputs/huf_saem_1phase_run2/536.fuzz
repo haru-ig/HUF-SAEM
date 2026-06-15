@@ -1,0 +1,79 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/Casting.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+     
+    Function *F = createFunction();  
+    CallInst *CI = createCallInst(F);  
+
+    if (!CI->use_empty() || !F->hasFnAttribute(Attribute::NoUnwind)) {
+        std::cerr << "Constraints not met!" << std::endl;
+        return 1;
+    }
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (!II->isAnyMemIntrinsic()) {
+            std::cerr << "Not an AnyMemIntrinsic!" << std::endl;
+            return 1;
+        }
+         
+    }
+
+     
+    for (auto &arg : F->args()) {
+        if (arg.hasReturnedAttr()) {
+            std::cout << "Function has a returned argument." << std::endl;
+        }
+    }
+
+     
+    if (!isa<CallBase>(CI)) {
+        std::cerr << "Context instruction is not a CallBase!" << std::endl;
+        return 1;
+    }
+
+     
+    auto *L = getLoop();  
+    if (!L || !L->getLoopPreheader() || !L->getLoopLatch()) {
+        std::cerr << "Invalid loop structure!" << std::endl;
+        return 1;
+    }
+
+    if (!L->isSafeToClone()) {
+        std::cerr << "Loop is not safe to clone!" << std::endl;
+        return 1;
+    }
+
+     
+    LoopUnrollInfo ULO;
+    if (ULO.Count <= 0) {
+        std::cerr << "Unroll count must be greater than zero!" << std::endl;
+        return 1;
+    }
+
+     
+    Value *I = nullptr;  
+    if (!I || !isIntegerType(I->getType())) {
+        std::cerr << "Invalid instruction type!" << std::endl;
+        return 1;
+    }
+
+     
+    uint64_t NLZ = getUnusedHighBits(CI);
+    if (NLZ > 0) {
+         
+    }
+
+    std::cout << "All constraints met!" << std::endl;
+    return 0;
+}

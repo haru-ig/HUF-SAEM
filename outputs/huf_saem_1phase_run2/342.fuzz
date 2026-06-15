@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt32Ty(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+
+     
+    Intrinsic::ID IntrId = CI->getIntrinsicID();
+    if (IntrId == Intrinsic::memset || IntrId == Intrinsic::memcpy) {
+        std::cout << "CI is a valid memory intrinsic" << std::endl;
+    } else {
+        std::cout << "CI is not a recognized memory intrinsic" << std::endl;
+    }
+
+     
+    if (IntrId == Intrinsic::atomic_load || IntrId == Intrinsic::atomic_store) {
+        Value *Length = ConstantInt::get(Type::getInt64Ty(Context), 0);
+        CI->setArgOperand(2, Length);  
+    }
+
+     
+    if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+        std::cout << "CI is a CallBase" << std::endl;
+    } else {
+        std::cout << "CI is not a CallBase" << std::endl;
+    }
+
+     
+
+    return 0;
+}

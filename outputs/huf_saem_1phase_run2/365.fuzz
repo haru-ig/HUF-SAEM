@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createCallInst(Function &F, Module &M) {
+     
+    Intrinsic::ID intrinsicType = Intrinsic::pow;
+    std::vector<Value *> args;
+    args.push_back(ConstantFP::get(Type::getFloatTy(M.getContext()), 2.0));
+    args.push_back(ConstantFP::get(Type::getFloatTy(M.getContext()), 3.0));
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, intrinsicType), args, "", F.getEntryBlock().getFirstInsertionPt());
+
+     
+    CI->addUse(F.arg_begin());
+}
+
+ 
+bool checkCallInstConstraints(CallInst &CI) {
+    if (CI.use_empty()) return false;  
+
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow() || func->isNounwind()) return false;  
+
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    if (!II || !II->isAnyMemIntrinsic()) return false;  
+
+     
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function &F = *Function::Create(FTy, Function::ExternalLinkage, "test_function", M);
+
+     
+    createCallInst(F, M);
+
+     
+    for (auto &BB : F) {
+        for (auto &I : BB) {
+            if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+                if (checkCallInstConstraints(*CI)) {
+                    errs() << "All constraints satisfied!\n";
+                    return 0;
+                }
+            }
+        }
+    }
+
+    errs() << "Not all constraints satisfied.\n";
+    return 1;
+}

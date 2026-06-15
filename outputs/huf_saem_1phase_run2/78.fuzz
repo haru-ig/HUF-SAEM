@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setReturnValueFlag(true);
+
+     
+    Intrinsic::ID IID = Intrinsic::not_an_intrinsic;  
+    std::vector<Value *> Args;
+    Value *CallVal = CallInst::Create(Intrinsic::getDeclaration(&Mod, IID), Args, "", BB);
+
+     
+    CallVal->addUse(*F);
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (verifyModule(Mod, &outs())) {
+        errs() << "Verification failed!\n";
+        return 1;
+    }
+
+    std::cout << "Test passed successfully.\n";
+    return 0;
+}

@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "func", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(FuncTy, FunctionCtor, {Arg});
+    BB->insert(BB->end(), CI);
+    
+     
+    Use &U = F->args().begin();
+    U.set();
+    
+     
+    F->setDoesNotThrow(false);
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    
+     
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "Expected a memory intrinsic");
+    
+     
+    if (!CI->use_empty()) {
+        Value *SimplifiedValue = simplifyCall(CI);
+        if (SimplifiedValue) {
+            CI->replaceAllUsesWith(SimplifiedValue);
+        }
+    }
+    
+     
+    Mod.print(outs(), nullptr);
+    
+    return 0;
+}

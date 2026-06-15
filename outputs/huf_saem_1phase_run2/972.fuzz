@@ -1,0 +1,90 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyIndvar.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {ConstantExpr::getBitCast(F->arg_begin(), Type::getInt8PtrTy(Context))}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID IID = dyn_cast<IntrinsicInst>(CI)->getIntrinsicID();
+        assert(IID == Intrinsic::memcpy && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+    }
+
+     
+    if (auto *CB = dyn_cast<CallBase>(CI)) {
+        IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+        assert(!Pos.getAnchor().isNull() && "Function associated with the IRPosition must be non-null");
+    }
+
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() != nullptr && "Loop must have a valid preheader block");
+    assert(L->getLoopLatch() != nullptr && "Loop must have a valid latch block");
+
+     
+    assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop must be safe to clone and header's address must not be taken");
+
+     
+    LoopUnrollParams ULO;
+    ULO.Count = 2;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Value *I = CI;  
+    assert(I != nullptr && "Instruction *I must be non-null");
+    Type *Ty = I->getType();
+    unsigned BitWidth = Ty->getScalarSizeInBits();
+    assert((BitWidth == 32 || BitWidth == 64) && "Type of instruction I must have a scalar size in bits equal to the bit width of DemandedMask and Known");
+
+     
+    unsigned Depth = 0;  
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    FPClassTest DemandedMask;  
+    assert(DemandedMask.getBitWidth() == BitWidth && "DemandedMask and Known must have the same bit width");
+
+     
+    unsigned NLZ = 0;  
+    assert(NLZ > 0 && "There should be no unused high bits in the operation");
+
+     
+    TreeEntry *TE = nullptr;  
+    assert(TE->Idx != 0 && "TreeEntry must have a non-zero Idx");
+
+     
+    assert(TE->UserTreeIndex.EdgeIdx != UINT_MAX && "UserTreeIndex should not lead to an immediate return of std::nullopt");
+
+     
+    unsigned SliceSize = 0;  
+    unsigned Part = 0;  
+    assert(MaskBase != 0 && "MaskBase must be correctly computed and used in further logic");
+
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

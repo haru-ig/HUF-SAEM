@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 5);
+    Argument *A1 = new Argument(Type::getInt32Ty(Context), "arg1", BB);
+    A1->addIncoming(Arg1, BB);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, F, { A1 }, "", BB);
+
+     
+    CI->addUse(A1);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = CallInst::Create(Intrinsic::any_mem_intrinsic, { CI }, "", BB);
+
+     
+    if (auto *AI = dyn_cast<AtomicRMWInst>(II)) {
+        AI->setOrdering(AtomicRMWInst::Unordered);
+    } else if (auto *SI = dyn_cast<StoreInst>(II)) {
+        SI->setAlignment(16);  
+    }
+
+     
+    M.print(errs());
+
+    return 0;
+}

@@ -1,0 +1,70 @@
+[TRACE] Validating outputs/phase1_smoke_test/0.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/0.fuzz failed validation with error message: outputs/phase1_smoke_test/0.fuzz: In lambda function:
+outputs/phase1_smoke_test/0.fuzz:5:16: error: ‘someFunction’ was not declared in this scope
+    5 |         return someFunction(x);
+      |                ^~~~~~~~~~~~
+outputs/phase1_smoke_test/0.fuzz: In function ‘int main()’:
+outputs/phase1_smoke_test/0.fuzz:12:64: error: expected ‘}’ at end of input
+   12 |     std::cout << "Result of the call: " << result << std::endl;
+      |                                                                ^
+outputs/phase1_smoke_test/0.fuzz:2:12: note: to match this ‘{’
+    2 | int main() {
+      |            ^
+
+[TRACE] Validating outputs/phase1_smoke_test/1.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/1.fuzz failed validation with error message: outputs/phase1_smoke_test/1.fuzz: In function ‘int main()’:
+outputs/phase1_smoke_test/1.fuzz:8:67: error: expected ‘}’ at end of input
+    8 |     std::cout << "Result after adding 5: " << result << std::endl;
+      |                                                                   ^
+outputs/phase1_smoke_test/1.fuzz:2:12: note: to match this ‘{’
+    2 | int main() {
+      |            ^
+
+[TRACE] Validating outputs/phase1_smoke_test/2.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/2.fuzz is safe
+[TRACE] Validating outputs/phase1_smoke_test/3.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/3.fuzz failed validation with error message: outputs/phase1_smoke_test/3.fuzz: In function ‘int main()’:
+outputs/phase1_smoke_test/3.fuzz:4:9: warning: empty parentheses were disambiguated as a function declaration [-Wvexing-parse]
+    4 | int main() {
+      |         ^~
+outputs/phase1_smoke_test/3.fuzz:4:9: note: remove parentheses to default-initialize a variable
+    4 | int main() {
+      |         ^~
+      |         --
+outputs/phase1_smoke_test/3.fuzz:4:9: note: or replace parentheses with braces to value-initialize a variable
+outputs/phase1_smoke_test/3.fuzz:4:12: error: a function-definition is not allowed here before ‘{’ token
+    4 | int main() {
+      |            ^
+outputs/phase1_smoke_test/3.fuzz:11:2: error: expected ‘}’ at end of input
+   11 | }
+      |  ^
+outputs/phase1_smoke_test/3.fuzz:2:12: note: to match this ‘{’
+    2 | int main() {
+      |            ^
+
+[TRACE] Validating outputs/phase1_smoke_test/4.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/4.fuzz is safe
+[TRACE] Validating outputs/phase1_smoke_test/5.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/5.fuzz failed validation with error message: outputs/phase1_smoke_test/5.fuzz: In function ‘int main()’:
+outputs/phase1_smoke_test/5.fuzz:4:9: warning: empty parentheses were disambiguated as a function declaration [-Wvexing-parse]
+    4 | int main() {
+      |         ^~
+outputs/phase1_smoke_test/5.fuzz:4:9: note: remove parentheses to default-initialize a variable
+    4 | int main() {
+      |         ^~
+      |         --
+outputs/phase1_smoke_test/5.fuzz:4:9: note: or replace parentheses with braces to value-initialize a variable
+outputs/phase1_smoke_test/5.fuzz:4:12: error: a function-definition is not allowed here before ‘{’ token
+    4 | int main() {
+      |            ^
+outputs/phase1_smoke_test/5.fuzz:11:2: error: expected ‘}’ at end of input
+   11 | }
+      |  ^
+outputs/phase1_smoke_test/5.fuzz:2:12: note: to match this ‘{’
+    2 | int main() {
+      |            ^
+
+[TRACE] Validating outputs/phase1_smoke_test/6.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/6.fuzz is safe
+[TRACE] Validating outputs/phase1_smoke_test/7.fuzz ...
+[VERBOSE] outputs/phase1_smoke_test/7.fuzz is safe

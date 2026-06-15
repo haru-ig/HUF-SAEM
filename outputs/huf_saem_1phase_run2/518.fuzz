@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        assert(isa<AnyMemIntrinsic>(CI) && "CI must be an AnyMemIntrinsic");
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    if (CB) {
+        IRPosition Pos = IRPosition::callsite_argument(CB);
+        assert(!Pos.isNull() && "IRPosition must be valid");
+         
+    }
+
+     
+     
+
+    std::cout << "Test case generation completed." << std::endl;
+    return 0;
+}

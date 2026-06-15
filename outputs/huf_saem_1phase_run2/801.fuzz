@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *MemsetArgs[] = {
+        ConstantInt::get(Type::getInt64Ty(Context), 0),
+        ConstantInt::get(Type::getInt32Ty(Context), 1),
+        ConstantInt::get(Type::getInt64Ty(Context), 4)
+    };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), MemsetArgs, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an AnyMemIntrinsic." << std::endl;
+    }
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use, triggering simplification attempt." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses, cannot trigger simplification." << std::endl;
+    }
+
+    return 0;
+}

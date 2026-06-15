@@ -1,0 +1,92 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::fabs), {ConstantFP::get(Type::getFloatTy(Context), 1.0)}, "", BB);
+
+     
+    Use &U = F->arg_begin();
+    CallInst *UserCI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::fneg), {CI}, "", BB);
+    U.set(UserCI);
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::fabs) {
+            errs() << "Test passed: CI is a valid intrinsic call.\n";
+        } else {
+            errs() << "Test failed: CI is not an AnyMemIntrinsic as expected.\n";
+        }
+    } else {
+        errs() << "Test failed: CI is not an intrinsic call.\n";
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        errs() << "Test passed: CI is a CallBase instance.\n";
+    } else {
+        errs() << "Test failed: CI is not a CallBase instance.\n";
+    }
+
+     
+    if (CI->getFunction() == F) {
+        errs() << "Test passed: CI is contained in the function.\n";
+    } else {
+        errs() << "Test failed: CI is not contained in the function.\n";
+    }
+
+     
+    Loop *L = nullptr;  
+    if (L->getLoopPreheader() && L->getLoopLatch()) {
+        errs() << "Test passed: Loop has valid preheader and latch blocks.\n";
+    } else {
+        errs() << "Test failed: Loop does not have valid preheader and latch blocks.\n";
+    }
+
+     
+    if (L->isSafeToClone()) {
+        errs() << "Test passed: Loop is safe to clone.\n";
+    } else {
+        errs() << "Test failed: Loop is not safe to clone.\n";
+    }
+
+     
+    if (!L->getHeader()->hasAddressTaken()) {
+        errs() << "Test passed: Loop header's address is not taken.\n";
+    } else {
+        errs() << "Test failed: Loop header's address is taken.\n";
+    }
+
+     
+    UnrollLoopOptions ULO;
+    if (ULO.Count > 0) {
+        errs() << "Test passed: Unroll count is greater than zero.\n";
+    } else {
+        errs() << "Test failed: Unroll count is not greater than zero.\n";
+    }
+
+    return 0;
+}

@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+from llvm import *
+import llvm.core as core
+
+def create_module():
+    m = Module(None)
+    fnty = FunctionType(VoidType(), [], False)
+    fn = Function(m, fnty, "test_function")
+    
+    # BasicBlock and Instruction setup
+    bb = BasicBlock("entry", fn)
+    builder = Builder.to_module(bb, m)
+    
+    ci = CallInst.create_call(fn, [], "", bb)
+    
+    # Adding attributes to ensure specific properties
+    fn.add_attr("nounwind")
+    ci.set_doesnotthrow(False)
+    
+    return m
+
+def main():
+    m = create_module()
+    print(str(m))
+
+if __name__ == "__main__":
+    main()

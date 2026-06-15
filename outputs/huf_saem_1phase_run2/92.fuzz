@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/InstrTypes.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "func", &M);
+    Argument* A = F->arg_begin();
+    A->addAttr(Attribute::Returned);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst* CI = Builder.CreateCall(&Intrinsic::getDeclaration(M, Intrinsic::foo), {}, "call");
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    CallInst* CI2 = Builder.CreateCall(&Intrinsic::getDeclaration(M, Intrinsic::bar), {A}, "call");
+    assert(dyn_cast<IntrinsicInst>(CI2) && "The call must be an intrinsic call.");
+    assert(isa<AnyMemIntrinsic>(CI2) && "The intrinsic must be a memory intrinsic.");
+
+     
+    if (!CI->use_empty()) {
+        CI->simplifyCall();
+    }
+
+     
+     
+
+    return 0;
+}

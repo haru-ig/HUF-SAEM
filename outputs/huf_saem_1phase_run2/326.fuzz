@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), Function::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+            int NumBytes = 0;  
+            if (NumBytes <= 0 || !isMultiple(NumBytes, F->arg_begin()->getType()->getScalarSizeInBits())) {
+                 
+                F->addParamAttr(0, Attribute::Returned);
+
+                 
+                auto *CB = dyn_cast<CallBase>(CI);
+                if (CB) {
+                     
+                     
+                }
+            }
+        }
+    }
+
+     
+    std::cout << "Generated Module:\n" << *Mod << "\n";
+
+    return 0;
+}

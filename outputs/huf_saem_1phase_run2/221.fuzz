@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {Constant::getNullValue(Type::getInt8PtrTy(Context)), ConstantInt::get(Type::getInt8Ty(Context), 0), ConstantInt::get(Type::getInt64Ty(Context), 10)}, "", BB);
+    CI->addUse(...);  
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Instruction *CtxI = CI;
+
+     
+    if (!CI->use_empty()) {
+        simplifyCall(CI);
+    }
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        if (!CI->use_empty()) {
+            auto *AMI = cast<AnyMemIntrinsic>(CI);
+            int NumBytes = AMI->getNumElements();
+            if (NumBytes <= 0 || NumBytes % 8 != 0) {  
+                 
+            }
+        }
+    }
+
+     
+    ModulePassManager MPM;
+    MPM.addPass(PassBuilder().buildSimplifyCFGPass());
+    MPM.run(M, PassBuilder::EP_ModuleToFunction);
+
+    return 0;
+}

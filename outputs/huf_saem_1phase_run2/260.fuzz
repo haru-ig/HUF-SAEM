@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+int main() {
+    llvm::LLVMContext Context;
+    std::unique_ptr<llvm::Module> Module = std::make_unique<llvm::Module>("test", Context);
+    llvm::Function *Func = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(Context), {}, false), llvm::GlobalValue::ExternalLinkage, "func", Module.get());
+    Func->addFnAttr("nounwind");
+
+     
+    llvm::BasicBlock *BB = llvm::BasicBlock::Create(Context, "", Func);
+
+     
+    llvm::Value *Arg1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), 0);
+    llvm::Value *Arg2 = llvm::ConstantInt::get(llvm::Type::getInt64Ty(Context), 0);
+    llvm::CallInst *CI = llvm::CallInst::Create(llvm::Intrinsic::getDeclaration(Module.get(), llvm::Intrinsic::memset, {}), {Arg1, Arg2}, "", BB);
+
+     
+    CI->addUse(Func->arg_begin());
+
+     
+    if (llvm::dyn_cast<llvm::IntrinsicInst>(CI)) {
+        std::cout << "The CallInst is an intrinsic." << std::endl;
+    } else {
+        std::cout << "The CallInst is not an intrinsic." << std::endl;
+    }
+
+    return 0;
+}

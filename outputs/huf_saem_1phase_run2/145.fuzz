@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), Function::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantExpr::getBitCast(ConstantInt::get(Type::getInt32Ty(Context), 0), PointerType::get(F->getType(), 0));
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+    CI->setDoesNotThrow();  
+    CI->takeName(nullptr);
+
+     
+    BB->push_back(CI);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+
+    std::cout << "Module before any transformation: " << *Mod << std::endl;
+
+    return 0;
+}

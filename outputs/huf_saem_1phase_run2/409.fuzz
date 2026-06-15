@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+using namespace llvm;
+
+ 
+void createCallInst(Function &F) {
+     
+    Argument *Arg = F.addArg(Type::getInt32Ty(F.getContext()));
+
+     
+    CallInst *CI = CallInst::Create(..., ..., ..., ...);
+    
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    if (F.doesNotThrow() && !CI->doesNotThrow()) {
+        std::cout << "Function and CallInst satisfy nounwind constraints." << std::endl;
+    } else {
+        std::cout << "Function or CallInst does not satisfy nounwind constraints." << std::endl;
+    }
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+        if (auto *AII = dyn_cast<AnyMemIntrinsic>(CI)) {
+             
+            if (AII->getNumBytes() <= 0) {
+                std::cout << "CallInst is an AnyMemIntrinsic with non-positive length." << std::endl;
+            }
+        }
+    } else {
+        std::cout << "CallInst is not an intrinsic call." << std::endl;
+    }
+}
+
+int main() {
+     
+    Function *F = new Function("myFunction", ...);
+    
+     
+    createCallInst(*F);
+
+    delete F;
+    return 0;
+}

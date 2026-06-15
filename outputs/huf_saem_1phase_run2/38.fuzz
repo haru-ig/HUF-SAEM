@@ -1,0 +1,77 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", &module);
+    func->addArgAttr(1, Attribute::Returned);
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+    IRBuilder<> builder(bb);
+
+     
+    Value *arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, Intrinsic::memset), {arg}, "", bb);
+
+     
+    CI->addUse(func->getArg(0));
+
+     
+    func->setDoesNotThrow();
+    func->setUnwindBehavior(Function::UnwindNone);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+            Value *numBytes = CI->getArgOperand(2);
+            if (!numBytes || !isa<ConstantInt>(numBytes) || cast<ConstantInt>(numBytes)->isZero()) {
+                 
+                int64_t value = cast<ConstantInt>(numBytes)->getSExtValue();
+                if (value <= 0 || value % getTypeStoreSize(CI->getType()) != 0) {
+                     
+                }
+            }
+        }
+    }
+
+     
+    if (auto *CB = dyn_cast<CallBase>(CI)) {
+         
+    }
+
+     
+    if (!CI->use_empty()) {
+        Value *simplifiedValue = CI;
+        if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+            simplifiedValue = simplifyCall(CI);
+        }
+        if (simplifiedValue != CI) {
+            CI->replaceAllUsesWith(simplifiedValue);
+        }
+    }
+
+     
+    module.print(outs(), nullptr);
+
+    return 0;
+}

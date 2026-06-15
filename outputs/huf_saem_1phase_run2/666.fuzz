@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+    FunctionType* FuncType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function* F = Function::Create(FuncType, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Callee = ConstantInt::get(Type::getInt64Ty(Context), 0);
+    CallBase* CI = CallInst::Create(Callee, {}, "", BB);
+    
+     
+    BB->push_back(CI);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call.");
+    assert(dyn_cast<AnyMemIntrinsic>(II) && "CallInst must be an AnyMemIntrinsic.");
+    
+     
+    CallBase* CtxCI = dyn_cast<CallBase>(BB->front().getTerminator());
+    assert(CtxCI && "Context instruction must be a CallBase.");
+    
+     
+    
+    return 0;
+}

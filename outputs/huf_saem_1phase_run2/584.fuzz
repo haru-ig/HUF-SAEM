@@ -1,0 +1,68 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyIndVar.h>
+
+using namespace llvm;
+
+std::optional<Instruction *> simplifySelectInst(SelectInst &SI) {
+  Value *CondVal = SI.getCondition();
+  Value *TrueVal = SI.getTrueValue();
+  Value *FalseVal = SI.getFalseValue();
+
+   
+  if (!CondVal || !TrueVal || !FalseVal) {
+    return std::nullopt;
+  }
+
+  Type *CondType = CondVal->getType();
+  Type *TrueType = TrueVal->getType();
+  Type *FalseType = FalseVal->getType();
+
+   
+  if (CondType != TrueType || CondType != FalseType) {
+    return std::nullopt;
+  }
+
+   
+  if (isa<ICmpInst>(CondVal) && isa<FPExtInst>(TrueVal) && isa<FPTruncInst>(FalseVal)) {
+     
+    Value *AbsValue = BinaryOperator::CreateFNeg(BinaryOperator::CreateFABS(TrueVal), "", &SI);
+    SI.replaceAllUsesWith(AbsValue);
+    return &SI;
+  }
+
+   
+  return std::nullopt;
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("test_module", Context);
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  IRBuilder<> Builder(BB);
+
+   
+  Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+  Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+  Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+  SelectInst *SI = Builder.CreateSelect(CondVal, TrueVal, FalseVal, "", &SI);
+
+   
+  if (auto Simplified = simplifySelectInst(*SI)) {
+    std::cout << "Simplified instruction successfully." << std::endl;
+  } else {
+    std::cout << "Failed to simplify instruction." << std::endl;
+  }
+
+  return 0;
+}

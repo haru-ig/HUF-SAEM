@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createTestFunction(LLVMContext &C) {
+    Module M("test", C);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(C), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(C, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(C), Type::getInt8PtrTy(C), ConstantInt::get(Type::getInt64Ty(C), 10)}, "", BB);
+    CI->setDoesNotThrow();  
+
+    return F;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("test", Ctx);
+    Function *F = createTestFunction(Ctx);
+
+     
+    if (!F->use_empty()) {
+        errs() << "Function has at least one use.\n";
+    } else {
+        errs() << "Function does not have any uses.\n";
+    }
+
+     
+    for (auto &BB : *F) {
+        for (auto &I : BB) {
+            if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+                if (!CI->getFunction()->isNounwind() || CI->doesNotThrow()) {
+                    errs() << "Function is not marked as nounwind or call instruction throws.\n";
+                } else {
+                    errs() << "Function is marked as nounwind and call instruction does not throw.\n";
+                }
+            }
+        }
+    }
+
+    return 0;
+}

@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+void exampleFunction(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), Type::getInt32Ty(Ctx), false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "example", M);
+  F->addParamAttr(0, Attribute::Returned);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+   
+  Value *Vec = UndefValue::get(VectorType::get(Type::getInt32Ty(Ctx), 4));
+  Vec = InsertElementInst::Create(Vec, ConstantInt::get(Type::getInt32Ty(Ctx), 0), ConstantInt::get(Type::getInt32Ty(Ctx), 0), "", BB);
+
+   
+  CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), Vec, nullptr, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+  assert(F->doesNotThrow() && "Function must be marked as nounwind");
+  assert(isa<IntrinsicInst>(CI) && isa<AnyMemIntrinsic>(CI) && "CallInst must be an intrinsic call and a memory intrinsic");
+
+   
+  if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+    if (II->getIntrinsicID() == Intrinsic::memset) {
+      uint64_t NumBytes = 0;  
+      assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes, getScalarTypeByteWidth(Vec->getType())) && "Length must be non-positive or not a multiple of the element size");
+    }
+  }
+
+   
+}

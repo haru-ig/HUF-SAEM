@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&Mod, Intrinsic::sqrt), {}, "", BB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        auto *II = dyn_cast<IntrinsicInst>(CI);
+        assert(II->getIntrinsicID() == Intrinsic::sqrt && "CallInst must be an intrinsic call.");
+    } else {
+        errs() << "The CallInst is not an intrinsic.\n";
+        return 1;
+    }
+
+     
+    Mod.print(errs(), nullptr);
+
+    return 0;
+}

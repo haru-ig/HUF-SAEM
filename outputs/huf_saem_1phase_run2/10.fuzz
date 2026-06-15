@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *TheFunction = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", TheFunction);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::anymemintrinsic, {}, "", BB);
+
+     
+    CI->addUse(Type::getVoidTy(Context));
+
+     
+    TheFunction->setDoesNotThrow();
+    TheFunction->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

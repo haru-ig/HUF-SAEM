@@ -1,0 +1,79 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI;
+    if (true) {  
+        Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+        CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+        
+         
+        if (!CI->use_empty() && !F->doesNotThrow()) {
+             
+            F->setDoesNotThrow();
+            
+             
+            CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymem_intrinsic), {Arg}, "", BB);
+            
+             
+            if (AnyMemIntrinsic *AII = dyn_cast<AnyMemIntrinsic>(CI)) {
+                int NumBytes = AII->getNumElements();
+                if (NumBytes <= 0) {  
+                     
+                    Function *Func = CI->getFunction();
+                    if (Func && Func->isNounwind()) {
+                         
+                        
+                         
+                        if (AII->isAtomic() && AII->isUnordered()) {
+                             
+                            Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+                            Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 2);
+                            SelectInst *SI = SelectInst::Create(CI->compare(), TrueVal, FalseVal, "", BB);
+                            
+                             
+                            if (SI && SI->getType()->isIntegerTy() && SI->getTrueValue()->getType()->isIntegerTy() && SI->getFalseValue()->getType()->isIntegerTy()) {
+                                 
+                                
+                                 
+                                if (ICmpInst *Cmp = dyn_cast<ICmpInst>(SI->getCondition())) {
+                                    if (Cmp->getPredicate() == ICmpInst::ICMP_ULT && Cmp->getOperand(0) == TrueVal && Cmp->getOperand(1)->getType()->isIntegerTy()) {
+                                         
+                                        if (BinaryOperator *CtPop = dyn_cast<BinaryOperator>(SI->getFalseValue())) {
+                                            if (CtPop->getOpcode() == Instruction::CTPop && CtPop->getOperand(0) == TrueVal) {
+                                                 
+                                                
+                                                 
+                                                 
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return 0;
+}

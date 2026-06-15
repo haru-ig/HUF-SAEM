@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("myModule", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testFunction", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantExpr::getRetain({});
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    CI->setDoesNotThrow();
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, CI, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(isa<IntegerType>(TrueVal->getType()) && "TrueVal must be an integer type");
+    assert(isa<IntegerType>(FalseVal->getType()) && "FalseVal must be an integer type");
+    assert(CondVal->getType()->isIntegerTy() && "CondVal must be of integer type");
+
+     
+    legacy::PassManager Passes;
+    Passes.add(createPrintModulePass([](const Module &M) { errs() << M; }));
+    Passes.run(M);
+
+    return 0;
+}

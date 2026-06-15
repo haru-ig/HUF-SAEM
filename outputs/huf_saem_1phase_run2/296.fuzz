@@ -1,0 +1,136 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/KnownBits.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Scalar/LoopUnrollPass.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/IR/CFG.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool satisfiesConstraints(CallInst &CI, Function &F) {
+     
+    if (CI.use_empty()) return false;
+
+     
+    if (!F.doesNotThrow()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    auto *II = dyn_cast<IntrinsicInst>(&CI);
+    if (!II->isAnyMemIntrinsic()) return false;
+
+     
+    if (II->getNumOperands() > 0) {
+        Value *Op = II->getOperand(0);
+        if (Op->getType()->isVectorTy()) {
+            uint64_t NumBytes = cast<FixedVectorType>(Op->getType())->getNumElements();
+            if (NumBytes <= 0 || NumBytes % Op->getType()->getScalarSizeInBits() != 0) return false;
+        }
+    }
+
+     
+    Function::arg_iterator AI = F.arg_begin();
+    for (; AI != F.arg_end(); ++AI) {
+        if (AI->hasRetAttr()) break;
+    }
+    if (AI == F.arg_end()) return false;
+
+     
+    if (!isa<CallBase>(CI)) return false;
+
+     
+    auto *CB = cast<CallBase>(&CI);
+    auto IP = IRPosition::callsite_argument(CB, 0);
+    if (IP.getPositionKind() != IRP_CALL_SITE_ARGUMENT) return false;
+
+     
+    auto *FPtr = IP.getAnchorScope();
+    if (!FPtr) return false;
+
+     
+    TreeEntry *E = nullptr;  
+    if (E->Scalars.size() == 0) return false;
+
+     
+    DenseMap<TreeEntry *, Type *> MinBWs;
+    auto MI = MinBWs.find(E);
+    if (MI != MinBWs.end() && !MI->second->isIntegerTy()) return false;
+
+     
+    if (E->State != TreeEntry::SplitVectorize || E->CombinedEntriesWithIndices.size() != 2) return false;
+
+     
+    Value *CondVal = nullptr, *TrueVal = nullptr, *FalseVal = nullptr;
+    Type *SelType = nullptr;
+    if (!CondVal || !TrueVal || !FalseVal || !SelType) return false;
+
+     
+    if (isa<ConstantInt>(CondVal) && CondVal->getBitWidth() == 1 && TrueVal->getType()->isIntegerTy()) {
+        Value *fabsX = nullptr;  
+        auto *CI = dyn_cast<CallInst>(fabsX);
+        if (!CI || CI->use_empty()) return false;
+    }
+
+     
+    Type *CondType = CondVal->getType();
+    if (!(CondType->isIntegerTy() || (CondType->isVectorTy() && CondType == SelType))) return false;
+
+     
+    Value *Op = E->getOperand(1)->back();
+    if (Op->getType()->isVectorTy()) return false;
+
+     
+    Type *ScalarTy = nullptr;  
+    if (!isValidElementType(ScalarTy)) return false;
+
+     
+    if (MinBWs.find(E) != MinBWs.end() && !MinBWs[E]->isIntegerTy()) return false;
+
+     
+    Instruction *I = nullptr;  
+    if (!isa<FNegInst>(I)) return false;
+    auto *fabsX = dyn_cast<CallInst>(I->getOperand(0));
+    if (!fabsX || fabsX->use_empty()) return false;
+
+     
+    KnownBits Known;
+    if (Known.count() != 0) return false;
+
+     
+    if (!isFPClassTest(DemandedMask)) return false;
+
+     
+    DenseMap<BasicBlock *, Schedule *> BlocksSchedules;
+    if (BlocksSchedules.empty()) return false;
+
+     
+    if (!VectorizableTree.contains(E)) return false;
+
+     
+    Instruction *ReductionRoot = nullptr;  
+    if (!ReductionRoot->getParent()) return false;
+
+     
+    Loop *L = nullptr;  
+    UnrollOption ULO;
+    if (!L->getLoopPreheader() || !L->getLoopLatch() || ULO.Count <= 0) return false;
+
+     
+    if (L->getHeader()->hasAddressTaken()) return false;
+
+     
+    TreeEntry *TE = nullptr;  
+    if (TE->Idx == 0 || TE->UserTreeIndex == UINT_MAX) return false;
+
+     
+    Value *VL = nullptr, *Mask = nullptr;  
+    uint64_t SliceSize = 0, Part = 0;
+    if (!VL || !Mask || SliceSize == 0 || Part == 0) return false;
+
+    return true;
+}

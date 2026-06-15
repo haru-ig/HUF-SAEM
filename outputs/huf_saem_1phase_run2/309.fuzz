@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "testFunc", M);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument* Arg = &*F->arg_begin();
+    Arg->setArgNo(0);
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {Arg}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->addFnAttr(Attribute::Nounwind);
+    assert(!CI->doesNotThrow() && "CallInst must not be marked as doesNotThrow");
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+        assert(II->getIntrinsicID() == Intrinsic::memset && "CallInst must be a memset intrinsic");
+    }
+
+     
+    if (auto* AMI = dyn_cast<AnyMemIntrinsic>(CI)) {
+        int64_t NumBytes = AMI->getMemoryLength();
+        assert(NumBytes <= 0 || NumBytes % sizeof(int32_t) != 0, "Atomic unordered memory intrinsic length must be non-positive or not a multiple of the element size");
+    }
+
+     
+
+    std::cout << "Test program completed successfully!" << std::endl;
+    return 0;
+}

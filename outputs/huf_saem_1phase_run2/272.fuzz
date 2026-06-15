@@ -1,0 +1,99 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memset.p0i8.i32", Type::getVoidTy(Context), Type::getInt8PtrTy(Context), Type::getInt32Ty(Context), ConstantInt::get(Type::getInt1Ty(Context), false));
+    CallInst *CI = Builder.CreateCall(Callee, {Arg}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(&*F->begin()->begin());
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is an intrinsic call\n";
+    } else {
+        errs() << "CallInst is not an intrinsic call\n";
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        errs() << "Context instruction is a CallBase instance\n";
+    } else {
+        errs() << "Context instruction is not a CallBase instance\n";
+    }
+
+     
+    if (F->arg_size() > 0) {
+        errs() << "Function contains at least one returned argument\n";
+    } else {
+        errs() << "Function does not contain any returned arguments\n";
+    }
+
+     
+    auto *L = Loop::Create(BB, nullptr, nullptr, F);
+    if (L->getLoopPreheader() && L->getLoopLatch()) {
+        errs() << "Loop has valid preheader and latch blocks\n";
+    } else {
+        errs() << "Loop does not have a valid preheader or latch block\n";
+    }
+
+     
+    if (L->isSafeToClone()) {
+        errs() << "Loop is safe to clone\n";
+    } else {
+        errs() << "Loop is not safe to clone\n";
+    }
+
+     
+    if (!L->getHeader()->hasAddressTaken()) {
+        errs() << "Loop header's address is not taken\n";
+    } else {
+        errs() << "Loop header's address is taken\n";
+    }
+
+     
+    UnrollOption ULO(2);
+    if (ULO.Count > 0) {
+        errs() << "Unroll count is greater than zero\n";
+    } else {
+        errs() << "Unroll count is not greater than zero\n";
+    }
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    if (Depth < MaxAnalysisRecursionDepth) {
+        errs() << "Recursion depth does not exceed MaxAnalysisRecursionDepth\n";
+    } else {
+        errs() << "Recursion depth exceeds MaxAnalysisRecursionDepth\n";
+    }
+
+    return 0;
+}

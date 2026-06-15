@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "testFunc", &module);
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+    IRBuilder<> builder(entryBB);
+
+     
+    AllocationInst *alloca = new AllocaInst(Type::getInt32Ty(Context), 0, "argAlloca", entryBB);
+    Value *argValue = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 42));
+    new StoreInst(argValue, alloca, entryBB);
+
+     
+    LoadInst *load = new LoadInst(alloca, "loadedArg", false, entryBB);
+
+     
+    CallInst *call = CallInst::Create(funcType, func, { load }, "", entryBB);
+
+     
+    assert(!call->use_empty() && "CallInst must have at least one use");
+
+     
+    func->setLinkage(GlobalValue::InternalLinkage);
+    func->setDoesNotThrow();
+    func->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *intrinsic = dyn_cast<IntrinsicInst>(call);
+    assert(intrinsic && "CallInst must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(intrinsic) && "Intrinsic must be AnyMemIntrinsic");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

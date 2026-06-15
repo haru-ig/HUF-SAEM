@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+  
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionAliasAnalysis.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Transforms/Scalar/SCCP.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(&M.getContext().getBasicBlockList().front());
+    
+     
+    CI->setDoesNotThrow();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID ID = CI->getIntrinsicID();
+        if (ID == Intrinsic::memcpy || ID == Intrinsic::memset) {
+             
+            Value *Arg0 = CI->getOperand(1);
+            ConstantInt *LenCI = dyn_cast<ConstantInt>(CI->getOperand(2));
+            if (LenCI && LenCI->isZero()) {
+                std::cerr << "Memory intrinsic has zero length, triggering undefined behavior handling code path." << std::endl;
+            } else {
+                 
+            }
+        }
+    }
+    
+     
+    legacy::PassManager Passes;
+    Passes.add(new SimplifyCFGPass());
+    Passes.add(new SCCPPass());
+    Passes.run(*F);
+    
+    std::cout << "Module after optimizations: \n" << M << std::endl;
+    
+    return 0;
+}

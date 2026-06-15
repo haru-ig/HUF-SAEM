@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::Create(Callee, Args, "", BB);
+
+     
+    if (CI->use_empty()) {
+        CI->addUse(Type::getInt32Ty(Context));
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    CI->setDoesNotThrow();
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "Expected a CallInst to be intrinsic\n";
+        return 1;
+    }
+
+     
+     
+
+    std::cout << "Test setup completed.\n";
+    return 0;
+}

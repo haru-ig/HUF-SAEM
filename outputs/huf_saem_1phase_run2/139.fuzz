@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {Type::getFloatTy(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        auto *IMI = dyn_cast<AnyMemIntrinsic>(CI);
+        assert(IMI && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+        
+         
+        int64_t NumBytes = IMI->getOperand(0)->getType()->getScalarSizeInBits() / 8;
+        assert(NumBytes <= 0 || !((NumBytes % 8) == 0) && "Length must be non-positive or not a multiple of the element size");
+    }
+    
+     
+    auto *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    
+    return 0;
+}

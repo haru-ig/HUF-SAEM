@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *MemsetArgs[] = {
+        ConstantExpr::getBitCast(F->arg_begin(), Type::getInt8PtrTy(Context)),
+        ConstantInt::get(Type::getInt8Ty(Context), 0),
+        ConstantInt::get(Type::getInt64Ty(Context), 0)
+    };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), ArrayRef<Value*>(MemsetArgs), "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst *MI = dyn_cast<IntrinsicInst>(CI);
+    assert(MI && MI->getIntrinsicID() == Intrinsic::memset && "Expected a memset intrinsic");
+    
+     
+    ConstantInt *Length = cast<ConstantInt>(CI->getArgOperand(2));
+    assert(Length->isZero() && "Expected zero length for memset intrinsic");
+    
+     
+    M->print(errs());
+    
+    delete M;
+    return 0;
+}

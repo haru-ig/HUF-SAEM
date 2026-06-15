@@ -1,0 +1,92 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *I = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+
+     
+    I->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    static_cast<CallBase *>(I)->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(I);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "Expected memset intrinsic");
+
+     
+    CallBase *CB = static_cast<CallBase *>(I);
+    assert(!CB->use_empty() && "Expected at least one use of CallInst");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(II->doesNotThrow() && "CallInst itself must not throw");
+
+     
+    AnyMemIntrinsic *AM = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AM && "Expected AnyMemIntrinsic");
+
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() && "Expected non-null preheader block");
+    assert(L->getLoopLatch() && "Expected non-null latch block");
+
+     
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+
+     
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header address should not be taken");
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Instruction *InputInst = nullptr;  
+    Type *Ty = InputInst->getType();
+    assert((Ty->isIntegerTy() || Ty->isVectorTy()) && "Expected integer or vector type");
+    assert(Ty->getScalarSizeInBits() == APInt::getNullValue(Ty->getScalarSizeInBits()).getLimitedValue() && "Scalar size in bits must match demanded mask");
+
+     
+    unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth < MaxAnalysisRecursionDepth && "Recursion depth exceeds maximum allowed");
+
+     
+    FPClassTest DemandedMask;  
+    KnownFPClass Known;  
+    assert(DemandedMask.getBitWidth() == Known.getBitWidth() && "Demanded mask and known values must have compatible bit widths");
+
+     
+    unsigned NLZ = 1;  
+    assert(NLZ > 0 && "Expected unused high bits in the operation");
+
+     
+    TreeEntry *TE = nullptr;  
+    assert(TE->Idx != 0 && "TreeEntry must have a non-zero Idx");
+
+     
+    assert(TE->UserTreeIndex.EdgeIdx != UINT_MAX && "UserTreeIndex should not lead to an immediate return of std::nullopt");
+
+     
+    unsigned SliceSize = 1;  
+    unsigned Part = 1;  
+    assert(MaskBase != nullptr && "Expected valid MaskBase for further logic");
+
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+
+     
+    Module *M = new Module("test", getGlobalContext());
+
+     
+    Function *F = cast<Function>(M->getOrInsertFunction("foo", Type::getVoidTy(getGlobalContext()), nullptr));
+    BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::sqrt), {}, "", BB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setOnlyAccessesStack();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID IID = CI->getIntrinsicID();
+        assert(IID == Intrinsic::sqrt && "CallInst must be an intrinsic call");
+    } else {
+        return 1;  
+    }
+
+     
+
+    std::cout << "Test passed successfully!" << std::endl;
+    return 0;
+}

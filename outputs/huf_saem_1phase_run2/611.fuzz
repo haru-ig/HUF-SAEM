@@ -1,0 +1,11 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Use.h>
+
+using namespace llvm;
+
+bool hasAtLeastOneUse(const CallInst &CI) {
+    return !CI.use_empty();
+}

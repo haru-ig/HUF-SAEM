@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallBase *CI = CallBase::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+
+     
+    Value *UserVal = nullptr;
+    for (auto &Use : CI->uses()) {
+        UserVal = Use.getUser();
+        break;
+    }
+    assert(UserVal && "CI must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+        }
+    }
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    assert(AI != F->arg_end() && "Function must have at least one argument");
+    AI->addAttr(Attribute::Returned);
+
+     
+
+    return 0;
+}

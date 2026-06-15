@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memset", FTy);
+    std::vector<Value *> Args;
+    Args.push_back(ConstantExpr::getBitCast(Arg, Type::getInt8PtrTy(Context)));
+    Args.push_back(ConstantInt::get(Type::getInt64Ty(Context), 1));
+    Args.push_back(ConstantInt::get(Type::getInt32Ty(Context), 0));
+    CallInst *CI = CallInst::Create(Callee, Args, "", BB);
+
+     
+    CI->addUse(*F->arg_begin());
+
+     
+    assert(!F->doesNotThrow() && "Function should not be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "CallInst should be an intrinsic call");
+
+     
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(CI);
+    assert(AMII->getNumElements() <= 0 && "Length must be non-positive");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction should be a CallBase instance");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*F, 0);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition should have the correct position kind");
+
+     
+    Function *Func = F;
+    assert(Func && "Function associated with IRPosition should not be null");
+
+     
+    std::cout << "Module: " << M.getName() << "\n";
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+    return 0;
+}

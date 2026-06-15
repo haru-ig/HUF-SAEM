@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/SelectInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), -1.0);
+    Value *CondVal = ICmpInst::create(ICmpInst::FCMP_ULT, TrueVal, FalseVal, "", BB);
+
+     
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(!SI->use_empty() && "SelectInst must have at least one use.");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind.");
+    if (auto *CI = dyn_cast<CallBase>(SI)) {
+        if (CI->isIntrinsic()) {
+            Intrinsic::ID ID = CI->getIntrinsicID();
+            if (ID == Intrinsic::fabs || ID == Intrinsic::fneg) {
+                 
+                Value *X = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+                CallInst *FABS = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::fabs), X, "", BB);
+                CallInst *FNEG = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::fneg), FABS, "", BB);
+                assert(FABS->hasOneUse() && "fabs(x) must have exactly one use.");
+            }
+        }
+    }
+
+     
+    M.print(errs());
+
+    return 0;
+}

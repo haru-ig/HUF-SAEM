@@ -1,0 +1,76 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "test_func", M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    AllocaInst* AI = new AllocaInst(IntegerType::getInt32Ty(Context), 0, "arg", BB->getFirstInsertionPt());
+    
+     
+    LoadInst* LI = new LoadInst(AI, "", false, BB->getFirstInsertionPt());
+    
+     
+    CallInst* CI = CallInst::Create(F, {LI}, "", BB->getLastNonDebugInstruction());
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    IntrinsicInst* II = Intrinsic::memset;
+    CallInst* MCI = CallInst::Create(II, {AI, ConstantInt::get(IntegerType::getInt8Ty(Context), 0)}, "", BB->getLastNonDebugInstruction());
+    
+     
+    assert(!MCI.use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    Value* TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value* FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    ICmpInst* Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, LI, ConstantInt::get(IntegerType::getInt32Ty(Context), 2));
+    SelectInst* SI = new SelectInst(Cmp, TrueVal, FalseVal, "", BB->getLastNonDebugInstruction());
+    
+     
+    assert(SI && "SelectInst must be non-null");
+    Value* CondVal = Cmp;
+    Type* SelType = SI->getType();
+    assert(SelType && "SelType must be correctly retrievable");
+    
+     
+    if (SI) {
+         
+         
+         
+         
+         
+         
+    }
+    
+     
+     
+     
+     
+     
+    
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

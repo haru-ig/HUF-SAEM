@@ -1,0 +1,140 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg0 = &*F->arg_begin();
+    Instruction *I1 = new LoadInst(IntegerType::getInt32Ty(Context), Arg0, "load", BB);
+    Instruction *I2 = new StoreInst(I1, Arg0, BB);
+    
+     
+    Value *Callee = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(F, {Callee}, "", BB);
+    
+     
+    CI->addUse(*F);
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CI must be an intrinsic call");
+    auto *AMI = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMI && "CI must be a memory intrinsic");
+    
+     
+    if (AMI->isAtomic() && AMI->getNumOps() > 0) {
+        Value *NumBytes = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+        assert(NumBytes->getSExtValue() <= 0 || NumBytes->getSExtValue() % II->getType()->getScalarSizeInBits() != 0, "Atomic unordered memory intrinsic must have non-positive length or undefined behavior conditions");
+    }
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRPos = IRPosition::callsite_argument(*CB, 0);
+    assert(IRPos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have position kind of IRC_CALL_SITE_ARGUMENT");
+    
+     
+    Function *Func = IRPos.getAnchorScope();
+    assert(Func && "Function associated with IRPosition must be non-null");
+    
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<const TreeEntry *, Type *> MinBWs;  
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getScalarSizeInBits() > 0 && "Precomputed bit width must be valid");
+    } else {
+        assert(E->Idx == 0 && E->isReducedBitcastRoot(), "Alternative path for updating ScalarTy triggered");
+    }
+    
+     
+    if (E->State == TreeEntry::SplitVectorize) {
+        assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+    } else if (E->isGather() || E->in(TransformedToGatherNodes)) {
+         
+    }
+    
+     
+    Value *CondVal = ConstantInt::get(IntegerType::getInt1Ty(Context), 0);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat::FLT_POSITIVE_ZERO));
+    Value *FalseVal = FPMathOperator::createFNegFabs(*TrueVal, Context);
+    Type *SelType = TrueVal->getType();
+    assert(CondVal && CondVal->getType()->isIntegerTy() && "Condition must be an integer type");
+    assert(TrueVal && TrueVal->getType()->isFloatTy() && "True value must be a float type");
+    assert(FalseVal && FalseVal->getType()->isFloatTy() && "False value must be a float type");
+    assert(SelType && SelType->isFloatTy() && "Selection type must be a float type");
+    
+     
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    assert(isa<FPMathOperator>(TrueVal) && "True value must be a floating-point math operation");
+    assert(isa<FCmpInst>(CondVal) && "Condition must be a floating-point comparison");
+    
+     
+    if (SelType->isIntegerTy()) {
+        Type *CondType = CondVal->getType();
+        assert((CondType->isIntegerTy() || CondType->isVectorTy()) && "Condition type must be an integer scalar or vector type");
+    } else {
+         
+    }
+    
+     
+    if (E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement) {
+        Type *ScalarTy = getElementType(VL[0]);
+        assert(isValidElementType(ScalarTy) && "Derived scalar type must be valid for element type");
+        
+         
+        if (MinBWs.find(E) != MinBWs.end()) {
+            assert(MinBWs[E]->getScalarSizeInBits() > 0 && "Precomputed bit width must be valid");
+        } else {
+             
+        }
+    }
+    
+     
+    int Depth = 0;  
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest *DemandedMask = nullptr;  
+    assert(DemandedMask->getBitWidth() == getScalarSizeInBits(*I) && "DemandedMask must have the same bit width as the type of I");
+    
+     
+    int SliceSize = 0;  
+    int Part = 0;  
+    Value *MaskBase = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    assert(SliceSize > 0 && "SliceSize must be greater than zero");
+    assert(Part >= 0 && "Part must be non-negative");
+    
+     
+    outs() << "All constraints are satisfied.\n";
+    
+    return 0;
+}

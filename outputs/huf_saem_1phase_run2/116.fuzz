@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy->getPointerTo(), Intrinsic::memset, {}, "", BB);
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Intrinsic::ID MemSetIntrinsic = Intrinsic::memset;
+    CallInst *CI2 = CallInst::Create(FuncTy->getPointerTo(), Intrinsic::getIntrinsicIDForName("llvm.memset"), {}, "", BB);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI2)) {
+        errs() << "Intrinsic call meets all specified conditions.\n";
+    } else {
+        errs() << "Intrinsic call does not meet all specified conditions.\n";
+    }
+
+     
+
+    return 0;
+}

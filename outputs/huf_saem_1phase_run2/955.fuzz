@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "main", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value* Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Instruction* RetInst = ReturnInst::Create(Context, Zero, BB);
+
+     
+    M->print(outs(), nullptr);
+
+    return 0;
+}

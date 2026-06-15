@@ -1,0 +1,10 @@
+#include <iostream>
+int main() {
+   void callInstHasUse(CallInst &CI) {
+       if (!CI.use_empty()) {
+            
+       } else {
+           std::cerr << "Error: CallInst does not have any uses." << std::endl;
+       }
+   }
+   

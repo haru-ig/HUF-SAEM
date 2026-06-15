@@ -1,0 +1,101 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    Function* F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 10)}, "", BB);
+    
+     
+    Value* User = CI;
+    assert(!User->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        assert(isa<AnyMemIntrinsic>(CI) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+        
+         
+        unsigned NumBytes = 10;
+        if (NumBytes > 0) {
+            assert(NumBytes % 8 != 0 && "Length must be non-positive or not a multiple of the element size");
+        }
+    }
+    
+     
+    CallBase* CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRP = IRPosition::callsite_argument(CB, 0);
+    assert(IRP.getFunction() && "Function associated with the IRPosition must be non-null");
+    
+     
+    TreeEntry* E = nullptr;
+    if (E->Scalars.size() > 0) {
+        Type* ScalarTy = E->Scalars.front()->getType();
+        assert(isValidElementType(ScalarTy) && "ScalarTy must be a valid element type");
+        
+         
+        if (MinBWs.find(E) != MinBWs.end()) {
+            int BitWidth = MinBWs[E];
+            assert(BitWidth > 0 && "Entry must provide a valid bit width");
+        }
+        
+         
+        if (E->State == TreeEntry::SplitVectorize) {
+            assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+        } else if (!E->isGather() && E->getOpcode() != Instruction::InsertElement) {
+             
+        }
+    }
+    
+     
+    Value* CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, CI->getType(), CI, ConstantInt::get(CI->getType(), 2));
+    Value* TrueVal = ConstantFP::get(CI->getType(), APFloat(1.0));
+    Value* FalseVal = CallInst::Create(Intrinsic::ctpop, TrueVal, "", BB);
+    SelectInst* SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst must be an integer type or vector type");
+    assert(SI->getCondition()->getType() == CI->getType() && "CondType must match the type of TrueVal and FalseVal");
+    
+     
+    Loop* L = nullptr;
+    if (L) {
+        assert(!L->getHeader()->hasAddressTaken() && "Loop header's address must not be taken");
+        assert(L->isSafeToClone() && "Loop must be safe to clone");
+        
+        UnrollOptions ULO;
+        ULO.Count = 2;  
+        assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    }
+    
+     
+    unsigned Depth = 0;
+    FPClassTest DemandedMask = FPClassTest::all();
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    assert(DemandedMask.getBitWidth() == CI->getType()->getScalarSizeInBits() && "DemandedMask and Known must have the same bit width");
+    
+     
+    Instruction* I = new FNegInst

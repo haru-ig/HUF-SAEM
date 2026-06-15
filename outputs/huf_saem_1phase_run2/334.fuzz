@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    Function *TestFunc = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *EntryBB = BasicBlock::Create(Context, "entry", TestFunc);
+    IRBuilder<> Builder(EntryBB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(nullptr, Arg, "", EntryBB);
+
+     
+    Use &U = CI->use_begin();
+    if (!U.getUser()->isTerminator()) {
+        U.getUser()->replaceUsesOfWith(CI, ConstantInt::get(Type::getInt32Ty(Context), 42));
+    }
+
+     
+    TestFunc->setDoesNotThrow();
+    TestFunc->addFnAttr(Attribute::Nounwind);
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (AnyMemIntrinsic *AMIntrin = dyn_cast<AnyMemIntrinsic>(II)) {
+            errs() << "Detected AnyMemIntrinsic: " << AMIntrin->getIntrinsicID() << "\n";
+        }
+    }
+
+     
+    Module->print(errs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    ConstantInt *C1 = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    ConstantInt *C2 = ConstantInt::get(Type::getInt32Ty(Context), 2);
+
+     
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, C1, C2, "", BB->getTerminator());
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 3.0);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), 4.0);
+    Type *SelType = TrueVal->getType();
+
+     
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB->getTerminator());
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::fabs), {TrueVal}, "", BB->getTerminator());
+
+     
+    CI->addUse(F->arg_begin()->getType());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

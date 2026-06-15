@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "main", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallBase* CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    assert(!F->doesNotThrow() && "Function must not be nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    IntrinsicInst* IIC = cast<IntrinsicInst>(CI);
+    assert(IIC->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be a memcpy intrinsic");
+
+     
+    F->setDoesNotThrow();
+
+     
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value* FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    ICmpInst* Cmp = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst* SI = new SelectInst(Cmp, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "SelectInst must have at least one use");
+    Value* CondVal = Cmp;
+    Type* SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "Selection type must be an integer type");
+
+     
+    CallBase* CI2 = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    assert(!CI2->use_empty() && "CallInst must have at least one use");
+    assert(!F->doesNotThrow() && "Function must not be nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI2) && "CallInst must be an intrinsic call");
+    IntrinsicInst* IIC2 = cast<IntrinsicInst>(CI2);
+    assert(IIC2->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be a memcpy intrinsic");
+
+     
+    F->setDoesNotThrow();
+
+    std::cout << "Test program completed successfully." << std::endl;
+    return 0;
+}

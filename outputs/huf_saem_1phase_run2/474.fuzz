@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+
+     
+    BasicBlock &BB = F->front();
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::memset), {}, "", &BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "Intrinsic call detected." << std::endl;
+    } else {
+        std::cout << "No intrinsic call detected." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function marked as nounwind and CallInst does not throw." << std::endl;
+    } else {
+        std::cout << "Function or CallInst does not meet the nounwind condition." << std::endl;
+    }
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "Specific intrinsic type detected." << std::endl;
+    } else {
+        std::cout << "No specific intrinsic type detected." << std::endl;
+    }
+
+     
+
+    return 0;
+}

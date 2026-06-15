@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+    
+     
+    Value *Args[1] = { ConstantInt::get(Type::getInt32Ty(Context), 0) };
+    CallInst *CI = CallInst::Create(Func->getFunctionType(), Func, makeArrayRef(Args), "", BB);
+    
+     
+    CI->addUse(CI->getType());
+    
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (const auto *AnyMI = dyn_cast<AnyMemIntrinsic>(II)) {
+            if (AnyMI->getIntrinsicID() == Intrinsic::memset) {
+                 
+                ConstantInt *LengthCI = cast<ConstantInt>(AnyMI->getArgOperand(2));
+                if (LengthCI->isZero()) {
+                     
+                    Func->setDoesNotThrow();
+                    Func->addFnAttr(Attribute::NoUnwind);
+                    
+                     
+                    Module->print(errs(), nullptr);
+                }
+            }
+        }
+    }
+    
+    return 0;
+}

@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memset.p0i8.i64", Type::getVoidTy(Context), PointerType::get(Type::getInt8Ty(Context), 0), ConstantInt::get(Type::getInt64Ty(Context), 10), ConstantInt::get(Type::getInt32Ty(Context), 1));
+    CallInst *CI = CallInst::Create(Callee, {Arg}, "", BB);
+
+     
+    CI->addUse(CI->getType());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+    assert(II->getIntrinsicID() == Intrinsic::memset, "Expected llvm.memset intrinsic");
+
+     
+    assert(isa<CallBase>(CI) && "Expected a CallBase instruction");
+
+     
+    auto Pos = IRPosition::callsite_argument(II);
+    assert(Pos.getPositionKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "Expected IRP_CALL_SITE_ARGUMENT");
+
+     
+    auto *AssocFunc = Pos.resolve(true).getAssociatedFunction();
+    assert(AssocFunc && "Expected a non-null associated function");
+
+     
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = Argument::Create(IntegerType::getInt32Ty(Context), "arg", F);
+    Arg->setReturnedAttr(Attribute::Returned);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, FunctionCtor, {Arg});
+    BB->getInstList().push_back(CI);
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    Value *MemOp = Intrinsic::getDeclaration(&M, Intrinsic::memcpy);
+    CallInst *MI = CallInst::Create(FuncTy, MemOp, {Arg, Arg}, "", BB);
+    BB->getInstList().push_back(MI);
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(MI)) {
+        if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+            AMII->setAtomic(AtomicOrdering::NotAtomic);
+        }
+    }
+
+     
+     
+
+    std::cout << "Test program with constraints" << std::endl;
+
+    return 0;
+}

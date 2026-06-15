@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(IntegerType::getInt32Ty(Context), 10);
+    F->arg_begin()->setName("arg1");
+
+     
+    CallInst *CI = CallInst::Create(FTy, F, {Arg1}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *II = CallInst::Create(Intrinsic::anymemintrinsic, {Arg1}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(II) && "Must be an intrinsic call");
+
+     
+    Value *TrueVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    ICmpInst *Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, Arg1, ConstantInt::get(IntegerType::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(Cmp, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "SelectInst must have one use");
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+
+     
+    Mod->print(outs(), nullptr);
+
+    return 0;
+}

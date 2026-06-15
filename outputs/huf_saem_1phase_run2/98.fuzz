@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testfunc", *Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(FTy, F, {Arg}, "", BB->getFirstNonPHI());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    Intrinsic::ID IID = Intrinsic::sqrt;  
+    CallInst *IntrCI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), IID), {Arg}, "", BB->getFirstNonPHI());
+
+     
+    IntrCI->setDoesNotThrow();
+
+     
+    std::cout << "Generated Function: " << *F << std::endl;
+    std::cout << "First CallInst in function: " << *CI << std::endl;
+    std::cout << "Intrinsic CallInst: " << *IntrCI << std::endl;
+
+    return 0;
+}

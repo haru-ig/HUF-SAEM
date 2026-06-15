@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[] = {};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::abs), Args, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II->getIntrinsicID() == Intrinsic::abs && "CallInst must be an intrinsic");
+    } else {
+        llvm_unreachable("Expected an intrinsic instruction");
+    }
+
+     
+    if (AtomicCmpXchgInst *AC = dyn_cast<AtomicCmpXchgInst>(CI)) {
+        assert(AC->isUnordered() && "Expected unordered atomic operation");
+    }
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setParamAttr(0, Attribute::Returned);
+
+     
+    if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+        assert(CB && "Expected a CallBase instruction");
+    } else {
+        llvm_unreachable("Expected a CallBase instruction");
+    }
+
+     
+
+    std::cout << "All assertions passed!\n";
+    return 0;
+}

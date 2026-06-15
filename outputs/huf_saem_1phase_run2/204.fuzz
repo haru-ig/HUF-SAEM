@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createModule(LLVMContext &context, Module *module) {
+     
+    std::vector<Type *> argTypes = {Type::getInt32Ty(context)};
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(context), argTypes, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", module);
+
+     
+    BasicBlock *entryBB = BasicBlock::Create(context, "", func);
+    IRBuilder<> builder(entryBB);
+
+     
+    Value *arg = func->getArg(0);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(module, Intrinsic::abs), arg, "", entryBB);
+    CI->setDoesNotThrow();
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        if (CI->use_empty()) {
+            std::cerr << "Error: Intrinsic call does not have any uses." << std::endl;
+            return;
+        }
+    }
+
+     
+    module->print(outs(), nullptr);
+}
+
+int main() {
+    LLVMContext context;
+    Module *module = new Module("testModule", context);
+
+    createModule(context, module);
+
+    delete module;
+    return 0;
+}

@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI && "SelectInst creation failed");
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+
+     
+    assert(isa<ICmpInst>(CondVal) && cast<ICmpInst>(CondVal)->getPredicate() == ICmpInst::ICMP_ULT && "Condition must be icomp ult");
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

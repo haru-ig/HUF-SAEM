@@ -1,0 +1,86 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    F->addParamAttribute(0, Attribute::Returned);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::sqrt;  
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {}, "", F);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    assert(!F->doesNotThrow() && "Function must not be marked as nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    assert(dyn_cast<AnyMemIntrinsic>(CI) && "Intrinsic must be a memory intrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = Intrinsic::ctpop(TrueVal);
+    ICmpInst *ICmp = new ICmpInst(*CB->getParent(), ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(ICmp, TrueVal, FalseVal, "", CB->getParent());
+
+     
+    assert(SI && "SelectInst must be created");
+    Value *CondVal = ICmp;
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "SelectInst type must be integer or integer vector type");
+
+     
+    BasicBlock *PreheaderBB = BasicBlock::Create(Context, "", F);
+    BasicBlock *HeaderBB = BasicBlock::Create(Context, "", F);
+    BranchInst::Create(HeaderBB, PreheaderBB);
+
+    Loop *L = new Loop();
+    L->initializeLoopInfo(*F);
+    assert(L->getLoopPreheader() && "Loop must have a valid preheader block");
+    assert(L->getLoopLatch() && "Loop must have a valid latch block");
+
+     
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header's address must not be taken");
+
+    UnrollLoopOptions ULO;
+    ULO.Count = 4;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    int Depth = 0;
+    FPClassTest KnownFPClass = FPClassTest();
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    assert(KnownFPClass.getBitWidth() == SelType->getScalarSizeInBits() && "Demanded mask and known must have the same bit width");
+
+     
+    DenseMap<TreeEntry*, Type*> MinBWs;
+    TreeEntry *E = new TreeEntry();
+    assert(E->Idx != 0 || E->isReducedBitcastRoot() && "MinBWs map must contain an entry for E or E->Idx must be 0 and isReducedBitcastRoot() must return true");
+
+     
+    Instruction *ReductionRoot = new FNegInst(*new FAbsInst( ));
+    assert(ReductionRoot && "Reduction root instruction must be created");
+
+    std::cout << "Test program setup completed successfully." << std::endl;
+    return 0;
+}

@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createTestFunction(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {Type::getFloatTy(Ctx)}, "", BB);
+    CI->setDoesNotThrow();  
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    assert(CI->getType()->isFloatTy() && "Intrinsic call must be of float type");
+    assert(!CI->doesNotThrow() && "Intrinsic call should not be marked as doesNotThrow");
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+
+    createTestFunction(M);
+
+     
+    if (verifyModule(M, &errs())) {
+        errs() << "Module verification failed.\n";
+        return 1;
+    } else {
+        outs() << "Module verified successfully.\n";
+        return 0;
+    }
+}

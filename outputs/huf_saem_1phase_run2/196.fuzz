@@ -1,0 +1,143 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FT, GlobalValue::ExternalLinkage, "testFunc", &M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::any_mem_intrinsic, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID ID = CI->getIntrinsicID();
+        assert(ID == Intrinsic::any_mem_intrinsic && "CallInst must be an AnyMemIntrinsic");
+        
+         
+        if (isAnyAtomicFenceInst(CI)) {
+            uint64_t NumBytes = getNumElementsForAtomicFence(*CI) * getTypeStoreSize(CI->getType());
+            assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes, CI->getType()) && "Length must be non-positive or not a multiple of the element size");
+        }
+    }
+    
+     
+    if (auto *CB = dyn_cast<CallBase>(CI)) {
+        auto IRPos = IRPosition::callsite_argument(CB);
+        assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "Context instruction must be CallBase and have valid IR position");
+        
+         
+    }
+    
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        Type *ScalarTy = IntegerType::get(*Context, MinBWs[E]->getBitWidth());
+        assert(ScalarTy && "MinBWs entry must provide a valid bit width for creating an IntegerType");
+    }
+    
+     
+    if (E->State == TreeEntry::SplitVectorize) {
+        assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices must contain exactly two entries");
+         
+    } else if (E->isGather() || E->State == TreeEntry::TransformedToGatherNodes) {
+         
+    }
+    
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat::getOne(APFloat::IEEEsingle));
+    Value *FalseVal = CallInst::CreateFNeg(CallInst::CreateFAbs(TrueVal), "fneg_fabs", BB);
+    Type *SelType = TrueVal->getType();
+    
+     
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "select", BB);
+    assert(!simplifySelectInst(SI) && !canonicalizeSelectToShuffle(SI) && !canonicalizeScalarSelectOfVecs(SI) && "SelectInst should not be simplified or transformed");
+    
+     
+    Value *X = ConstantFP::get(Type::getFloatTy(Context), APFloat::getZero(APFloat::IEEEsingle));
+    TrueVal = CallInst::CreateFAbs(X, "fabs", BB);
+    CondVal = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    
+     
+    SelType = TrueVal->getType();
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondType->isIntegerTy() || CondType->isVectorTy()) && "SelectInst must have an integer type or an integer vector type");
+    
+     
+    if (E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement) {
+        Type *ScalarTy = SelType;  
+        assert(isValidElementType(ScalarTy) && "ScalarTy derived must be a valid element type");
+        
+         
+        if (MinBWs.find(E) != MinBWs.end()) {
+            ScalarTy = IntegerType::get(*Context, MinBWs[E]->getBitWidth());
+        } else if (E->Idx == 0 && E->isReducedBitcastRoot()) {
+             
+        }
+    }
+    
+     
+    Instruction *FNeg = new UnaryOperator(Instruction::FNeg, TrueVal, "fneg", BB);
+    Value *XArg = ConstantFP::get(Type::getFloatTy(Context), APFloat::getZero(APFloat::IEEEsingle));
+    assert(FNeg->getOperand(0) == CallInst::CreateFAbs(XArg) && "FNeg operand must match the pattern fabs(x)");
+    
+     
+    KnownFPClass Known;
+    assert(Known == KnownFPClass() && "Known must be in an uninitialized state");
+    
+     
+    int Depth = 0;
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest DemandedMask;
+    adjustDemandedMaskFromFlags(DemandedMask);
+    
+     
+    if (BlocksSchedules.size() > 0) {
+         
+    }
+    
+    if (!VectorizableTree.empty()) {
+         
+        for (auto &TE : VectorizableTree) {
+            assert(!TE->isDeleted() && !TE->isGathered() && "TreeEntry must not be marked as gathered or deleted");
+            if (TE->State == TreeEntry::UserTE) {
+                 
+            }
+        }
+    }
+    
+    if (ReductionRoot) {
+         
+    }
+    
+    return 0;
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyIndVar.h>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("module", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  IRBuilder<> Builder(BB);
+
+   
+  CallInst *CI = CallInst::Create(nullptr, {}, "call_inst");
+  BB->getInstList().push_back(CI);
+
+   
+  CI->addUse(F->getArg(0));
+
+   
+  F->setDoesNotThrow();
+  F->setNoUnwind();
+
+   
+  if (dyn_cast<IntrinsicInst>(CI)) {
+    std::cout << "CallInst is an intrinsic call." << std::endl;
+  } else {
+    std::cout << "CallInst is not an intrinsic call." << std::endl;
+  }
+
+   
+  if (!CI->use_empty()) {
+    SimplifyIndvar(CI);
+  }
+
+  return 0;
+}

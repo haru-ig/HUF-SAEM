@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Dominators.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+    
+     
+    FunctionType* funcType = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", &module);
+    
+     
+    BasicBlock* bb = BasicBlock::Create(Context, "", func);
+    
+     
+    Argument* arg = &*(func->arg_begin());
+    arg->setName("arg");
+    arg->addAttr(Attribute::Returned);
+    
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::any_mem_intrinsic, { Type::getInt32Ty(Context) }, {}, "", bb);
+    
+     
+    if (CI->use_empty()) {
+        std::cerr << "Error: CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+    
+     
+    func->setDoesNotThrow();
+    
+     
+    Value* trueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value* falseVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 2));
+    SelectInst* sel = new SelectInst(CI->getType(), CI, trueVal, falseVal, "", bb);
+    
+     
+    if (!sel->getCondition() || !sel->getTrueValue() || !sel->getFalseValue() || !sel->getType()->isIntegerTy()) {
+        std::cerr << "Error: SelectInst does not have valid operands or type." << std::endl;
+        return 1;
+    }
+    
+     
+     
+    
+    return 0;
+}

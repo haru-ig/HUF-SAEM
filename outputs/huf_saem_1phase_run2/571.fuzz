@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+  
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context)}, {}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has uses." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    assert(F->doesNotThrow() && !CI->doesNotThrow() && "Function or CallInst should be marked correctly.");
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is a memory intrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not a memory intrinsic." << std::endl;
+    }
+
+     
+
+    return 0;
+}

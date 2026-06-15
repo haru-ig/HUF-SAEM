@@ -1,0 +1,4 @@
+#include <iostream>
+int main() {
+    int result = [](auto x) noexcept -> int { return x * 2; }(5);
+    std::cout << result << std::endl;

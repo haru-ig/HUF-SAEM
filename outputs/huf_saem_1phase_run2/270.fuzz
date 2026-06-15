@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+    Function *func = cast<Function>(module.getOrInsertFunction(
+        "testFunc", Type::getVoidTy(Context), (Type *)nullptr));
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Value *args[1] = {ConstantInt::get(Type::getInt32Ty(Context), 42)};
+    CallInst *ci = CallInst::Create(nullptr, func, args, "", bb);
+
+     
+    func->setDoesNotThrow();
+    func->setNoUnwind();
+
+     
+    Intrinsic::ID intrinsicID = Intrinsic::memcpy;
+    Value *intrinsicArgs[3] = {
+        ConstantPointerNull::get(Type::getInt8PtrTy(Context)),
+        ConstantPointerNull::get(Type::getInt8PtrTy(Context)),
+        ConstantInt::get(Type::getInt64Ty(Context), 10)};
+    CallInst *intrinsicCI = CallInst::Create(Intrinsic::getDeclaration(&module, intrinsicID), intrinsicArgs, "", bb);
+
+     
+    intrinsicCI->addUse(*func);
+
+     
+    module.print(errs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Value.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "example_function", &M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+   
+  CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+
+   
+  F->setDoesNotThrow();
+  CI->setDoesNotThrow();
+
+   
+  Intrinsic::ID IntrID = Intrinsic::not_an_intrinsic;  
+  CallInst *IntrCI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {}, "", BB);
+  assert(dyn_cast<IntrinsicInst>(IntrCI) && "CallInst must be an intrinsic call");
+  assert(isa<AnyMemIntrinsic>(IntrCI) && "Intrinsic call must be a memory intrinsic");
+
+   
+  Value *Length = ConstantInt::get(Type::getInt32Ty(Context), -1);
+  IntrCI->setOperand(0, Length);  
+
+   
+
+  return 0;
+}

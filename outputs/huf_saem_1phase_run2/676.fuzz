@@ -1,0 +1,69 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &M);
+    F->addFnAttr(Attribute::NoUnwind);  
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Instruction *Call = CallInst::Create(FuncTy, F, { Arg }, "", BB);
+
+     
+    Call->addUse(Value *(), nullptr);
+
+     
+    Instruction *CtxI = Call;
+
+     
+
+     
+    if (!isa<CallBase>(CtxI)) {
+        std::cerr << "Expected a CallBase instruction." << std::endl;
+        return 1;
+    }
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CtxI);
+    if (!II || !II->isLifetimeStartOrEnd()) {
+        std::cerr << "Expected a lifetime start or end intrinsic." << std::endl;
+        return 1;
+    }
+
+     
+    Loop *L = createLoopFor(BB);
+    if (!L) {
+        std::cerr << "Failed to create a loop from the basic block." << std::endl;
+        return 1;
+    }
+
+     
+    llvm::UnrollLoopOptions ULO;
+    ULO.Count = 2;
+    if (ULO.Count <= 0) {
+        std::cerr << "Unroll count must be greater than zero." << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "Test setup completed successfully." << std::endl;
+    return 0;
+}

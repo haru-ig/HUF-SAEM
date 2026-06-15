@@ -1,0 +1,81 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_function", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *VecTy = VectorType::get(Type::getInt32Ty(Context), 4);
+    Constant *C0 = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Instruction *InsElem = InsertElementInst::Create(UndefValue::get(VecTy), C0, C0, "", BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), InsElem->getType(), insertelement(UndefValue::get(VecTy), C0, 0), "", BB);
+    CI->setDoesNotThrow();
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setFnAttr("nounwind", true);
+    assert(!CI->doesNotThrow() && "CallInst must not be nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call");
+
+     
+    CallBase *CB = cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument((Value *)CI);
+    assert(Pos.getKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+
+     
+    Function *Func = Pos.getAssociatedFunction();
+    assert(Func && "Function associated with IRPosition must be non-null");
+
+     
+     
+     
+    TreeEntry *E = new TreeEntry();
+    E->Scalars.push_back(VecTy);
+    MinBWs[E] = 32;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() != nullptr && "Loop must have a valid preheader block");
+    assert(L->getLoopLatch() != nullptr && "Loop must have a valid latch block");
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header's address must not be taken");
+
+     
+    UnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+     
+
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

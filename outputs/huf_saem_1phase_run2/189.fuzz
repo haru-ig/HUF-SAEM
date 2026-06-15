@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test_module", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "test_func", &M);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+   
+  CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {PointerType::get(IntegerType::getInt32Ty(Context), 0), PointerType::get(IntegerType::getInt32Ty(Context), 0)}, {}, "", BB);
+  CI->setDoesNotThrow();  
+
+   
+  if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+    if (!II->isAnyMemory()) continue;
+
+     
+    Value *NumBytes = nullptr;  
+    if (NumBytes && (NumBytes->getBitWidth() <= 0 || !isMultiple(NumBytes->getBitWidth(), 32))) {
+      std::cerr << "Intrinsic has undefined behavior due to length\n";
+      return -1;
+    }
+
+     
+    if (!F->doesNotThrow()) continue;
+
+     
+  }
+
+  std::cout << "Module before transformation: \n" << M << "\n";
+
+   
+   
+
+  std::cout << "Module after transformation: \n" << M << "\n";
+
+  return 0;
+}

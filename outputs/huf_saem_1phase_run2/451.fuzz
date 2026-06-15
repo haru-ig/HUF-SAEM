@@ -1,0 +1,103 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/KnownBits.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CFG.h>
+#include <llvm/Support/Casting.h>
+#include <vector>
+#include <optional>
+#include <cstdint>
+#include <cmath>
+
+using namespace llvm;
+
+class TreeEntry {
+public:
+    enum State { SplitVectorize, Vectorize };
+    std::vector<Value *> Scalars;
+    int Idx;
+    State State;
+    std::optional<uint32_t> UserTreeIndex;
+    bool isGather() const { return false; }  
+    Value *getOperand(int) const { return nullptr; }  
+};
+
+class MinBWs {
+public:
+    std::optional<uint32_t> get(const TreeEntry &) const { return {}; }
+};
+
+class InstructionCost {
+public:
+    static constexpr int getInvalid() { return -1; }
+};
+
+class FPClassTest {
+public:
+    bool isValid() const { return true; }
+};
+
+class BlockBase;
+class BasicBlock;
+class Loop;
+class UnrollLoopOptions;
+
+namespace llvm {
+class Function;
+class CallInst;
+class Value;
+class IRPosition;
+class TreeEntry;
+class SelectInst;
+class IntrinsicInst;
+class Type;
+class IntegerType;
+class FPExtInst;
+class BlockBase;
+class BasicBlock;
+class LoopInfo;
+class UnrollLoopOptions;
+}  
+
+std::optional<TreeEntry> getUserTE(const TreeEntry &) { return {}; }
+
+void initialize(const std::vector<Value *> &args, const MinBWs &minBWs);
+void checkAndUpdate(IRPosition &pos, bool optimisticFixpoint);
+void simplifyCallInst(CallInst &CI);
+void canonicalizeSelectToShuffle(SelectInst *SI);
+void canonicalizeScalarSelectOfVecs(SelectInst *SI);
+void adjustDemandedMaskFromFlags(FPClassTest &mask, const KnownBits &known);
+bool isValidElementType(Type *type);
+int32_t getBitWidthOrZero(const Type *type);
+bool isReducedBitcastRoot(const TreeEntry &entry);
+Value *createFNegFabsPattern(Value *x);
+void vectorizeLoop(Loop *L, const UnrollLoopOptions &ULO, int Depth, FPClassTest DemandedMask, KnownBits Known, MinBWs minBWs, std::vector<TreeEntry> &VectorizableTree, BlockBase *ReductionRoot = nullptr, std::vector<std::pair<Value *, Value *>> VectorValuesAndScales = {});
+void unrollLoop(Loop *L, const UnrollLoopOptions &ULO, int Depth, FPClassTest DemandedMask, KnownBits Known, MinBWs minBWs, std::vector<TreeEntry> &VectorizableTree);
+
+int main() {
+     
+     
+     
+
+    std::vector<Value *> args;
+    MinBWs minBWs;
+    std::vector<TreeEntry> vectorizableTree;
+    Loop *loop = nullptr;  
+    UnrollLoopOptions unrollOpts;
+    int depth = 0;
+    FPClassTest demandedMask;
+    KnownBits knownBits;
+
+    initialize(args, minBWs);
+
+     
+    vectorizeLoop(loop, unrollOpts, depth, demandedMask, knownBits, minBWs, vectorizableTree);
+
+    return 0;
+}

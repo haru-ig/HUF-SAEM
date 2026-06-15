@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32PtrTy(Context), false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "testfunc", &Mod);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    
+     
+    Value *ZeroIndex = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *UndefVec = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    Instruction *InsElt = new InsertElementInst(UndefVec, Arg, ZeroIndex, "", BB);
+    
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *CondVal = new ICmpInst(*BB, ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    Instruction *SelectInst = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    Mod.print(errs(), nullptr);
+    
+    return 0;
+}

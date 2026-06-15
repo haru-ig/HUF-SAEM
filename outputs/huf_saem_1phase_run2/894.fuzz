@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+
+     
+    CallBase *CI;
+    if (true) {  
+        CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::any_mem_intrinsic), {Arg}, "", BB);
+        assert(!CI->use_empty() && "CallInst must have at least one use");
+        assert(!F->doesNotThrow() && "Function must not be nounwind");
+        assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+        IntrinsicInst *II = cast<IntrinsicInst>(CI);
+        if (II->getIntrinsicID() == Intrinsic::any_mem_intrinsic) {
+             
+            Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);  
+            if (NumBytes->isNonPositive() || !NumBytes->getValue().isMultipleOf(1)) {
+                assert(!F->doesNotThrow() && "CallInst must not be nounwind");
+            }
+        }
+    }
+
+     
+
+    return 0;
+}

@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Const1 = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Const2 = ConstantInt::get(Type::getInt32Ty(Context), 2);
+
+     
+    CallInst *CI = CallInst::Create(FTy, F, {Const1, Const2}, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(&M.getContext());
+
+     
+    Intrinsic::ID IID = Intrinsic::not_intrinsic;  
+    CallInst *IntrCI = CallInst::Create(Type::getVoidTy(Context), static_cast<Value *>(nullptr), {Const1, Const2}, "", BB);
+    IntrCI->setIntrinsicID(IID);
+
+     
+    simplifyCall(*CI);
+
+    return 0;
+}

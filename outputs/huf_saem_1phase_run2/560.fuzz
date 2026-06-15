@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/IR/LegacyPassManager.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setArgNo(0);
+    Arg->setName("arg");
+
+     
+    CallInst* CI = CallInst::Create(FuncTy, F, { Arg }, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::memcpy;
+    CallInst* MemCpy = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), CI->getType(), { CI }, "", BB);
+    assert(dyn_cast<IntrinsicInst>(MemCpy) && "CallInst must be an intrinsic call.");
+
+     
+    legacy::PassManager PM;
+    PM.add(createInstructionCombiningPass());
+    PM.run(*F->getParent());
+
+    std::cout << "Module after simplification: " << F->getName() << "\n";
+
+    return 0;
+}

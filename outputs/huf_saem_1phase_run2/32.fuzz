@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(F, { Arg }, "", BB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::anymemintrinsic && "CallInst must be an intrinsic call");
+
+     
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(CI);
+    assert(AMII->getLength() <= 0 || !isMultipleOfElementSize(AMII->getLength()) && "Length must be non-positive or not a multiple of the element size");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(*CB);
+    assert(Pos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+
+     
+    Function *Func = Pos.getFunction();
+    assert(Func && "Function must be non-null");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

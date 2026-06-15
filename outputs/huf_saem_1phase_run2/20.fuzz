@@ -1,0 +1,175 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/TargetTransformInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CI = CallInst::Create(nullptr, {ConstantInt::get(Type::getInt32Ty(Context), 0)}, "", BB);
+
+     
+    Value *User = CI;
+    if (User->use_empty()) {
+        User = ConstantInt::get(Type::getInt32Ty(Context), 0);
+        CI->replaceAllUsesWith(User);
+    }
+
+     
+    assert(!F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is not an intrinsic call\n";
+        return 1;
+    }
+
+     
+    IntrinsicInst *AII = cast<IntrinsicInst>(CI);
+    if (!isa<AnyMemIntrinsic>(AII)) {
+        errs() << "CallInst is not an AnyMemIntrinsic\n";
+        return 1;
+    }
+
+     
+    if (!AII->onlyAccessesMemory()) {
+        errs() << "AnyMemIntrinsic does not only access memory\n";
+        return 1;
+    }
+
+     
+    Constant *C = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI2 = CallInst::Create(nullptr, {C}, "", BB);
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (!AI.hasAttrList()) {
+        errs() << "Function must have an argument with the returned attribute\n";
+        return 1;
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI2);
+    if (!CB) {
+        errs() << "Context instruction is not a CallBase\n";
+        return 1;
+    }
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(CI2);
+    if (!Pos.isValid()) {
+        errs() << "IRPosition is not valid\n";
+        return 1;
+    }
+
+     
+    Function *Func = Pos.getAssociatedFunction();
+    if (!Func) {
+        errs() << "Associated function does not exist\n";
+        return 1;
+    }
+
+     
+    TreeEntry *E = new TreeEntry(Instruction::InsertElement, {}, {});
+    E->Scalars.push_back(TypeBuilder<int32_t, false>::get(Context));
+
+     
+    DenseMap<TreeEntry *, int> MinBWs;
+    if (MinBWs.find(E) != MinBWs.end()) {
+        Type *ScalarTy = E->Scalars.front();
+        assert(ScalarTy && "Scalar type is not valid");
+    }
+
+     
+    if (E->State != TreeEntry::SplitVectorize || E->CombinedEntriesWithIndices.size() != 2) {
+        errs() << "TreeEntry state or CombinedEntriesWithIndices size is incorrect\n";
+        return 1;
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *FalseVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(FalseVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (!simplifySelectInst(SI) && !canonicalizeSelectToShuffle(SI) && !canonicalizeScalarSelectOfVecs(SI)) {
+        errs() << "SelectInst simplification failed\n";
+        return 1;
+    }
+
+     
+    if (!isa<CallInst>(FalseVal) || !isa<ICmpInst>(CondVal)) {
+        errs() << "SelectInst conditions are not met\n";
+        return 1;
+    }
+
+     
+    Type *SelType = SI->getType();
+    Type *CondType = CondVal->getType();
+    assert(SelType->isIntegerTy() && "SelectInst type is not integer");
+    assert((SelType->isVectorTy() || SelType->isIntegerTy()) && "SelectInst type is not vector or scalar");
+    assert((CondType->isVectorTy() || CondType->isIntegerTy()) && "Condition type is not vector or scalar");
+
+     
+    if (E->getOperand(1).back()->getType()->isVectorTy()) {
+        errs() << "Operand type is vector, expected scalar\n";
+        return 1;
+    }
+
+     
+    Type *ScalarTy = E->Scalars.front();
+    assert(isValidElementType(ScalarTy) && "ScalarType is not valid");
+
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        Type *ScalarTy = E->Scalars.front();
+        assert(ScalarTy && "Scalar type is not valid");
+    }
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    if (Depth > MaxAnalysisRecursionDepth) {
+        errs() << "Recursion depth exceeds maximum allowed\n";
+        return 1;
+    }
+
+     
+    FPClassTest KnownFPClass();
+    FPClassTest DemandedMask = FPClassTest::getZero();
+    if (!adjustDemandedMaskFromFlags(DemandedMask, KnownFPClass)) {
+        errs() << "Adjusting demanded mask failed\n";
+        return 1;
+    }
+
+     
+    Loop *L = nullptr;
+    BasicBlock *Preheader = BB;
+    BasicBlock *Latch = BB;
+    L = new Loop();
+    L->addBasicBlockToLoop(BB, LI);
+
+     
+    unsigned SliceSize = 16;
+    unsigned Part = 8;
+    uint64_t MaskBase = computeMaskBase(SliceSize, Part);
+    assert(MaskBase == (SliceSize - Part) && "MaskBase calculation is incorrect");
+
+    return 0;
+}

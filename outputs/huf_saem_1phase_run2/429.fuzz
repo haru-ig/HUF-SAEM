@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    AllocaInst *Alloca = new AllocaInst(Type::getInt32Ty(Context), 0, "arg", BB->getFirstInsertionPt());
+
+     
+    LoadInst *Load = new LoadInst(Type::getInt32Ty(Context), Alloca, "", BB);
+    StoreInst *Store = new StoreInst(Load, Alloca, BB);
+
+     
+    CallInst *CI = CallInst::Create(F, {Alloca}, "", BB);
+    CI->setCalledFunction(F);
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    LoadInst *Use = new LoadInst(Type::getInt32Ty(Context), Alloca, "", BB);
+    Use->setName("use");
+    CI->addUse(Use);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+    assert(II->getIntrinsicID() == Intrinsic::anymemintrinsic, "Expected an AnyMemIntrinsic");
+
+     
+    bool Simplified = llvm::simplifyCall(CI);
+    if (Simplified) {
+        outs() << "Call instruction simplified successfully.\n";
+    } else {
+        errs() << "Failed to simplify call instruction.\n";
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

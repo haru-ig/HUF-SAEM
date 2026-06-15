@@ -1,0 +1,13 @@
+#include <iostream>
+int main() {
+void test_simplification() {
+     
+    assert(!CI.use_empty());  
+    assert(CI.getFunction()->hasFnAttribute("nounwind"));  
+    assert(!CI.doesNotThrow());  
+
+    auto *II = dyn_cast<IntrinsicInst>(&CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::anymemintrinsic);  
+
+     
+}

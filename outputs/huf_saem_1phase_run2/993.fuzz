@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/IntrinsicInst.h>  
+#include <llvm/IR/Instructions.h>   
+#include <llvm/IR/Value.h>          
+
+using namespace llvm;
+
+int main() {
+     
+    CallInst CI;  
+    if (!CI.use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    Function *func = CI.getFunction();
+    if (func && func->doesNotThrow()) {
+        std::cout << "Function is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function is not marked as nounwind or does not have a valid function pointer." << std::endl;
+    }
+
+     
+    IntrinsicInst *II = nullptr;  
+    if (II && II->getIntrinsicID() == llvm::Intrinsic::anymem_intrinsic) {
+        std::cout << "Intrinsic call detected." << std::endl;
+    } else {
+        std::cout << "Not an intrinsic call." << std::endl;
+    }
+
+     
+
+    return 0;
+}

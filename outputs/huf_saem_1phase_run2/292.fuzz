@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Use.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(FuncTy, F, {Constant::getNullValue(Type::getInt32PtrTy(Context))}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::anymemintrinsic;  
+    IntrinsicInst *II = IntrinsicInst::Create(IntrID, {CI}, "", BB);
+
+     
+    assert(isa<CallBase>(II) && "Context instruction must be a CallBase");
+
+     
+    std::cout << *BB << std::endl;
+
+    return 0;
+}

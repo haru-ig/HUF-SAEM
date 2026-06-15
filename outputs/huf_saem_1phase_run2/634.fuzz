@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "main", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[1] = {ConstantInt::get(IntegerType::getInt32Ty(Context), 0)};
+    CallInst *CI = CallInst::Create(nullptr, F->arg_begin(), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+
+     
+    Intrinsic::ID IID = Intrinsic::memcpy;  
+    Value *Src = ConstantExpr::getBitCast(F->arg_begin(), CI->getType());
+    Value *Dst = F->arg_begin();
+    Value *Len = ConstantInt::get(IntegerType::getInt32Ty(Context), 4);
+    CallInst *AnyMemCI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), Src, Dst, Len, "", BB);
+
+     
+    AnyMemCI->setIsAtomic(true);
+    AnyMemCI->setOrdering(llvm::AtomicOrdering::Unordered);
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createFunctionWithCallInst() {
+  LLVMContext Context;
+  Module *M = new Module("test", Context);
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  
+  CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+  assert(F->doesNotThrow() && "Function must be marked as nounwind");
+  assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+  IntrinsicInst *II = cast<IntrinsicInst>(CI);
+  assert(isa<AnyMemIntrinsic>(II) && "Intrinsic must be a memory intrinsic");
+  
+  return F;
+}
+
+int main() {
+  Function *F = createFunctionWithCallInst();
+  F->dump();
+  return 0;
+}

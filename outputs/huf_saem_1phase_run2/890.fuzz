@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "testfunc", Module.get());
+    BasicBlock *EntryBB = BasicBlock::Create(Context, "", Func);
+
+     
+    Value *ConstVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 42));
+
+     
+    Instruction *InsertPt = ReturnInst::Create(Context, ConstVal, EntryBB);
+
+     
+    if (!Func->empty()) {
+        IRBuilder<> Builder(EntryBB);
+        Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+        CallInst *CI = CallInst::Create(Func, Callee, "", InsertPt);
+
+         
+        CI->addUse(CI->getType(), CI);
+
+         
+        assert(!Func->hasFnAttribute(Attribute::NoUnwind) && !CI->doesNotThrow() && "Function or CallInst should be nounwind");
+
+         
+        if (verifyModule(*Module, &std::cerr)) {
+            std::cerr << "Module verification failed!\n";
+            return 1;
+        }
+    }
+
+    std::cout << "Module successfully created with constraints.\n";
+    return 0;
+}

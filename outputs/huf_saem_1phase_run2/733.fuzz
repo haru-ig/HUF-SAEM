@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *One = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Two = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Zero, Two, "", BB);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat::fltMin());
+    Value *FalseVal = FPMathOperator::CreateFNeg(FPMathOperator::CreateFAbs(TrueVal), Context);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    Value *InsertPos = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Instruction *InsertElement = InsertElementInst::Create(SI, Zero, InsertPos, "", BB);
+
+     
+    assert(CondVal && "Condition value should be valid");
+    assert(TrueVal && "True value should be valid");
+    assert(FalseVal && "False value should be valid");
+    assert(SI->getType()->isFloatTy() && "Select instruction type should be float");
+
+     
+    assert(InsertElement->getType()->isInt32Ty() && "Insert element instruction type should be int32");
+
+     
+    M.print(errs());
+
+    return 0;
+}

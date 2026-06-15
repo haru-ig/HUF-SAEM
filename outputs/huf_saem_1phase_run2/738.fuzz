@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 42);
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memset.p0i8.i64", FunctionType::get(Builder.getVoidTy(), {PointerType::get(IntegerType::getInt8Ty(Context), 0), IntegerType::getInt8Ty(Context), IntegerType::getInt64Ty(Context), IntegerType::getInt1Ty(Context)}, false));
+    CallInst *CI = CallInst::Create(Callee, {ConstantExpr::getBitCast(Arg, PointerType::get(IntegerType::getInt8Ty(Context), 0)), ConstantInt::get(IntegerType::getInt8Ty(Context), 0), ConstantInt::get(IntegerType::getInt64Ty(Context), 8), ConstantInt::get(IntegerType::getInt1Ty(Context), false)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "CallInst must be an AnyMemIntrinsic");
+
+     
+    uint64_t NumBytes = 8;
+    assert(NumBytes <= 0 || (NumBytes % sizeof(int8_t) != 0) && "Length must be non-positive or not a multiple of the element size");
+
+     
+    legacy::PassManager Passes;
+    Passes.add(createInstructionCombiningPass());
+    Passes.run(*F);
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

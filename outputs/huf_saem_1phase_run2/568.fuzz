@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "Intrinsic call found." << std::endl;
+    } else {
+        std::cout << "No intrinsic call found." << std::endl;
+    }
+
+     
+
+    return 0;
+}

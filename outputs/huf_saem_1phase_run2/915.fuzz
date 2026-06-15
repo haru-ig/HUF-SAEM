@@ -1,0 +1,80 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/Casting.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+class TreeEntry {
+public:
+    enum State { SplitVectorize, Vectorize };
+    int Idx;
+    State State;
+     
+};
+
+class SelectInst {
+public:
+    Value *CondVal;
+    Value *TrueVal;
+    Value *FalseVal;
+    Type *SelType;
+     
+};
+
+ 
+bool isValidElementType(Type *) { return true; }
+int getScalarSizeInBits(Type *) { return 32; }
+class IntrinsicInst : public Instruction {
+public:
+    IntrinsicInst(Value *Callee, Type *RetTy, std::initializer_list<Value *> Ops) : Instruction(Callee, RetTy, ops.begin(), ops.end()) {}
+};
+
+ 
+bool satisfiesConstraints(CallInst &CI) {
+     
+    if (CI.use_empty()) return false;
+
+     
+    Function *func = CI.getFunction();
+    if (!func || func->doesNotThrow()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI) || !isa<AnyMemIntrinsic>(&CI)) return false;
+
+     
+     
+
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+    FunctionType *fnTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *fn = cast<Function>(module.getOrInsertFunction("test_func", fnTy));
+
+     
+    Value *callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst CI(&module, Intrinsic::memset, {callee}, "", fn->getEntryBlock().getFirstNonPHI());
+
+    if (satisfiesConstraints(CI)) {
+        std::cout << "Constraints satisfied!\n";
+    } else {
+        std::cout << "Constraints not satisfied.\n";
+    }
+
+    return 0;
+}

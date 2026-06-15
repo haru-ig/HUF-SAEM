@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    CI->setDoesNotThrow();
+    CI->setIsNoReturn();
+
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Instruction *Store = new StoreInst(Zero, CI, false, BB);
+
+     
+    legacy::PassManager Passes;
+    Passes.add(new SimplifyCFGPass());
+    Passes.run(*BB->getParent());
+
+    return 0;
+}

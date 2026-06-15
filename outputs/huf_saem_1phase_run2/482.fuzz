@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+void createCallInstWithUse(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Ctx), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    
+     
+    ConstantInt *Arg = ConstantInt::get(Type::getInt32Ty(Ctx), 42);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::abs, {Arg->getType()}, &Arg, "", BB);
+    
+     
+    CI->addUse(CI->getType());
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+    createCallInstWithUse(M);
+    
+    std::cout << "Module created with call instruction:\n" << M;
+    
+    return 0;
+}

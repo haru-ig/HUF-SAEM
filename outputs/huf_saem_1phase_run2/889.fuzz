@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+    
+     
+    Value *Callee = ConstantInt::get(Type::getInt64Ty(Context), 0);
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+    CI->setDoesNotThrow();  
+    
+     
+    Func->setNoUnwind();
+    
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = CallInst::Create(Callee, {}, "");
+    SelectInst *SI = SelectInst::Create(ICmpInst::create(Instruction::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal);
+    
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+    
+     
+    SI->setName("selectInst");
+    CI->addUse(SI);
+    
+     
+    Loop *L = new Loop();
+    L->initializePredecessorsAndSucessors({BB});
+    L->setLoopPreheader(BasicBlock::Create(Context, "", Func));
+    L->setLoopLatch(BasicBlock::Create(Context, "", Func));
+    
+     
+    assert(L->getLoopPreheader() && "Loop must have a preheader block");
+    assert(L->getLoopLatch() && "Loop must have a latch block");
+    
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    
+     
+     
+
+    std::cout << "Module: " << *Module << std::endl;
+    return 0;
+}

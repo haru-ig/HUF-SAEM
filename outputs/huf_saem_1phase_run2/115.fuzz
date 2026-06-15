@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Instruction *CallInst = CallInst::Create(FTy, F, {Arg}, "", BB);
+
+     
+    Use &U = CallInst->use_begin();
+    U.getUser()->dump();
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CallInst);
+    if (II && II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+        std::cout << "CallInst is an anymemintrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an anymemintrinsic." << std::endl;
+    }
+
+     
+    if (isa<CallBase>(CallInst)) {
+        std::cout << "Context instruction is a CallBase." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase." << std::endl;
+    }
+
+     
+    Mod->print(outs(), nullptr);
+
+    return 0;
+}

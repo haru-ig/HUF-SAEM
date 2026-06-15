@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        std::cerr << "Error: CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    if (CI->doesNotThrow()) {
+        std::cerr << "Error: CallInst is marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !II->isAnyMemIntrinsic()) {
+        std::cerr << "Error: CallInst is not an AnyMemIntrinsic." << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

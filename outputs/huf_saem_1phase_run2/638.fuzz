@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IRBuilder.h>
+#include <iostream>
+
+using namespace llvm;
+
+ 
+Function *createFunctionWithCallInst(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Call = Builder.CreateCall(F, {}, "call");
+
+     
+    assert(!Call->use_empty() && "CallInst must have at least one use.");
+
+    return F;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M(Ctx);
+
+    Function *F = createFunctionWithCallInst(M);
+
+     
+    F->print(outs());
+
+    return 0;
+}

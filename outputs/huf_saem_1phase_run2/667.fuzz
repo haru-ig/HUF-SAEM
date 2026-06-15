@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test", Context);
+  
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+  
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  Instruction *I = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+  
+   
+  assert(!I->use_empty() && "CallInst must have at least one use");
+
+   
+  F->addFnAttr(Attribute::Nounwind);
+  assert(!F->hasFnAttr(Attribute::NoUnwind) && "Function should be marked as nounwind");
+
+   
+  if (auto *II = dyn_cast<IntrinsicInst>(I)) {
+    assert(II->getIntrinsicID() == Intrinsic::memset && "CallInst must be a memset intrinsic");
+  } else {
+    errs() << "Not an intrinsic call\n";
+    return -1;
+  }
+
+   
+  Loop *L = nullptr;  
+  assert(L && "Loop must be initialized");
+  assert(L->isLoopExitBasicBlock(BB) && "Loop exit block should be set correctly");
+
+   
+  assert(!L->getHeader()->hasAddressTaken() && "Loop header must not have its address taken");
+  unsigned UnrollCount = 4;
+  assert(UnrollCount > 0 && "Unroll count must be greater than zero");
+
+   
+  Type *Ty = F->getReturnType();
+  assert((Ty == Type::getInt32Ty(Context)) && "Function return type should be i32");
+
+   
+
+  outs() << "All assertions passed!\n";
+  return 0;
+}

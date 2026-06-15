@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    
+     
+    Value *ZeroVal = Constant::getNullValue(Type::getInt32Ty(Context));
+    std::vector<Value *> Args;
+    Args.push_back(ZeroVal);
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, Args, "", BB);
+    
+     
+    CI->addUse(F->getArgNo() + 1);
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwindBehavior(Function::UnwindNone);
+    
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "CallInst is not an intrinsic call!" << std::endl;
+        return 1;
+    }
+    
+     
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (II->getIntrinsicID() != Intrinsic::memset) {
+        std::cerr << "CallInst is not a memset intrinsic!" << std::endl;
+        return 1;
+    }
+    
+     
+    if (CI->use_empty()) {
+        std::cerr << "CallInst does not have any uses, cannot test undefined behavior handling!" << std::endl;
+        return 1;
+    }
+    
+     
+    if (!dyn_cast<CallBase>(CI)) {
+        std::cerr << "Context instruction is not a CallBase!" << std::endl;
+        return 1;
+    }
+    
+     
+    M.print(outs(), nullptr);
+    
+    return 0;
+}

@@ -1,0 +1,86 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createFunction() {
+    LLVMContext Context;
+    Module *M = new Module("testModule", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", M);
+    return F;
+}
+
+ 
+Instruction *createMemoryIntrinsic() {
+    LLVMContext Context;
+    Module *M = new Module("testModule", Context);
+    Function *F = createFunction();
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {ConstantInt::get(Type::getInt32Ty(Context), 0)}, "", BB);
+    return CI;
+}
+
+ 
+Value *createSelectInst() {
+    LLVMContext Context;
+    Module *M = new Module("testModule", Context);
+    Function *F = createFunction();
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Builder.getInt32(2), TrueVal);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    return SI;
+}
+
+int main() {
+    try {
+        Function *F = createFunction();
+        Instruction *CI = createMemoryIntrinsic();
+        Value *SI = createSelectInst();
+
+        if (CI->use_empty()) {
+            std::cerr << "Error: Memory intrinsic does not have any uses." << std::endl;
+            return 1;
+        }
+
+         
+        Function *func = CI->getFunction();
+        if (!func->doesNotThrow()) {
+            std::cerr << "Error: Function is not marked as nounwind." << std::endl;
+            return 1;
+        }
+
+         
+        IntrinsicInst *MI = dyn_cast<IntrinsicInst>(CI);
+        if (!MI || MI->getIntrinsicID() != Intrinsic::memset) {
+            std::cerr << "Error: The instruction is not a memory intrinsic." << std::endl;
+            return 1;
+        }
+
+         
+        std::cout << "Function: " << F->getName().str() << std::endl;
+        std::cout << "Memory Intrinsic: " << *CI << std::endl;
+        std::cout << "SelectInst: " << *SI << std::endl;
+
+    } catch (const std::exception &e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return 1;
+    }
+
+    return 0;
+}

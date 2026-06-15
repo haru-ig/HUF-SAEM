@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool checkAndUpdate(const IRPosition &pos, const DataLayout &DL) {
+   
+  return true;
+}
+
+int main() {
+  LLVMContext Context;
+  Module module("test_module", Context);
+  FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *mainFunc = Function::Create(funcType, Function::ExternalLinkage, "main", &module);
+  BasicBlock *entryBB = BasicBlock::Create(Context, "", mainFunc);
+
+   
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, Intrinsic::memset), {}, "", entryBB);
+
+   
+  CI->addUse(Value::use_iterator(), Type::getInt32Ty(Context));
+
+   
+  mainFunc->setDoesNotThrow();
+  mainFunc->setNoUnwind();
+
+   
+  if (dyn_cast<IntrinsicInst>(CI)) {
+    errs() << "CI is an intrinsic call\n";
+  } else {
+    errs() << "CI is not an intrinsic call\n";
+  }
+
+   
+  if (checkAndUpdate(IRPosition::callsite_argument(*mainFunc, CI), module.getDataLayout())) {
+    errs() << "Constraints satisfied\n";
+  } else {
+    errs() << "Constraints not satisfied\n";
+  }
+
+  return 0;
+}

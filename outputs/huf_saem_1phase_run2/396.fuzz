@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void createIntrinsicCall(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+    Function *F = Intrinsic::getDeclaration(&M, Intrinsic::your_intrinsic, {});
+    if (!F) return;  
+
+    BasicBlock *BB = BasicBlock::Create(Ctx, "entry", Function::Create(FunctionType::get(Type::getVoidTy(Ctx), {}, false), Function::ExternalLinkage));
+    IRBuilder<> Builder(BB);
+    CallInst *CI = Builder.CreateCall(F, {});
+    assert(!CI->use_empty() && "The CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        Value *NumBytes = ConstantInt::get(Type::getInt64Ty(Ctx), 0);  
+        CI->setArgOperand(0, NumBytes);  
+    } else if (dyn_cast<AtomicRMWInst>(CI) || dyn_cast<AtomicCmpXchgInst>(CI)) {
+         
+        Value *Ptr = ConstantInt::get(Type::getInt8Ty(Ctx), 0);  
+        CI->setArgOperand(0, Ptr);  
+    }
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (AI != F->args().end()) {
+        AI->addAttr(Attribute::Returned);
+    }
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+    createIntrinsicCall(M);  
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

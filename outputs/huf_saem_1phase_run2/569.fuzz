@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/SimplifyIndVar.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *EntryBB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::Create(Func->getFunctionType(), Func, {});
+    EntryBB->getInstList().push_back(CI);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::Nounwind);
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *AnyMemIntrin = IntrinsicInst::createMemoryTransfer(Context, CI, {}, "anymemintr");
+    EntryBB->getInstList().push_back(AnyMemIntrin);
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+
+     
+     
+     
+
+     
+     
+    if (CI->getNumUses() > 0) {
+        std::cout << "CallInst has at least one use, triggering potential simplification.\n";
+    } else {
+        std::cout << "CallInst does not have any uses.\n";
+    }
+
+     
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    new StoreInst(Arg, (AllocaInst*)Func->arg_begin(), EntryBB);
+
+     
+    Func->addAttribute(0, Attribute::Returned);
+
+    return 0;
+}

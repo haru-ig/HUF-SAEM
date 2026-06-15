@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+ 
+void createTestModule(LLVMContext &Ctx, Module *M) {
+    Type *Int32Ty = Type::getInt32Ty(Ctx);
+    FunctionType *FTy = FunctionType::get(Int32Ty, {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::abs), {}, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("testModule", Ctx);
+    
+    createTestModule(Ctx, &M);
+    
+     
+    std::cout << "Generated IR:\n" << M << "\n";
+    
+    return 0;
+}

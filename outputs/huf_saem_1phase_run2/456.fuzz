@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Arg0 = &*F->arg_begin();
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::anymemintrinsic), { Arg0 }, "", BB);
+    
+     
+    if (CI->use_empty()) {
+        std::cerr << "Error: CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+    
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "Error: CallInst is not an intrinsic." << std::endl;
+        return 1;
+    }
+    
+     
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (!isa<AnyMemIntrinsic>(II)) {
+        std::cerr << "Error: CallInst is not an AnyMemIntrinsic." << std::endl;
+        return 1;
+    }
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    if (!CB) {
+        std::cerr << "Error: Context instruction is not a CallBase." << std::endl;
+        return 1;
+    }
+    
+     
+    auto IRP = IRPosition::callsite_argument(CB);
+    if (IRP.getKind() != IRPosition::IRP_CALL_SITE_ARGUMENT) {
+        std::cerr << "Error: IRPosition does not have the correct position kind." << std::endl;
+        return 1;
+    }
+    
+     
+    if (!IRP.getAnchorScope()) {
+        std::cerr << "Error: Function associated with IRPosition is null." << std::endl;
+        return 1;
+    }
+    
+     
+    
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

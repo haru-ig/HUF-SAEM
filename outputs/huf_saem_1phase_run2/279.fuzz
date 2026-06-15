@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Type *FloatTy = Type::getFloatTy(Context);
+    Value *TrueVal = ConstantFP::get(FloatTy, 1.0);
+    Value *FalseVal = ConstantFP::get(FloatTy, -1.0);
+
+     
+    Value *X = ConstantFP::get(FloatTy, 3.5);
+    Instruction *FAbs = BinaryOperator::CreateFNeg(X, "", BB);
+    FAbs->insertBefore(BB->getFirstInsertionPt());
+
+     
+    Value *CTPop = InstCombine工(BinaryOperator::CreateAnd(FAbs, ConstantInt::get(FloatTy, 1)), "", BB);
+    CTPop->insertBefore(BB->getFirstInsertionPt());
+
+     
+    Instruction *CondInst = ICmpInst::create(ICmpInst::ICMP_ULT, X, ConstantInt::get(FloatTy, 2), "", BB);
+    SelectInst *SI = new SelectInst(CondInst, TrueVal, FalseVal, "", BB);
+    SI->insertBefore(BB->getFirstInsertionPt());
+
+     
+    if (auto *CI = dyn_cast<CallInst>(SI)) {
+        if (!CI->use_empty()) {
+            std::cout << "SelectInst created successfully with specific conditions." << std::endl;
+        } else {
+            std::cout << "SelectInst has no uses, which is not desired." << std::endl;
+        }
+    } else {
+        std::cout << "The instruction is not a SelectInst or was not created correctly." << std::endl;
+    }
+
+    return 0;
+}

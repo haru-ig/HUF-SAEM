@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 1)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::abs, {Type::getInt32Ty(Context)}), Args, "", BB);
+    
+     
+    CI->addUse(0, Value::use_iterator());
+    
+     
+    F->setDoesNotThrow();
+    
+     
+     
+    
+     
+    Loop *L = nullptr;
+    if (auto *BI = dyn_cast<BranchInst>(BB->getTerminator())) {
+        if (BI->isUnconditional()) {
+            L = LI->getLoopFor(BB);
+            if (L) {
+                 
+                 
+            }
+        }
+    }
+    
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), -1.0);
+    Value *CondVal = ICmpInst::create(Cst, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+     
+
+    std::cout << "Test case generated." << std::endl;
+    return 0;
+}

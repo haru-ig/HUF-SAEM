@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {PointerType::getInt8PtrTy(Context), PointerType::getInt8PtrTy(Context)}, {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is a valid memory intrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not a valid memory intrinsic." << std::endl;
+    }
+
+     
+    if (!CI->use_empty()) {
+        Value *SimplifiedValue = CI;  
+        if (SimplifiedValue != CI) {
+            std::cout << "CallInst simplified." << std::endl;
+        } else {
+            std::cout << "CallInst could not be simplified." << std::endl;
+        }
+    }
+
+    return 0;
+}

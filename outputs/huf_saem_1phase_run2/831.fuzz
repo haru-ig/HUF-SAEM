@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+
+using namespace llvm;
+
+ 
+Function *createFunctionWithCall(LLVMContext &Ctx) {
+  Module *M = new Module("test", Ctx);
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+   
+  LLVMContext &Ctx2 = BB->getContext();
+  Intrinsic::ID IID = Intrinsic::not_an_intrinsic;  
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, IID), {}, "", BB);
+
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+  assert(F->doesNotThrow() && "Function must be marked as nounwind");
+  assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+  assert(isa<AnyMemIntrinsic>(CI) && "Intrinsic must be a memory intrinsic");
+
+   
+
+  return F;
+}
+
+ 
+void simplifySelectInst() {
+  LLVMContext Ctx;
+  Module *M = new Module("test", Ctx);
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "simplifySelectFunc", M);
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+  Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Ctx), APInt(32, 1));
+  Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Ctx), APInt(32, 0));
+  SelectInst *SI = new SelectInst(TrueVal, FalseVal, "", BB);
+
+  assert(isa<SelectInst>(SI) && "SelectInst must be a valid select instruction");
+
+   
+  if (auto *SE = SI->hasOneUse()) {
+    SI->replaceAllUsesWith(TrueVal);
+    SI->eraseFromParent();
+  }
+}
+
+int main() {
+  LLVMContext Ctx;
+  Function *F = createFunctionWithCall(Ctx);
+  simplifySelectInst();
+
+   
+
+  std::cout << "Module created with function having call instruction.\n";
+  return 0;
+}

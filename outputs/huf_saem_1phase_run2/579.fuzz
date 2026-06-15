@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* Func = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Argument* Arg = &(*Func->arg_begin());
+    Arg->setName("arg");
+
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::getDeclaration(Module.get(), Intrinsic::memset), { Arg }, {}, BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID ID = CI->getIntrinsicID();
+        if (ID == Intrinsic::memset) {
+             
+            Value* NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);  
+            if (NumBytes->getSExtValue() <= 0 || NumBytes->getSExtValue() % sizeof(int) != 0) {
+                std::cerr << "Length is valid for atomic unordered memory intrinsic handling" << std::endl;
+            } else {
+                std::cerr << "Invalid length for atomic unordered memory intrinsic" << std::endl;
+            }
+        }
+    }
+
+     
+    if (!CI->use_empty()) {
+        std::unique_ptr<CallBase> SimplifiedCI = simplifyCall(CI);
+        if (SimplifiedCI) {
+            CI = dyn_cast<CallInst>(SimplifiedCI.get());
+        }
+    }
+
+     
+    Module->print(outs(), nullptr);
+
+    return 0;
+}

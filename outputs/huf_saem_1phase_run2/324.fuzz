@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Value.h"
+#include "llvm/IR/Use.h"
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+    
+     
+    CallInst *CI = CallInst::Create(FuncTy, Func, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+    return 0;
+}

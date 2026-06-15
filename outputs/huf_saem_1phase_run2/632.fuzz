@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool generateTest(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Value *Arg = &*F->arg_begin();   
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymem_intrinsic), {Arg}, "", BB);
+
+     
+    if (CI->use_empty()) return false;
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (!isa<IntrinsicInst>(CI)) return false;
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (!II->getIntrinsicID() == Intrinsic::anymem_intrinsic) return false;
+
+     
+    Value *NumBytes = II->getArgOperand(1);   
+    if (!isa<ConstantInt>(NumBytes) || cast<ConstantInt>(NumBytes)->isZero()) return false;
+
+     
+    if (!isa<CallBase>(CI)) return false;
+
+     
+
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module M(std::string("testModule"), Context);
+
+    if (generateTest(M)) {
+        std::cout << "Test generation successful!" << std::endl;
+    } else {
+        std::cerr << "Test generation failed." << std::endl;
+    }
+
+    return 0;
+}

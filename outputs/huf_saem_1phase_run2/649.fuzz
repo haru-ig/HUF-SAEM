@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[] = { ConstantInt::get(Type::getInt32Ty(Context), 42) };
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::ctlz), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    assert(!CI->doesNotThrow() && "CallInst does not throw");
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::ctlz && "Expected llvm.ctlz intrinsic");
+
+     
+    simplifyCall(CI);
+
+     
+    Value *Cond = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *SI = new SelectInst(Cond, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+
+     
+    simplifySelectInst(SI);
+
+    std::cout << "Test cases generated successfully!" << std::endl;
+    return 0;
+}

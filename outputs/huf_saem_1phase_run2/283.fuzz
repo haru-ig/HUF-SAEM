@@ -1,0 +1,69 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    F->addUse(CI->getType(), CI);
+
+     
+    assert(!F->isDeclaration() && "Function should not be external");
+    assert(F->hasFnAttribute(Attribute::NoUnwind) && "Function should have NoUnwind attribute");
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cerr << "CallInst is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        std::cout << "Context instruction is a CallBase." << std::endl;
+    } else {
+        std::cerr << "Context instruction is not a CallBase." << std::endl;
+        return 1;
+    }
+
+     
+    Value *operand = CI->getOperand(0);
+    if (!operand->getType()->isVectorTy()) {
+        std::cout << "Last operand's type is not a vector type." << std::endl;
+    } else {
+        std::cerr << "Last operand's type is a vector type." << std::endl;
+        return 1;
+    }
+
+     
+    F->print(llvm::outs());
+    M.print(llvm::outs());
+
+    return 0;
+}

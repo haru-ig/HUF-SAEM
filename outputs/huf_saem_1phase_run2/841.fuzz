@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID intrinsicID = Intrinsic::memcpy;
+    Value *Arg1 = ConstantInt::get(Type::getInt64Ty(Context), 0);
+    Value *Arg2 = ConstantInt::get(Type::getInt64Ty(Context), 0);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, intrinsicID), {Arg1, Arg2}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst satisfies constraints for memory intrinsic handling." << std::endl;
+    } else {
+        std::cout << "CallInst does not satisfy the intrinsic constraint." << std::endl;
+    }
+
+     
+    delete M;
+    return 0;
+}

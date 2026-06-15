@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/CallBase.h"
+#include "llvm/Transforms/Utils/LoopUtils.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallBase *CI = CallBase::Create(Intrinsic::any_mem_intrinsic, {}, {}, "", BB);
+    CI->addUse(...);  
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II && "CallInst should be an intrinsic call");
+        if (AnyMemIntrinsic *AMIntr = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+        }
+    }
+
+     
+    Loop *L = createLoopFor(BB);
+    if (L) {
+        L->setLoopLatch(BasicBlock::Create(Context, "", F));
+        L->setLoopPreheader(BasicBlock::Create(Context, "", F));
+         
+    }
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;  
+
+     
+
+    std::cout << "Test case constructed with basic elements.\n";
+    return 0;
+}

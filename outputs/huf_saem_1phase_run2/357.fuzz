@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("testmodule", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testfunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *CallInstVal = CallInst::Create(FuncTy, F, {}, "", BB);
+    assert(!CallInstVal->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(FuncTy, Intrinsic::getDeclaration(Mod.get(), Intrinsic::memset), {Arg}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Intrinsic must be memset");
+
+     
+    Value *CtxIVal = II;
+    assert(isa<CallBase>(CtxIVal) && "Context instruction must be a CallBase");
+
+     
+
+    std::cout << "Module structure:\n" << *Mod << std::endl;
+
+    return 0;
+}

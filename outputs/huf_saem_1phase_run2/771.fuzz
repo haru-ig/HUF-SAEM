@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymemintrinsic), {Arg}, "", BB);
+    assert(!CI->use_empty() && "The CallInst must have at least one use.");
+    
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+    
+     
+    CallBase *CtxI = dyn_cast<CallBase>(CI);
+    assert(CtxI && "Context instruction must be a CallBase instance.");
+    
+     
+    auto IRPos = IRPosition::callsite_argument(*CtxI, 0);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have a callsite argument position kind.");
+    
+     
+    Function *Func = IRPos.getFunction();
+    assert(Func && "Associated function must be non-null.");
+    
+     
+    
+    std::cout << "Test program execution completed successfully." << std::endl;
+    return 0;
+}

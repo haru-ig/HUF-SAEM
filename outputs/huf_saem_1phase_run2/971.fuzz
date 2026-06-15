@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+  
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::ExternalLinkage);
+
+     
+    IntrinsicInst *II = IntrinsicInst::get(Intrinsic::sqrt, {CI}, "", BB);
+
+     
+    if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+        Value *Ptr = AMII->getRawPointerOperand();
+        uint64_t NumBytes = 0;  
+        if (NumBytes == 0) {
+             
+        }
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(BB->getTerminator());
+
+     
+
+    std::cout << "Satisfied some of the constraints." << std::endl;
+    return 0;
+}

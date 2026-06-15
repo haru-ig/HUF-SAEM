@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), Function::ExternalLinkage, "foo", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), Args, "", BB);
+
+     
+    if (CI->use_empty()) {
+        CI->addUse(Type::getInt32Ty(Context));
+    }
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CI is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "CI is not an intrinsic call." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function F is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function F is not marked as nounwind." << std::endl;
+    }
+
+     
+    M->print(errs());
+    F->print(errs());
+
+    return 0;
+}

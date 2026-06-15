@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst must have at least one use.\n";
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst must be an intrinsic call.\n";
+        return 1;
+    }
+
+     
+    int NumBytes = 0;  
+    if (NumBytes > 0 && !isMultiple(NumBytes, getElementTypeSize(CI->getType()))) {
+        errs() << "Atomic unordered memory intrinsics must have length non-positive or not a multiple of element size.\n";
+        return 1;
+    }
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (AI == F->arg_end()) {
+        errs() << "Function must have at least one argument with the returned attribute.\n";
+        return 1;
+    }
+
+     
+    if (!isa<CallBase>(CI)) {
+        errs() << "Context instruction must be a CallBase instance.\n";
+        return 1;
+    }
+
+     
+     
+
+     
+     
+
+     
+
+    errs() << "All constraints satisfied.\n";
+    return 0;
+}

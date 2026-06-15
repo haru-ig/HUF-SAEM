@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+
+     
+    Value *IntrinsicVal = Intrinsic::getDeclaration(Mod.get(), Intrinsic::anymem_intrinsic, {Type::getInt8PtrTy(Context)});
+    CallInst *CI = CallInst::Create(IntrinsicVal, {Arg}, "", BB);
+
+     
+    CI->addUse(F->getArgNo(0));
+
+     
+    F->setDoesNotThrow();
+    F->setOnlyAccessesArgumentPointers();
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "CallInst is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+
+     
+    Mod->print(outs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,75 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->addAttr(Attribute::Returned);
+    
+     
+    CallBase *CI;
+    if (Intrinsic::isSupportedCPU(Intrinsic::anymemintrinsic)) {
+        CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::anymemintrinsic), {Arg}, "", BB);
+    } else {
+         
+        std::cerr << "Unsupported intrinsic type" << std::endl;
+        return 1;
+    }
+    
+     
+    if (CI->use_empty()) {
+        CI->addUse(Type::getInt32Ty(Context));
+    }
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = cast<IntrinsicInst>(CI);
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+            Value *NumBytes = II->getArgOperand(0);
+            if (!isa<ConstantInt>(NumBytes) || cast<ConstantInt>(NumBytes)->isZero()) {
+                std::cerr << "Zero-length operation detected" << std::endl;
+                return 1;
+            }
+        }
+    } else {
+        std::cerr << "Not an intrinsic call" << std::endl;
+        return 1;
+    }
+    
+     
+    if (!F->doesNotThrow()) {
+        std::cerr << "Function does not have the 'nounwind' attribute" << std::endl;
+        return 1;
+    }
+    
+     
+    M->print(outs(), nullptr);
+    
+    return 0;
+}

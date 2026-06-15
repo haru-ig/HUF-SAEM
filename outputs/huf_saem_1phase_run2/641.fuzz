@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool checkCallInst(CallInst &CI) {
+     
+    if (CI.use_empty()) return false;
+
+     
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    Intrinsic::ID intrinsicID = dyn_cast<IntrinsicInst>(&CI)->getIntrinsicID();
+    if (intrinsicID != Intrinsic::memcpy && intrinsicID != Intrinsic::memmove && intrinsicID != Intrinsic::memset) {
+        return false;
+    }
+
+     
+
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    FunctionCallee Callee = M->getOrInsertFunction("memset", FTy);
+    std::vector<Value *> Args;
+    Args.push_back(Builder.CreatePointerCast(ConstantExpr::getBitCast(Arg, Type::getInt8PtrTy(Context)), Type::getInt8PtrTy(Context)));
+    Args.push_back(Arg);
+    Args.push_back(ConstantInt::get(Type::getInt32Ty(Context), 4));
+    CallInst *CI = Builder.CreateCall(Callee, Args, "");
+
+    if (checkCallInst(*CI)) {
+        std::cout << "The CallInst meets all the constraints." << std::endl;
+    } else {
+        std::cout << "The CallInst does not meet some of the constraints." << std::endl;
+    }
+
+    delete M;
+    return 0;
+}

@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Use.h>
+
+using namespace llvm;
+
+int main() {
+     
+    Function f("exampleFunc", {}, nullptr);
+    CallInst CI(&f, {});  
+
+    if (!CI.use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+    return 0;
+}

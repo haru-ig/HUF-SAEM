@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyLibCalls.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    Intrinsic::ID ID = Intrinsic::memcpy;  
+    IntrinsicInst *II = IntrinsicInst::Create(Module.get(), ID, {ConstantInt::get(Type::getInt8Ty(Context), 0)}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(II) && "Must be an intrinsic call");
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "Must be a memory intrinsic");
+
+     
+    uint64_t NumBytes = 0;  
+    assert(NumBytes <= 0 || !(NumBytes % 8), "Atomic unordered memory intrinsic must have length non-positive or not a multiple of element size");
+
+     
+    if (ID == Intrinsic::memcpy) {
+        assert(AMII->getNumMemOperands() > 0, "Atomic unordered memory intrinsic must have zero-length operation to trigger undefined behavior handling");
+    }
+
+     
+    Value *CondVal = ConstantInt::getTrue(Context);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = Intrinsic::ctpop(TrueVal);  
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be valid");
+
+     
+    Type *SelType = SI->getType();
+    Type *CondType = CondVal->getType();
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondType->isIntegerTy() || CondType->isVectorTy()), "SelectInst types must be compatible");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

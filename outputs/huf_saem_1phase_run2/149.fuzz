@@ -1,0 +1,157 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        std::cerr << "Error: CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "Error: CallInst is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    if (!CB) {
+        std::cerr << "Error: Context instruction is not a CallBase." << std::endl;
+        return 1;
+    }
+
+     
+    auto Pos = IRPosition::callsite_argument(CB, 0);
+    if (Pos.getPositionKind() != IRP_CALL_SITE_ARGUMENT) {
+        std::cerr << "Error: IRPosition does not have the correct position kind." << std::endl;
+        return 1;
+    }
+
+     
+    if (!Pos.getFunction()) {
+        std::cerr << "Error: Function associated with IRPosition is null." << std::endl;
+        return 1;
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Value *FalseVal = ICmpInst::makeICmp(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(FalseVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (!SI->getCondition() || !SI->getTrueValue() || !SI->getFalseValue()) {
+        std::cerr << "Error: Invalid values for SelectInst." << std::endl;
+        return 1;
+    }
+
+     
+    Type *SelType = SI->getType();
+    if (!SelType) {
+        std::cerr << "Error: Unable to retrieve the type of SelectInst." << std::endl;
+        return 1;
+    }
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    if (MaxAnalysisRecursionDepth <= 0) {
+        std::cerr << "Error: Invalid MaxAnalysisRecursionDepth value." << std::endl;
+        return 1;
+    }
+
+     
+    FPClassTest DemandedMask = FPClassTest::getFPClassTest(FPClassTest::Zero);
+    if (!DemandedMask.isValid()) {
+        std::cerr << "Error: Invalid DemandedMask value." << std::endl;
+        return 1;
+    }
+
+     
+    Loop *L = nullptr;
+    if (!BB->getParent()->getLoopInfo().empty()) {
+        L = BB->getParent()->getLoopInfo().begin()->get();
+        if (!L->getLoopPreheader() || !L->getLoopLatch() || !L->isSafeToClone() || L->getHeader()->hasAddressTaken()) {
+            std::cerr << "Error: Invalid loop structure." << std::endl;
+            return 1;
+        }
+    } else {
+        std::cerr << "Error: No loop found in the function." << std::endl;
+        return 1;
+    }
+
+     
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;
+    if (ULO.Count <= 0) {
+        std::cerr << "Error: Invalid unroll count." << std::endl;
+        return 1;
+    }
+
+     
+    Instruction *I = SI;
+    if (!I || !I->getType()->isIntegerTy()) {
+        std::cerr << "Error: Invalid instruction or type." << std::endl;
+        return 1;
+    }
+
+     
+    unsigned Depth = 0;
+    if (Depth > MaxAnalysisRecursionDepth) {
+        std::cerr << "Error: Recursion depth exceeds maximum allowed." << std::endl;
+        return 1;
+    }
+
+     
+    if (DemandedMask.getBitWidth() != SelType->getScalarSizeInBits()) {
+        std::cerr << "Error: Bit width mismatch between DemandedMask and instruction type." << std::endl;
+        return 1;
+    }
+
+     
+    if (NLZ > 0) {
+         
+    }
+
+     
+    TreeEntry *TE = nullptr;
+    if (!TE || TE->Idx == 0 || TE->UserTreeIndex.EdgeIdx == UINT_MAX) {
+        std::cerr << "Error: Invalid TreeEntry." << std::endl;
+        return 1;
+    }
+
+     
+    Value *VL = ConstantInt::get(Type::getInt32Ty(Context), 4);
+    Value *Mask = ConstantInt::get(Type::getInt32Ty(Context), 0xF);
+    if (!VL || !Mask) {
+        std::cerr << "Error: Invalid VL or Mask values." << std::endl;
+        return 1;
+    }
+
+     
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

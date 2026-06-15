@@ -1,0 +1,89 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Use.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Args[0];
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, Args, {}, "", BB);
+    
+     
+    CI->addUse(Type::getInt32Ty(Context));
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected a memory intrinsic");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    
+     
+    if (AMII->isAtomic() && !AMII->isVolatile()) {
+        uint64_t NumBytes = AMII->getArgOperand(2)->getZExtValue();
+        assert(NumBytes <= 0 || NumBytes % 8 != 0, "Expected non-positive length or not a multiple of element size");
+    }
+    
+     
+    if (!CI->use_empty()) {
+        CallBase *CB = cast<CallBase>(CI);
+        assert(CB && "Expected a CallBase instruction");
+        
+         
+        auto IRPos = IRPosition::callsite_argument(CB, 0);
+        Value *CtxI = CB;
+        assert(isa<CallBase>(CtxI) && "Expected CtxI to be a CallBase");
+        
+         
+         
+    }
+    
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ICmpInst::makeICmp(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(TrueVal, FalseVal, true, "", BB);
+    
+     
+    assert(SI->getCondition() && "Expected a valid condition");
+    assert(SI->getTrueValue() && "Expected a valid true value");
+    assert(SI->getFalseValue() && "Expected a valid false value");
+    
+     
+    if (auto *ICmp = dyn_cast<ICmpInst>(SI->getCondition())) {
+        if (ICmp->getPredicate() == ICmpInst::ICMP_ULT && ICmp->getOperand(0) == TrueVal && isa<ConstantInt>(ICmp->getOperand(1))) {
+            auto *Cst = cast<ConstantInt>(ICmp->getOperand(1));
+            assert(Cst->getZExtValue() == 2, "Expected specific constant for ICMP");
+        }
+    }
+    
+     
+    Type *SelType = SI->getType();
+    Type *CondType = SI->getCondition()->getType();
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondType->isIntegerTy() || CondType->isVectorTy()), "Expected integer or vector types");
+    
+     
+     
+    
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

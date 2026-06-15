@@ -1,0 +1,153 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 0, true);
+    Arg->setName("arg");
+    BB->addArgument(Type::getInt32Ty(Context), false);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), { Arg }, "", BB);
+
+     
+    if (!CI->use_empty()) {
+         
+        F->setDoesNotThrow();
+        F->setUnwind(false);
+
+         
+        if (dyn_cast<IntrinsicInst>(CI)) {
+            Intrinsic::ID IID = CI->getIntrinsicID();
+            if (IID == Intrinsic::memcpy || IID == Intrinsic::memmove || IID == Intrinsic::memset) {
+                 
+                Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0, true);
+                if (!CI->use_empty() && F->doesNotThrow() && dyn_cast<IntrinsicInst>(CI) && (NumBytes->isZero() || !((int)NumBytes % sizeof(void*)))) {
+                     
+                    if (isa<CallBase>(CI)) {
+                         
+                        IRPosition Pos = IRPosition::callsite_argument(CI, 0);
+                        assert(Pos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition kind should be callsite argument");
+
+                         
+                        Function *Func = Pos.getFunction();
+                        assert(Func && "Function should not be null");
+
+                         
+                        TreeEntry *E = nullptr;
+                        if (E) {
+                            Value *ScalarTy = E->Scalars.front();
+                            int Size = E->Scalars.size();
+
+                             
+                            DenseMap<TreeEntry*, Type*> MinBWs;
+                            if (MinBWs.find(E) != MinBWs.end()) {
+                                Type *Ty = MinBWs[E];
+                                assert(Ty->isIntegerTy() && "Type should be integer");
+                            }
+
+                             
+                            if (E->State == TreeEntry::SplitVectorize) {
+                                 
+                                assert(E->CombinedEntriesWithIndices.size() == 2 && "Exactly two entries should be present");
+
+                                 
+                                if (!E->isGather() && !(E->State & TreeEntry::TransformedToGatherNodes)) {
+                                     
+                                    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+                                    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+                                    Value *FalseVal = CallInst::Create(Instruction::getUnaryOpcode(Instruction::FNeg, TrueVal->getType()), TrueVal, "", BB);
+                                    Type *SelType = FalseVal->getType();
+
+                                     
+                                    if (SelType && SelType->isIntegerTy()) {
+                                         
+                                        Value *X = ConstantInt::get(Type::getInt32Ty(Context), 1);
+                                        Value *AbsVal = CallInst::Create(Instruction::getUnaryOpcode(Instruction::FNeg, X->getType()), X, "", BB);
+                                        FalseVal = CallInst::Create(Instruction::getUnaryOpcode(Instruction::FNeg, AbsVal->getType()), AbsVal, "", BB);
+
+                                         
+                                        Type *CondType = CondVal->getType();
+                                        if ((CondType->isIntegerTy() && SelType->isIntegerTy()) || (CondType->isVectorTy() && SelType->isVectorTy())) {
+                                             
+                                            if (E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement) {
+                                                 
+                                                Value *LastOperand = E->getOperand(1)->back();
+                                                assert(!lastOperand->getType()->isVectorTy() && "Last operand should not be a vector type");
+
+                                                 
+                                                Type *ScalarTy = VL[0];
+                                                assert(isValidElementType(ScalarTy) && "ScalarTy should be a valid element type");
+
+                                                 
+                                                DenseMap<TreeEntry*, Type*> MinBWs;
+                                                if (MinBWs.find(E) != MinBWs.end()) {
+                                                    Type *Ty = MinBWs[E];
+                                                    assert(Ty->isIntegerTy() && "Type should be integer");
+                                                } else if (E->Idx == 0 && isReducedBitcastRoot()) {
+                                                     
+                                                }
+
+                                                 
+                                                Value *I = CallInst::Create(Instruction::getUnaryOpcode(Instruction::FNeg, X->getType()), X, "", BB);
+                                                assert(isa<FNegInst>(I) && "I should be a FNegInst");
+                                                Value *XAbs = CallInst::Create(Instruction::getUnaryOpcode(Instruction::FABS, X->getType()), X, "", BB);
+                                                assert(isa<CallInst>(XAbs) && "XAbs should be a call to fabs");
+                                                assert(XAbs->hasOneUse() && "fabs(x) should have exactly one use");
+
+                                                 
+                                                FPClassTest Known = FPClassTest::getEmpty();
+                                                assert(Known.isUninit() && "Known should be uninitialized");
+
+                                                 
+                                                int Depth = 0;
+#define MaxAnalysisRecursionDepth 10
+                                                assert(Depth <= MaxAnalysisRecursionDepth && "Depth should not exceed MaxAnalysisRecursionDepth");
+
+                                                 
+                                                Type *ScalarType = ScalarTy;
+                                                assert(ScalarType->isIntegerTy() && "ScalarType should be integer");
+                                                int BitWidth = ScalarType->getIntegerBitWidth();
+                                                FPClassTest DemandedMask = FPClassTest::getEmpty();
+                                                assert(DemandedMask.getBitWidth() == BitWidth && "DemandedMask bit width should match ScalarTy type");
+
+                                                 
+                                                int SliceSize = 0;
+                                                int Part = 0;
+                                                Type *MaskBase = computeMaskBase(SliceSize, Part);
+                                                assert(MaskBase && "MaskBase should be computed");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}

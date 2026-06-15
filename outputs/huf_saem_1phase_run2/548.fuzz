@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {Arg}, "", BB);
+
+     
+    Use &U = F->arg_begin();
+    new StoreInst(CI, &*U, false, BB);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI) && CI->getIntrinsicID() == Intrinsic::memset) {
+        errs() << "CallInst meets conditions.\n";
+    } else {
+        errs() << "CallInst does not meet conditions.\n";
+    }
+
+     
+    if (F->doesNotThrow()) {
+        errs() << "Function is marked as nounwind.\n";
+    } else {
+        errs() << "Function is not marked as nounwind.\n";
+    }
+
+    return 0;
+}

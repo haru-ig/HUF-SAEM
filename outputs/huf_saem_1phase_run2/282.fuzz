@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, { Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1) }, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    Arg->addUse(CI);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is a valid intrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function is not marked as nounwind." << std::endl;
+    }
+
+     
+    if (!CI->doesNotThrow()) {
+        std::cout << "CallInst is not marked as nounwind." << std::endl;
+    } else {
+        std::cout << "CallInst is marked as nounwind." << std::endl;
+    }
+
+     
+
+    return 0;
+}

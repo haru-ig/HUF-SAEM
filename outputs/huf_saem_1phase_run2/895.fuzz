@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *Mod = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Mod, Intrinsic::memcpy), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID ID = CI->getIntrinsicID();
+        if (ID == Intrinsic::memcpy || ID == Intrinsic::memmove || ID == Intrinsic::memset) {
+             
+        } else if (ID == Intrinsic::atomic_load || ID == Intrinsic::atomic_store || 
+                   ID == Intrinsic::atomic_rmw_add || ID == Intrinsic::atomic_rmw_sub || 
+                   ID == Intrinsic::atomic_cmpxchg) {
+             
+            Value *Ptr = CI->getArgOperand(0);
+            uint64_t NumBytes = cast<ConstantInt>(CI->getArgOperand(2))->getZExtValue();
+            assert(NumBytes <= 1 || !isMultipleOfElementSize(NumBytes) && "Atomic unordered memory intrinsics must have non-positive length or not a multiple of element size");
+        }
+    }
+    
+     
+    if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+        IRPosition Pos = IRPosition::callsite_argument(CB);
+        assert(Pos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have position kind of IRP_CALL_SITE_ARGUMENT");
+        
+         
+    }
+    
+    return 0;
+}

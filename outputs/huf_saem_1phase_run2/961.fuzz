@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "test_func", M);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    CallBase* CB = dyn_cast<CallBase>(CI);
+    assert(CB && "CI must be an intrinsic call");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    assert(!Pos.isNull() && "Context instruction must be a CallBase instance");
+
+     
+    if (!CI->use_empty()) {
+        CI->simplifyCall();
+    }
+
+     
+    M->print(errs());
+
+    delete M;
+    return 0;
+}

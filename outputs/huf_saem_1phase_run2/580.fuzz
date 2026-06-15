@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+void generateTestFunction() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    
+     
+    F->arg_begin()->setName("arg1");
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    
+     
+    Value *IntrinsicArg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    IntrinsicInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, llvm::Intrinsic::memcpy), {IntrinsicArg}, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind.");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call.");
+    
+     
+    Intrinsic::ID IntrinsicID = CI->getIntrinsicID();
+    if (Intrinsic::isMemCmp(IntrinsicID)) {
+        assert(CI->getNumArgOperands() > 0 && "Memory intrinsic must have non-zero length.");
+    } else if (Intrinsic::isAtomic(IntrinsicID)) {
+        Value *NumBytes = CI->getOperand(2);
+        assert(cast<ConstantInt>(NumBytes)->getValue().ule(0) || !cast<ConstantInt>(NumBytes)->getValue().isMultipleOfElementSize(), "Length must be non-positive or not a multiple of the element size.");
+    }
+    
+     
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+}
+
+int main() {
+    generateTestFunction();
+    return 0;
+}

@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    Function* F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "foo", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    std::vector<Value*> Args;
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::getDeclaration(M, Intrinsic::any_mem_intrinsic), Args, "", BB);
+    
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind.");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call.");
+    assert(isa<AnyMemIntrinsic>(CI) && "Intrinsic must be AnyMemIntrinsic.");
+    
+     
+    F->setDoesNotThrow();
+    
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        auto* AIM = cast<AnyMemIntrinsic>(CI);
+        assert(AIM->getNumOperands() == 0 && "Atomic unordered memory intrinsic must have zero-length operation.");
+    }
+    
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (AI != F->arg_end()) {
+        AI->addAttr(Attribute::Returned);
+    }
+    
+     
+    Value* CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "Context instruction must be a CallBase.");
+    
+     
+    auto PosKind = IRPosition::callsite_argument(*CI);
+    assert(PosKind.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the call site argument position kind.");
+    
+     
+    auto* Funct = PosKind.getFunction();
+    assert(Funct != nullptr && "Associated function must be non-null.");
+    
+     
+    
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

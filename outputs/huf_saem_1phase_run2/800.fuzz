@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+bool satisfiesConstraints(CallInst &CI) {
+     
+    if (CI.use_empty()) return false;
+
+     
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow() || func->isDeclaration()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    Intrinsic::ID id = dyn_cast<IntrinsicInst>(&CI)->getIntrinsicID();
+    if (id != Intrinsic::memcpy && id != Intrinsic::memset) return false;
+
+     
+    if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
+        uint64_t NumBytes = MI->getNumElements() * MI->getElemSizeInBits();
+        if (NumBytes > 0 && NumBytes % 8 == 0) return false;
+    }
+
+     
+
+     
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", M->getFunction("main"));
+    CallInst *CI = CallInst::Create(nullptr, BB);
+
+    if (satisfiesConstraints(*CI)) {
+        errs() << "Constraints satisfied!\n";
+    } else {
+        errs() << "Constraints not satisfied.\n";
+    }
+
+    delete M;
+    return 0;
+}

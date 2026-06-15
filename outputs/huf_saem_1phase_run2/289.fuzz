@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IRBuilder.h>
+
+using namespace llvm;
+
+ 
+void simplifyAndIntrinsic(Function &F) {
+    LLVMContext &Ctx = F.getContext();
+    IRBuilder<> Builder(&F.getEntryBlock(), F.begin());
+
+     
+    Intrinsic::ID IntrID = Intrinsic::not_intrinsic;  
+    FunctionType *FTy = FunctionType::get(Builder.getInt32Ty(), {}, false);
+    Function *IntrinsicFunc = Intrinsic::getDeclaration(&F, IntrID, FTy);
+    CallInst *CI = Builder.CreateCall(IntrinsicFunc, {});
+
+     
+    if (!CI->use_empty()) {
+        std::cerr << "CallInst must have at least one use." << std::endl;
+        return;
+    }
+
+     
+    if (F.doesNotThrow() || CI->doesNotThrow()) {
+        std::cerr << "Function or CallInst must be marked as nounwind." << std::endl;
+        return;
+    }
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "CallInst must be an intrinsic call." << std::endl;
+        return;
+    }
+
+     
+}
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    FunctionType *FTy = FunctionType::get(Builder.getInt32Ty(), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "simplifyAndIntrinsic", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    simplifyAndIntrinsic(*F);
+
+    return 0;
+}

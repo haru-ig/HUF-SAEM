@@ -1,0 +1,135 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call");
+
+     
+    unsigned NumBytes = 0;
+    if (II->getIntrinsicID() == Intrinsic::memset) {
+        Value *LenVal = II->getArgOperand(2);
+        ConstantInt *LenCI = dyn_cast<ConstantInt>(LenVal);
+        assert(LenCI && "Length must be a constant integer");
+        NumBytes = LenCI->getZExtValue();
+    }
+    assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes) && "Atomic unordered memory intrinsics with non-positive length or not a multiple of element size should trigger undefined behavior handling code path");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    auto IRPos = IRPosition::callsite_argument(CB, 0);
+    assert(IRPos.getPositionKind() == IRPosition::CallSiteArgument && "IRPosition must have a position kind of IRP_CALL_SITE_ARGUMENT");
+
+     
+    Function *Func = IRPos.getAnchorScope();
+    assert(Func && "Function associated with the IRPosition must be non-null");
+
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry object must have a non-empty Scalars list");
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E].hasValue() && "MinBWs map entry for E must provide a valid bit width");
+    }
+
+     
+    assert(E->State == TreeEntry::SplitVectorize && "TreeEntry state must be SplitVectorize");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+
+     
+    SelectInst *SI = dyn_cast<SelectInst>(CI);
+    assert(SI && "SelectInst must be structured such that the simplification does not occur");
+    Value *CondVal = SI->getCondition();
+    Value *TrueVal = SI->getTrueValue();
+    Value *FalseVal = SI->getFalseValue();
+    Type *SelType = SI->getType();
+    assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst must have valid CondVal, TrueVal, FalseVal, and SelType");
+
+     
+    ICmpInst *ICmp = dyn_cast<ICmpInst>(CondVal);
+    assert(ICmp && ICmp->getPredicate() == ICmpInst::ICMP_ULT && "Condition must be an icmp ult comparison");
+    ConstantInt *Cst = dyn_cast<ConstantInt>(ICmp->getOperand(1));
+    assert(Cst && Cst->isZero() && "icmp ult condition must compare TrueVal with integer constant 2");
+
+     
+    Type *CondType = ICmp->getType();
+    assert((CondType->isIntegerTy() || CondType->isVectorTy()) && (SelType->isIntegerTy() || SelType->isVectorTy()) && "SelectInst types must be compatible");
+
+     
+    assert(E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement && "TreeEntry state must be Vectorize and opcode must be InsertElement");
+
+     
+    Value *LastOp = E->getOperand(1)->back();
+    assert(!LastOp->getType()->isVectorTy() && "The type of the last operand of E->getOperand(1) must not be a vector type");
+
+     
+    Type *ScalarTy = getElementTypeOrSelf(VL[0]);
+    assert(isValidElementType(ScalarTy) && "ScalarTy derived from VL[0] must be a valid element type");
+
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E].hasValue() && "MinBWs map must contain an entry for E");
+    } else if (E->Idx == 0 && isReducedBitcastRoot()) {
+         
+        updateScalarTypeFromReducedBitcast();
+    }
+
+     
+    Instruction *I = dyn_cast<Instruction>(CI);
+    assert(I && I->getOpcode() == Instruction::FNeg && "Input instruction must be of type FNeg");
+    Value *Op = I->getOperand(0);
+    if (auto *AbsInst = dyn_cast<UnaryOperator>(Op)) {
+        Op = AbsInst->getOperand(0);
+    }
+    assert(isOneUse(Op) && "Operand must have exactly one use");
+
+     
+    FPClass Known;
+    assert(Known == KnownFPClass() && "Known must be in an uninitialized state");
+    int Depth = 0;
+    const int MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    FPClassTest DemandedMask;
+    assert(DemandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+    Type *IType = I->getType();
+    assert((IType->isIntegerTy() || IType->isVectorTy()) && IType->getScalarSizeInBits() == DemandedMask.bitWidth() && "DemandedMask must match the type of I");
+
+     
+    Value *SliceSize = nullptr;  
+    Value *Part = nullptr;  
+    uint64_t MaskBase = computeMaskBase(SliceSize, Part);
+    assert(MaskBase != UINT_MAX && "MaskBase must be correctly computed");
+
+    std::cout << "All assertions passed." << std::endl;
+    return 0;
+}

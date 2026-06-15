@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *ZeroVal = Constant::getNullValue(Type::getInt32Ty(Context));
+    Value *VecVal = UndefValue::get(VectorType::get(IntegerType::getInt32Ty(Context), 4));
+    VecVal = InsertElementInst::Create(VecVal, ZeroVal, ConstantInt::get(Type::getInt32Ty(Context), 0), "", BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), VecVal, ZeroVal, ConstantInt::get(Type::getInt32Ty(Context), 0), "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    Use &U = *CI->user_begin();
+    assert(!CI.use_empty() && "CallInst must have at least one use");
+
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic");
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Intrinsic must be memset");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+
+    std::cout << "Test passed." << std::endl;
+    return 0;
+}

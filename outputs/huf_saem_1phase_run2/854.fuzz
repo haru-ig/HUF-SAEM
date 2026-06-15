@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("testmod", Context);
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function* F = Function::Create(FuncTy, Function::ExternalLinkage, "testfunc", Mod.get());
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Type* Int32Ty = Type::getInt32Ty(Context);
+    std::vector<Type*> ArgTys = {Int32Ty, Int32Ty};
+
+     
+    FunctionType* IntrinsicFuncTy = FunctionType::get(Int32Ty, ArgTys, false);
+    Intrinsic::ID IntrinsicID = Intrinsic::pow;  
+
+     
+    Value* Args[] = {ConstantInt::get(Int32Ty, 1), ConstantInt::get(Int32Ty, 2)};
+    CallInst* CI = CallInst::Create(IntrinsicFuncTy, Intrinsic::getIntrinsic(IntrinsicID), Args, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !II->isAnyMemory()) {
+        errs() << "Not a valid memory intrinsic!\n";
+        return 1;
+    }
+
+     
+    Mod->print(errs());
+
+    return 0;
+}

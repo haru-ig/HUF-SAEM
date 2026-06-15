@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test_module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_function", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Function *Callee = Intrinsic::getDeclaration(&Mod, Intrinsic::memcpy);
+    CallInst *CI = Builder.CreateCall(Callee, {Arg}, "", BB);
+
+     
+    CI->addUse(Builder.getInt32Ty(), 0);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic call." << std::endl;
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        std::cout << "Context instruction is a CallBase instance." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase instance." << std::endl;
+    }
+
+    return 0;
+}

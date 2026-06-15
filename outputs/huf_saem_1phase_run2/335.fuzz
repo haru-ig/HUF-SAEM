@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function* F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setAttr(Attribute::Returned);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    std::vector<Value*> Args;
+    Args.push_back(Arg);
+    CallBase* CI = CallInst::Create(FuncTy, Callee, Args, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst* IIC = dyn_cast<IntrinsicInst>(CI);
+    assert(IIC && "CallInst must be an intrinsic call");
+    AnyMemIntrinsic* AMI = cast<AnyMemIntrinsic>(IIC);
+    assert(AMI && "CallInst must be a memory intrinsic");
+
+     
+
+     
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value* FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 2);
+    SelectInst* SI = SelectInst::Create(ICmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI && "SelectInst creation failed");
+
+     
+
+     
+    Module->print(errs(), nullptr);
+
+    return 0;
+}

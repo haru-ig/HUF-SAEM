@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Intrinsic::ID IntrId = Intrinsic::not_an_intrinsic;  
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrId), Args, "", BB);
+
+     
+    Use &U = F->args().front();  
+    new StoreInst(CI, &U, false, BB);
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    if (II) {
+        switch (II->getIntrinsicID()) {
+            case Intrinsic::memset:
+                 
+                break;
+            case Intrinsic::atomic_load:
+            case Intrinsic::atomic_store:
+                 
+                break;
+            default:
+                assert(false && "Unsupported intrinsic type");
+        }
+    }
+
+     
+
+    std::cout << "Module: " << M << "\n";
+    return 0;
+}

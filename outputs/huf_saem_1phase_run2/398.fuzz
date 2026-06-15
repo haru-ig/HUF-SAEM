@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memset.p0i8.i32", 
+        FunctionType::get(Type::getVoidTy(Context), {PointerType::get(Type::getInt8Ty(Context), 0), Type::getInt32Ty(Context)}, false));
+    Value *Ptr = Builder.CreateAlloca(Type::getInt8Ty(Context));
+    Value *Val = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(Callee, {Ptr, Val}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setCallingConv(CallingConv::C);
+
+     
+    IntrinsicInst *Intr = dyn_cast<IntrinsicInst>(CI);
+    assert(Intr && "Expected an intrinsic instruction");
+    assert(Intr->getIntrinsicID() == Intrinsic::memset && "Expected llvm.memset intrinsic");
+
+     
+    CallBase *CallBaseInst = dyn_cast<CallBase>(CI);
+    assert(CallBaseInst && "Expected a call base instruction");
+
+     
+
+    return 0;
+}

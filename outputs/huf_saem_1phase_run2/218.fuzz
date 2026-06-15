@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("testModule", Context);
+
+     
+    Function *func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false), GlobalValue::ExternalLinkage, "testFunc", &module);
+    func->setDoesNotThrow();
+    func->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Value *arg1 = new Argument(Type::getInt32Ty(Context), "arg1", func);
+    arg1->addAttr(AttributeForReturnIndex(0));
+
+     
+    Intrinsic::ID intrinsicId = Intrinsic::memcpy;
+    std::vector<Value *> args;
+    args.push_back(ConstantInt::get(Type::getInt64Ty(Context), 10));  
+    args.push_back(arg1);  
+    args.push_back(arg1);  
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, intrinsicId), args, "", bb);
+
+     
+    CI->addUse(func->getArg(0));
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is an intrinsic call.\n";
+    } else {
+        errs() << "CallInst is not an intrinsic call.\n";
+    }
+
+     
+    if (func->hasFnAttr(Attribute::NoUnwind) && !CI->doesNotThrow()) {
+        errs() << "Function and CallInst attributes are correctly set.\n";
+    } else {
+        errs() << "Function or CallInst attributes are incorrectly set.\n";
+    }
+
+     
+    module.print(outs(), nullptr);
+
+    return 0;
+}

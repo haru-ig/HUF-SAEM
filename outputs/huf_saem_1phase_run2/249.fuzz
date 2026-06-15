@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Intrinsic::ID IntrID = Intrinsic::sqrt;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrID), {}, "", BB);
+    
+     
+    CI->addUse(Type::getInt32Ty(Context));
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic." << std::endl;
+        
+         
+        if (isa<CallBase>(CI)) {
+            CallBase *CB = cast<CallBase>(CI);
+            if (!CB.use_empty()) {
+                std::cout << "CallInst has at least one use." << std::endl;
+                
+                 
+                if (F->doesNotThrow() && F->isNoUnwind()) {
+                    std::cout << "Function is marked as nounwind." << std::endl;
+                    
+                     
+                    std::cout << "Function: " << F->getName().str() << std::endl;
+                    std::cout << "BasicBlock: " << BB->getName().str() << std::endl;
+                    std::cout << "CallInst in BasicBlock: " << CI->getParent()->getName().str() << std::endl;
+                } else {
+                    std::cerr << "Function is not marked as nounwind." << std::endl;
+                }
+            } else {
+                std::cerr << "CallInst does not have at least one use." << std::endl;
+            }
+        } else {
+            std::cerr << "Context instruction is not a CallBase." << std::endl;
+        }
+    } else {
+        std::cerr << "CallInst is not an intrinsic." << std::endl;
+    }
+    
+    return 0;
+}

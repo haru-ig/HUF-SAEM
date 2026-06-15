@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_function", &M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setParamAttribute(0, Attribute::Returned);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, { Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), Builder.getInt64(10) }, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *SI = new SelectInst(Builder.CreateICmpULT(Arg, Builder.getInt32(2)), TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getCondition() && "SelectInst must have a condition");
+    assert(SI->getTrueValue() && "SelectInst must have true value");
+    assert(SI->getFalseValue() && "SelectInst must have false value");
+    Type *SelType = SI->getType();
+    assert(SelType && "SelectInst type must be correctly retrievable");
+
+     
+     
+
+    std::cout << "Test case setup completed." << std::endl;
+    return 0;
+}

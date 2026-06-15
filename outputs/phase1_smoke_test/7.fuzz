@@ -1,0 +1,9 @@
+#include <iostream>
+int main() {
+    int result;
+    auto callFunction = []() noexcept -> int {
+        return 42;
+    };
+    result = callFunction();
+    std::cout << "The result of the call is: " << result << std::endl;
+}

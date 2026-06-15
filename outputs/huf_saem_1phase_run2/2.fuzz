@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+void createFunction(LLVMContext &ctx, Module &mod) {
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(ctx), {Type::getInt32Ty(ctx)}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunc", mod);
+    
+     
+    func->getBasicBlockList().push_back(BasicBlock::Create(ctx, "entry", func));
+    BasicBlock &BB = func->front();
+    
+     
+    IRBuilder<> builder(&BB);
+    Value *arg = ConstantInt::get(Type::getInt32Ty(ctx), 10);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&mod, Intrinsic::abs, {Type::getInt32Ty(ctx)}), {arg}, "", &BB);
+    
+     
+    func->setDoesNotThrow();
+    func->setLinkage(GlobalValue::InternalLinkage);  
+}
+
+int main() {
+    LLVMContext ctx;
+    Module mod("testModule", ctx);
+    
+    createFunction(ctx, mod);
+    
+     
+    std::cout << mod << "\n";
+    
+    return 0;
+}

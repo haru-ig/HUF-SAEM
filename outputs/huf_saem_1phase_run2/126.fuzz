@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallBase *CI = CallInst::Create(F->getFunctionType(), F, {Arg}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    Intrinsic::ID IntrinID = Intrinsic::memcpy;
+    Value *MemCpyIntrin = Intrinsic::getDeclaration(&M, IntrinID);
+    Instruction *MI = CallInst::Create(MemCpyIntrin->getType(), MemCpyIntrin, {CI, ConstantInt::get(Type::getInt64Ty(Context), 8)}, "", BB);
+
+     
+    MI->addUse(CI);
+
+     
+    F->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI) && dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst satisfies all constraints." << std::endl;
+    } else {
+        std::cout << "CallInst does not satisfy the constraints." << std::endl;
+    }
+
+    return 0;
+}

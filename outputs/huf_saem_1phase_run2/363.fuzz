@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "myfunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = cast<IntrinsicInst>(CI);
+        assert(II->getIntrinsicID() == Intrinsic::memset && "CallInst must be a memset intrinsic");
+    }
+
+     
+    Function::arg_iterator AI = F->arg_begin();
+    if (AI != F->arg_end()) {
+        AI->addAttr(Attribute::Returned);
+    }
+
+     
+    CallBase *CB = CI;
+    assert(isa<CallBase>(CB) && "Context instruction must be a CallBase");
+
+     
+
+    return 0;
+}

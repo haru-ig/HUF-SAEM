@@ -1,0 +1,88 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Pass.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+class TestPass : public Pass {
+public:
+  static char ID;
+  TestPass() : Pass(ID) {}
+
+  bool runOnFunction(Function &F) override {
+     
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        if (auto *CI = dyn_cast<CallInst>(&I)) {
+          if (!CI->use_empty()) continue;  
+          Function *CalleeF = CI->getCalledFunction();
+          if (!CalleeF || CalleeF->doesNotThrow()) continue;  
+          if (!isa<IntrinsicInst>(CI) || !dyn_cast<AnyMemIntrinsic>(CI)) continue;  
+
+          auto *II = dyn_cast<IntrinsicInst>(CI);
+          if (II->getIntrinsicID() == Intrinsic::memset || II->getIntrinsicID() == Intrinsic::memcpy) {
+            unsigned NumBytes = 0;  
+            if (NumBytes > 0 && NumBytes % sizeof(int) != 0) continue;  
+          }
+
+           
+          for (auto &Arg : CalleeF->args()) {
+            if (Arg.hasParamAttribute(0, Attribute::Returned)) {
+               
+              auto *L = nullptr;
+              for (auto it = loop_begin(&BB), et = loop_end(&BB); it != et; ++it) {
+                L = &*it;
+                if (!L->getLoopPreheader() || !L->getLoopLatch()) continue;  
+                if (!L->isSafeToClone()) continue;  
+                if (L->getHeader()->hasAddressTaken()) continue;  
+              }
+
+               
+              auto *ULO = new LoopUnrollOptions();
+              ULO->Count = 2;  
+              if (ULO->Count <= 0) continue;
+
+               
+              Value *Operand = CI->getArgOperand(0);
+              if (!Operand || !isa<FNegInst>(Operand)) continue;
+              auto *FI = dyn_cast<FNegInst>(Operand);
+              auto *AbsV = CallInst::CreateFNeg(CallInst::CreateFABS(FI->getOperand(0)), "", FI);
+
+               
+              APFloat Zero(0.0);
+              KnownBits Known(32);
+              if (Known != KnownFPClass()) continue;
+
+               
+              Value *CondVal = ConstantInt::getTrue(Context, 1);
+              Value *TrueVal = ConstantFP::get(Type::getFloatTy(*Context), 1.0);
+              Value *FalseVal = CallInst::CreateFNeg(CallInst::CreateFABS(FI->getOperand(0)), "", FI);
+              if (!CondVal || !TrueVal || !FalseVal) continue;
+              Type *SelType = TrueVal->getType();
+              if (!SelType->isIntegerTy()) continue;
+
+               
+              IntegerType *ScalarTy = dyn_cast<IntegerType>(E->getOperand(1).back()->getType());
+              if (!ScalarTy || !isValidElementType(ScalarTy)) continue;
+
+               
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+};
+
+char TestPass::ID = 0;
+static RegisterPass<TestPass> X("test-pass", "Test Pass for LLVM IR Simplification");

@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+    Function *F = createFunction();  
+    CallInst *CI = getCallInstruction(F);  
+
+    if (!CI || CI->use_empty()) {
+        std::cerr << "No valid CallInst found!" << std::endl;
+        return 1;
+    }
+
+     
+    if (F->doesNotThrow() || CI->doesNotThrow()) {
+        std::cerr << "Function or CallInst should be marked as nounwind!" << std::endl;
+        return 1;
+    }
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+        }
+    }
+
+     
+    for (auto &arg : F->args()) {
+        if (arg.hasReturnedAttr()) {
+             
+        }
+    }
+
+     
+
+    return 0;
+}

@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    assert(AII && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    CallBase *CB = cast<CallBase>(CI);
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    assert(!Pos.isNull() && "Context instruction must be a CallBase instance");
+
+     
+    Function *Funct = Pos.getFunction();
+    assert(Funct && "IRPosition must have a non-null associated function");
+
+     
+
+    std::cout << "Test program constructed successfully!" << std::endl;
+    return 0;
+}

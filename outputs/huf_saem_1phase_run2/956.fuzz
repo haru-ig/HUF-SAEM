@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createTestFunction(LLVMContext &ctx) {
+    Module *mod = new Module("testModule", ctx);
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(ctx), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "testFunction", mod);
+
+     
+    BasicBlock *bb = BasicBlock::Create(ctx, "", func);
+
+     
+    CallInst *ci = CallInst::Create(Intrinsic::getDeclaration(mod, Intrinsic::sqrt), {}, "", bb);
+    ci->setDoesNotThrow();  
+
+     
+    func->setNoUnwind();
+
+    return func;
+}
+
+int main() {
+    LLVMContext ctx;
+    Module *mod = new Module("testModule", ctx);
+    Function *func = createTestFunction(ctx);
+
+     
+    mod->print(errs(), nullptr);
+
+    return 0;
+}

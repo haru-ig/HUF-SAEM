@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "test_func", M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument* Arg = &*F->arg_begin();
+    Arg->setName("arg");
+    Arg->setReturnValue();
+    
+     
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::anymemintrinsic), { Arg }, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value* FalseVal = CallInst::Create(Intrinsic::ctpop, {TrueVal}, "", BB);
+    SelectInst* SI = new SelectInst(CI->getType(), CI, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(SI->getCondition() && "Condition should be valid");
+    assert(SI->getTrueValue() && "True value should be valid");
+    assert(SI->getFalseValue() && "False value should be valid");
+    assert(SI->getType()->isIntegerTy() && "Select type should be integer");
+    
+     
+    BB->getInstList().push_back(SI);
+    
+     
+    M->print(outs(), nullptr);
+    
+    return 0;
+}

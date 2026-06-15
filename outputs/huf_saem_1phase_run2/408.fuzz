@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    F->setDoesNotThrow();  
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CallInst = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+    assert(!CallInst->use_empty() && "CallInst must have at least one use");  
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = ICmpInst::create(CmpInst::ICMP_ULT, CallInst, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(FalseVal, TrueVal, nullptr, "", BB);
+
+     
+    Value *CondVal = ICmpInst::create(CmpInst::ICMP_ULT, CallInst, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SI->setOperand(0, CondVal);
+
+     
+    IntrinsicInst *II = cast<IntrinsicInst>(CallInst);
+    assert(isa<AnyMemIntrinsic>(II) && "CallInst must be an intrinsic call");
+
+     
+     
+
+    std::cout << "Test program structure:\n";
+    M.print(errs());
+
+    return 0;
+}

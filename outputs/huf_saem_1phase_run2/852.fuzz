@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Scalar/SimplifyCFGPass.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+std::unique_ptr<Module> createModule() {
+  auto Context = std::make_unique<LLVMContext>();
+  auto M = std::make_unique<Module>("test", *Context);
+
+  FunctionType* FT = FunctionType::get(Type::getInt32Ty(*Context), {}, false);
+  Function* F = Function::Create(FT, Function::ExternalLinkage, "foo", M.get());
+
+  BasicBlock* BB = BasicBlock::Create(*Context, "", F);
+  Instruction* CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {ConstantFP::get(*Context, APFloat(1.0))}, "", BB);
+
+  return M;
+}
+
+ 
+void simplifyCFG(Function& F) {
+  PassManager PM;
+  PM.add(createSimplifyCFGPass());
+  PM.run(F);
+}
+
+int main() {
+  auto M = createModule();
+  if (!M->getFunction("foo")) {
+    llvm::errs() << "Error: Function 'foo' not found!\n";
+    return 1;
+  }
+
+  Function& F = *M->getFunction("foo");
+  simplifyCFG(F);  
+
+   
+
+  return 0;
+}

@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    Function* F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "main", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Callee = ConstantInt::get(Type::getInt64Ty(Context), 0);
+    SmallVector<Value*, 0> Args;
+    CallInst* CI = CallInst::Create(Callee, Args, "", BB);
+    
+     
+    BB->getInstList().push_back(CI);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        assert(isa<AnyMemIntrinsic>(CI) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+    } else {
+        std::cerr << "The CallInst is not an intrinsic call" << std::endl;
+        return 1;
+    }
+    
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    
+     
+    outs() << "All constraints satisfied\n";
+    
+    return 0;
+}

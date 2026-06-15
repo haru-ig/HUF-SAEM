@@ -1,0 +1,94 @@
+#include <iostream>
+int main() {
+  
+
+ 
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.abs", FTy);
+    CallInst *CI = Builder.CreateCall(Callee, Arg, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    Intrinsic::ID ID = Intrinsic::abs;  
+    CallInst *AnyMemCI = CallInst::Create(Intrinsic::getDeclaration(&M, ID), Arg, "", BB);
+    assert(dyn_cast<IntrinsicInst>(AnyMemCI) && "CallInst must be an intrinsic call");
+    assert(dynamic_cast<AnyMemIntrinsic*>(AnyMemCI) && "CallInst must be a memory intrinsic");
+
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() && "Loop must have a preheader block");
+    assert(L->getLoopLatch() && "Loop must have a latch block");
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header address must not be taken");
+
+     
+    LoopInfo LI(*F);
+    L = &LI.getLoopsInPreorder()[0];
+    unsigned unrollCount = 2;
+    llvm::llvm_unroll<2>(*L, unrollCount);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = Builder.CreateNeg(Builder.CreateFabs(Arg));
+    ICmpInst *CondVal = new ICmpInst(*BB, ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+    assert(!E->getOperand(1).back()->getType()->isVectorTy() && "Last operand of E->getOperand(1) must not be a vector type");
+
+     
+    assert(isa<ConstantInt>(SI->getTrueValue()) && isa<FNegInst>(SI->getFalseValue()) && "FalseVal must be a ctpop operation of TrueVal");
+    assert(isa<ICmpInst>(SI->getCondition()) && "CondVal must be an icmp ult comparison");
+
+     
+    TreeEntry *E = nullptr;  
+    assert(E->Scalars.size() > 0 && "TreeEntry must have a non-empty Scalars list");
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E].getBitWidth() > 0 && "Precomputed type bit width must be valid");
+    } else if (E->Idx == 0 && E->isReducedBitcastRoot()) {
+         
+    }
+
+     
+    assert(E->getOpcode() == Instruction::InsertElement && "E->State must be Vectorize");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices must contain exactly two entries");
+
+     
+    unsigned MaxAnalysisRecursionDepth = 10;
+    FPClassTest KnownFPClass();
+    Depth = 5;  
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    FPClassTest DemandedMask;
+    adjustDemandedMaskFromFlags(DemandedMask,  );
+
+     
+    VectorizableTree.emplace_back(E);
+    assert(!E->isGather() && !E->isDeleted() && "VectorizableTree entries must not be gathered or deleted");
+
+    return 0;
+}

@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+ 
+bool isPrime(int num) {
+    if (num <= 1) return false;
+    for (int i = 2; i * i <= num; ++i) {
+        if (num % i == 0) return false;
+    }
+    return true;
+}
+
+ 
+std::vector<int> generatePrimes(int n) {
+    std::vector<int> primes;
+    int count = 0, num = 2;
+    while (count < n) {
+        if (isPrime(num)) {
+            primes.push_back(num);
+            ++count;
+        }
+        ++num;
+    }
+    return primes;
+}
+
+ 
+int sumOfSquaresOfPrimes(int limit) {
+    std::vector<int> primes = generatePrimes(limit);
+    int sum = 0;
+    for (int prime : primes) {
+        sum += prime * prime;
+    }
+    return sum;
+}
+
+ 
+int main() {
+    int limit = 10;  
+    std::cout << "Sum of squares of primes up to " << limit << ": " << sumOfSquaresOfPrimes(limit) << std::endl;
+    return 0;
+}

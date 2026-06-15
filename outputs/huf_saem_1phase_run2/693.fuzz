@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testfunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+     
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::memset), {ConstantInt::get(Type::getInt64Ty(Context), 0)}, "", BB);
+
+     
+    Func->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    Mod->print(errs());
+
+    return 0;
+}

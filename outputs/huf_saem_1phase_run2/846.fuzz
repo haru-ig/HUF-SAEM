@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI;
+    if (true) {  
+        CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), { Arg }, "", BB);
+        CI->setDoesNotThrow();  
+    }
+
+     
+    if (!CI->use_empty()) {
+        std::cerr << "CallInst must have at least one use." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    if (!F->doesNotThrow()) {
+        std::cerr << "Function must be marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 0));
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 2)), "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (!isa<CallBase>(CI)) {
+        std::cerr << "Context instruction must be a CallBase." << std::endl;
+        return 1;
+    }
+
+     
+
+    return 0;
+}

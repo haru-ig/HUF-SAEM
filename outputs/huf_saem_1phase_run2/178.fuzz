@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {Type::getInt32Ty(Context)}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "testFunc", Module.get());
+    Func->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 0)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::anymem_intrinsic), Args, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    Func->setDoesNotThrow();
+    Func->removeFnAttr(Attribute::NoUnwind);
+    Func->addFnAttr(Attribute::Nounwind);
+
+     
+    Module->print(errs(), nullptr);
+
+    return 0;
+}

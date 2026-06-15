@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+void generateTestCode(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+  IRBuilder<> Builder(BB);
+
+   
+  Value *Arg = ConstantInt::get(Type::getInt32Ty(Ctx), 42);
+  CallInst *CI = CallInst::Create(nullptr, {Arg}, "", BB);
+  IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+  assert(II && "Expected an intrinsic call");
+  if (!II) return;
+
+   
+  F->setDoesNotThrow();
+  F->addFnAttr(Attribute::Nounwind);
+
+   
+  CI->addUse(CI);
+  if (CI->use_empty()) return;
+
+   
+  Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Ctx), 10);
+  Value *FalseVal = Builder.CreateCall("ctpop", {TrueVal});
+  SelectInst *SI = SelectInst::Create(Builder.CreateICmpULT(TrueVal, Builder.getInt32(2)), TrueVal, FalseVal, "", BB);
+
+   
+  Type *SelType = SI->getType();
+  Value *CondVal = Builder.CreateICmpULT(TrueVal, Builder.getInt32(2));
+  assert(CondVal && "Expected a valid condition value");
+  if (!CondVal) return;
+
+   
+  SI->setCondition(CondVal);
+  SI->setTrueValue(TrueVal);
+  SI->setFalseValue(FalseVal);
+
+   
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("testModule", Context);
+  generateTestCode(M);
+  return 0;
+}

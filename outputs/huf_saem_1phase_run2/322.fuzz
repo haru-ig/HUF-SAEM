@@ -1,0 +1,68 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "test_function", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::abs, {Arg->getType()}), {Arg}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    F->setHasNoThrow(true);
+
+     
+    Builder.CreateAdd(CI, ConstantInt::get(Type::getInt32Ty(Context), 1));
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    assert(F->hasFnAttribute(Attribute::NoUnwind) && !CI->doesNotThrow() && "Function should be marked as nounwind and CallInst should not throw");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::abs && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = Builder.CreateFNeg(Builder.CreateFAbs(TrueVal));
+    SelectInst *SI = SelectInst::Create(CmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+    
+     
+    assert(SI->hasOneUse() && "SelectInst must have at least one use");
+    Value *CondVal = SI->getCondition();
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "Selection type must be an integer type");
+    
+     
+    assert(isa<ConstantInt>(TrueVal) && isa<ConstantInt>(FalseVal) && "TrueVal and FalseVal must be constant integers");
+    assert(isa<ICmpInst>(CondVal) && cast<ICmpInst>(CondVal)->getOperand(0) == TrueVal && cast<ICmpInst>(CondVal)->getPredicate() == ICmpInst::ICMP_ULT && "Condition must be an icmp ult comparison of TrueVal with 2");
+
+     
+    M->print(outs(), nullptr);
+
+    delete M;
+    return 0;
+}

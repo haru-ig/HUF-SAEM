@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/Verifier.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), -1.0);
+    Value *CondVal = ICmpInst::create(CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+
+     
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(!SI->use_empty() && "The CallInst must have at least one use.");
+    assert(F->doesNotThrow() && "The function containing the CallInst must be marked as nounwind.");
+    assert(isa<IntrinsicInst>(SI) && "The CallInst must be an intrinsic call.");
+    assert(cast<IntrinsicInst>(SI)->getIntrinsicID() == Intrinsic::any_mem_intrinsic && "It must be a memory intrinsic.");
+     
+
+    std::cout << "All constraints are satisfied." << std::endl;
+
+    return 0;
+}

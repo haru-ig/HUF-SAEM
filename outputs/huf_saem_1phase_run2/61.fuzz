@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+            Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+            II->setArgOperand(1, NumBytes);
+        }
+    }
+
+     
+    TreeEntry E;
+    E.Scalars.push_back(Type::getInt32Ty(Context));
+    MinBWs[E] = 32;
+
+     
+    Loop *L = nullptr;  
+    UnrollLoopOptions ULO;
+    ULO.Count = 1;  
+
+     
+    Value *I = CI;  
+    IntegerType *IntTy = cast<IntegerType>(I->getType());
+    unsigned BitWidth = IntTy->getBitWidth();
+
+    if (Depth <= MaxAnalysisRecursionDepth && DemandedMask.getBitWidth() == BitWidth) {
+         
+    }
+
+    return 0;
+}

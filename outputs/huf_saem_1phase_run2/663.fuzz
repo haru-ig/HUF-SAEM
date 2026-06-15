@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Verifier.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    Argument *Arg = F->getArg(0);
+    Arg->addAttr(Attribute::Returned);
+
+     
+    FunctionCallee Callee = M.getOrInsertFunction("llvm.memset.p0i8.i64", Type::getInt64Ty(Context), PointerType::get(Type::getInt8Ty(Context), 0), Type::getInt64Ty(Context), ConstantInt::get(Type::getInt1Ty(Context), true));
+    CallInst *CI = CallInst::Create(Callee, {}, "", F->getEntryBlock().getFirstNonPHI());
+
+     
+    Use &U = CI->use_begin();
+    Value *UserVal = U.getUser();
+    assert(!UserVal && "CI must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->removeFnAttr(Attribute::NoUnwind);
+
+     
+    Intrinsic::ID ID = Intrinsic::not_intrinsic;
+    if (Function *F = M.getFunction("llvm.memset.p0i8.i64")) {
+        ID = Intrinsic::getDeclaration(&M, Intrinsic::memset)->getIntrinsicID();
+    }
+    CallInst *IntrCI = CallInst::Create(Callee, {}, "", F->getEntryBlock().getFirstNonPHI());
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(IntrCI);
+    assert(II && "CallInst must be an intrinsic call");
+
+     
+     
+
+     
+    if (verifyModule(M, &outs())) {
+        errs() << "Error: Module failed verification\n";
+        return 1;
+    }
+
+    std::cout << "Test passed successfully!\n";
+    return 0;
+}

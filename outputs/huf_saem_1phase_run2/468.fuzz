@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test_module", Context);
+    Function *mainFunc = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), Function::ExternalLinkage, "main", Module.get());
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", mainFunc);
+
+     
+    Intrinsic::ID intrinsicID = Intrinsic::abs;
+    Value *arg = ConstantInt::get(Type::getInt32Ty(Context), 5);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), intrinsicID), {arg}, "", entryBB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    mainFunc->setDoesNotThrow();
+    mainFunc->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CI must be an intrinsic call");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    assert(AMII && "CI must be a memory intrinsic");
+
+     
+    uint64_t NumBytes = AMII->getNumElements() * sizeof(int32_t);
+    assert(NumBytes <= 0 || !isMultiple(NumBytes, sizeof(int32_t)) && "Length must be non-positive or not a multiple of the element size");
+
+     
+    CallBase *ctxCI = dyn_cast<CallBase>(CI);
+    assert(ctxCI && "Context instruction must be a CallBase");
+
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

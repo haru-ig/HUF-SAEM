@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FT, GlobalValue::ExternalLinkage, "func", M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CallInst = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memcpy), {}, "", BB);
+
+     
+    assert(!CallInst->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CallInst->setDoesNotThrow(false);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CallInst);
+    assert(II && II->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+
+    delete M;
+    return 0;
+}

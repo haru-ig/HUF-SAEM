@@ -1,0 +1,179 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/IR/DataLayout.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/ADT/Statistic.h>
+
+using namespace llvm;
+
+ 
+class TreeEntry {
+public:
+    enum State { SplitVectorize, Vectorize };
+     
+};
+
+class ScalarEvolution {};
+
+class InstructionCost {
+public:
+    static const int getInvalid() { return -1; }
+};
+
+class FPClassTest {};
+
+class Value {
+public:
+    virtual ~Value() = default;
+};
+
+class Type : public Value {
+public:
+    bool isVectorTy() const { return true; }
+    unsigned getScalarSizeInBits() const { return 32; }
+};
+
+class IntegerType : public Type {
+public:
+    unsigned getBitWidth() const { return 32; }
+};
+
+class CallBase : public Value {
+public:
+    virtual ~CallBase() = default;
+};
+
+class IntrinsicInst : public CallBase {
+public:
+    bool doesNotThrow() const { return true; }
+    Function *getFunction() const { return nullptr; }
+    Type *getType() const { return new IntegerType(); }
+    Value *getArgOperand(unsigned idx) const { return nullptr; }
+};
+
+class CallInst : public CallBase {
+public:
+    bool use_empty() const { return false; }
+    Function *getFunction() const { return nullptr; }
+    Type *getType() const { return new IntegerType(); }
+    Value *getCalledOperand() const { return nullptr; }
+};
+
+class SelectInst : public Value {
+public:
+    Value *getCondition() const { return nullptr; }
+    Value *getTrueValue() const { return nullptr; }
+    Value *getFalseValue() const { return nullptr; }
+    Type *getType() const { return new IntegerType(); }
+};
+
+class BasicBlock : public Value {
+public:
+    virtual ~BasicBlock() = default;
+};
+
+class Loop : public Value {
+public:
+    bool isSafeToClone() const { return true; }
+    BasicBlock *getLoopPreheader() const { return nullptr; }
+    BasicBlock *getLoopLatch() const { return nullptr; }
+    BasicBlock *getHeader() const { return nullptr; }
+    bool hasAddressTaken() const { return false; }
+};
+
+class ScalarEvolutionExpander : public LoopPass {
+public:
+    void getAdjustedIterationCount(Value *&IterCnt, const SimplifyQuery &SQ) const {}
+};
+
+class TargetLibraryInfoImpl : public PassInfoMixin<TargetLibraryInfoImpl> {
+public:
+    bool isMathFunc(const Function *F) const { return false; }
+};
+
+class LoopPassManager : public PassInfoMixin<LoopPassManager> {
+public:
+    void addPass(Pass *P) {}
+};
+
+class ScalarEvolutionNode {
+public:
+    class NodeTy {};
+    NodeTy *getScalar() const { return nullptr; }
+};
+
+class LoopInfoBase {
+public:
+    virtual ~LoopInfoBase() = default;
+};
+
+class FunctionPass : public PassInfoMixin<FunctionPass> {
+public:
+    void addPass(Pass *P) {}
+};
+
+class PassManagerBuilder {
+public:
+    void setOptLevel(unsigned level) {}
+    void populate(FunctionPass &FPM) {}
+};
+
+class SimplifyQuery {};
+
+ 
+void exampleFunction(CallInst &CI, ScalarEvolution &SE, LoopInfoBase *LI, TargetLibraryInfoImpl &TLI, DataLayout &DL, unsigned Depth, FPClassTest DemandedMask, Value *Known) {
+     
+    if (CI.use_empty()) return;
+
+     
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow() || !CI.doesNotThrow()) return;
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    if (!II || !isa<AnyMemIntrinsic>(II)) return;
+
+     
+}
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+    FunctionPassManager FPM;
+    PassManagerBuilder PMB;
+    PMB.setOptLevel(0);
+    PMB.populate(FPM);
+
+     
+    CallInst CI;
+    ScalarEvolution SE;
+    LoopInfoBase LI;
+    TargetLibraryInfoImpl TLI;
+    DataLayout DL(&module);
+    FPClassTest DemandedMask;
+    Value *Known = nullptr;
+
+    exampleFunction(CI, SE, &LI, TLI, DL, 0, DemandedMask, Known);
+
+    return 0;
+}

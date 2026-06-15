@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "main", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI;
+    if (Intrinsic::isHeaderAvailable(Intrinsic::anymemintrinsic)) {
+        CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::anymemintrinsic), {}, "", BB);
+    } else {
+         
+        CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::not_an_intrinsic), {}, "", BB);
+    }
+    
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+    
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+        }
+    }
+    
+     
+     
+    if (auto *SI = dyn_cast<SelectInst>(CI)) {
+        SI->setOperand(0, ConstantInt::getTrue(Context));   
+    }
+    
+     
+    Mod->print(outs(), nullptr);
+    
+    return 0;
+}

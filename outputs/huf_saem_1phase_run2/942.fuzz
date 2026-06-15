@@ -1,0 +1,109 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {PointerType::get(IntegerType::getInt8Ty(Context), 0), PointerType::get(IntegerType::getInt8Ty(Context), 0)}, {}, "", BB);
+    
+     
+    CI->addUse(Value::use_iterator(), false);
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    CallBase *CB = CI;
+    
+     
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (AnyMemIntrinsic *AM = dyn_cast<AnyMemIntrinsic>(II)) {
+            if (!AM->use_empty()) {
+                 
+                int NumBytes = 0;  
+                if (NumBytes <= 0 || NumBytes % sizeof(int) != 0) {
+                     
+                     
+                }
+            }
+        }
+    }
+    
+     
+    Loop *L = nullptr;  
+    if (L && L->getLoopPreheader() && L->getLoopLatch()) {
+        if (L->isSafeToClone() && !L->getHeader()->hasAddressTaken()) {
+            UnrollLoopOptions ULO;
+            ULO.Count = 2;  
+            if (ULO.Count > 0) {
+                 
+            }
+        }
+    }
+    
+     
+    SelectInst *SI = nullptr;  
+    if (SI && SI->getCondition()->getType() == IntegerType::getInt1Ty(Context) && 
+        SI->getTrueValue()->getType()->isIntegerTy() && SI->getFalseValue()->getType()->isIntegerTy()) {
+        
+         
+        Value *CondVal = SI->getCondition();
+        Value *TrueVal = SI->getTrueValue();
+        Value *FalseVal = SI->getFalseValue();
+        Type *SelType = SI->getType();
+        
+        if (isa<IntegerType>(SelType)) {
+             
+        }
+    }
+    
+     
+    int Depth = 0;  
+    if (Depth <= ScalarEvolution::MaxAnalysisRecursionDepth) {
+         
+    }
+    
+     
+    FPClassTest DemandedMask;  
+    if (DemandedMask.isValid()) {
+         
+    }
+    
+     
+    DenseMap<BasicBlock *, BlockEdgeWeights> BlocksSchedules;
+    if (!BlocksSchedules.empty()) {
+         
+    }
+    
+     
+    TreeEntry *TE = nullptr;  
+    if (TE->Idx != 0 && TE->UserTreeIndex.EdgeIdx != UINT_MAX) {
+         
+    }
+    
+    return 0;
+}

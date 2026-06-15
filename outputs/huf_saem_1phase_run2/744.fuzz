@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+ 
+Function *createFunctionWithCallInst(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+
+   
+  Type *VoidTy = Type::getVoidTy(Ctx);
+  std::vector<Type *> ArgTys;
+  FunctionType *FTy = FunctionType::get(VoidTy, ArgTys, false);
+
+   
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+   
+  Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Ctx), 42);
+  F->arg_begin()->setName("arg1");
+
+   
+  CallInst *CI = CallInst::Create(FTy, F, {Arg1}, "", BB);
+
+   
+  F->setDoesNotThrow();
+  F->setUnwindPredecessor(BB);
+
+  return F;
+}
+
+int main() {
+  LLVMContext Ctx;
+  Module M("test_module", Ctx);
+
+   
+  Function *F = createFunctionWithCallInst(M);
+
+   
+  if (!F->empty()) {
+    std::cerr << "Function should have at least one use." << std::endl;
+    return 1;
+  }
+
+   
+  M.print(outs(), nullptr);
+
+  return 0;
+}

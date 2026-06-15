@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Dominators.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool generateTestFunction(Module &M) {
+  LLVMContext &Ctx = M.getContext();
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+  Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+   
+  Argument *Arg = F->addArgument(Type::getInt32Ty(Ctx), "", &F->getFunctionType()->getParamAttrsList()[0]);
+  Arg->addAttr(::llvm::Attribute::Returned);
+
+   
+  BasicBlock *BB = BasicBlock::Create(Ctx, "entry", F);
+
+   
+  CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Ctx)}, {}, "", BB);
+  CI->setDoesNotThrow();  
+
+   
+  F->setDoesNotThrow();
+
+   
+  if (CI->use_empty()) {
+    return false;
+  }
+
+   
+  if (!dyn_cast<AnyMemIntrinsic>(CI)) {
+    return false;
+  }
+
+   
+
+  return true;
+}
+
+int main() {
+  LLVMContext Context;
+  Module M( "testModule", Context );
+
+  if (generateTestFunction(M)) {
+    std::cout << "Test function generated successfully!\n";
+  } else {
+    std::cout << "Failed to generate test function.\n";
+  }
+
+  return 0;
+}

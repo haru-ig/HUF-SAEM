@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = &*(F->arg_begin());
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Arg->getType()}, {Arg, Constant::getNullValue(Type::getInt8Ty(Context)), Constant::getIntegerValue(Type::getInt64Ty(Context), APInt(64, 10))}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    Value *CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "Context instruction must be a CallBase");
+
+     
+    assert(F != nullptr && "Function must be non-null");
+    assert(!Arg->getParent()->getReturnTypeList().empty() && "Function must have at least one argument marked as returned");
+
+     
+    std::cout << "Module: " << M.getName() << "\n";
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+    return 0;
+}

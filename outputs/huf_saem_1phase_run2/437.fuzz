@@ -1,0 +1,82 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Dominators.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II->getIntrinsicID() == Intrinsic::memset && "CallInst must be a memset intrinsic");
+    } else {
+        llvm_unreachable("Expected an intrinsic call");
+    }
+
+     
+    Loop *L = new Loop(BB, nullptr);
+    assert(L->getLoopPreheader() && "Loop must have a preheader block");
+    assert(L->getLoopLatch() && "Loop must have a latch block");
+
+     
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header must not have its address taken");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = BinaryOperator::CreateNeg(TrueVal);
+    SelectInst *SI = new SelectInst(CmpInst::createICMP(CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "SelectInst must have exactly one use");
+    Type *CondType = SI->getCondition()->getType();
+    Type *TrueType = SI->getTrueValue()->getType();
+    Type *FalseType = SI->getFalseValue()->getType();
+    assert((CondType == TrueType && CondType == FalseType) && "SelectInst condition, true and false values must be of the same type");
+
+     
+    if (SI->hasOneUse()) {
+        SI->setOperand(0, CmpInst::createICMP(CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)));
+    }
+
+     
+    if (isa<ConstantInt>(TrueVal) && isa<BinaryOperator>(FalseVal) && cast<BinaryOperator>(FalseVal)->getOpcode() == BinaryOps::FNeg && isa<CallInst>(cast<UnaryOperator>(FalseVal)->getOperand(0))) {
+         
+    }
+
+     
+    TreeEntry *E = new TreeEntry();
+    assert(E->Scalars.size() > 0 && "TreeEntry must have non-empty Scalars list");
+
+     
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header must not have its address taken");
+
+    return 0;
+}

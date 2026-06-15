@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = new Argument(Type::getInt32Ty(Context), "arg1", (Function*)F);
+    Arg1->setReturnValue();
+
+     
+
+     
+    std::vector<Value *> Args;
+    Args.push_back(Arg1);
+    CallInst *CI = CallInst::Create(FuncTy, F, Args, "", BB);
+
+     
+    CI->addUse(F);
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::anymemintrinsic;
+    CallInst *AnyMemCI = CallInst::Create(FuncTy, IntrID, Args, "", BB);
+
+     
+    AnyMemCI->addUse(F);
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,7 @@
+#include <iostream>
+int main() {
+    CallInst *CI = ...;  
+    if (!CI->use_empty()) {
+         
+    }
+    

@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "The CallInst must have at least one use");
+    assert(F->doesNotThrow() && "The function containing the CallInst must be marked as nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "The CallInst must be an intrinsic call");
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    assert(isa<AnyMemIntrinsic>(II) && "The CallInst must be a memory intrinsic");
+    
+     
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    Value *NumBytes = AMII->getArgOperand(1);
+    assert(cast<ConstantInt>(NumBytes)->isZero() && "For atomic unordered memory intrinsics, the length must be non-positive");
+    
+     
+    Value *CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "The context instruction must be a CallBase instance");
+    
+     
+    auto IRP = IRPosition::callsite_argument((const CallInst &)*CI, 0);
+    assert(IRP.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "The IRPosition must have a position kind of IRP_CALL_SITE_ARGUMENT");
+    
+     
+    Function *Funct = IRP.getAssociatedFunction();
+    assert(Funct != nullptr && "The function associated with the IRPosition must be non-null");
+    
+     
+     
+    
+     
+    std::cout << "Module: " << M.getName().str() << "\n";
+    std::cout << "Function: " << F->getName().str() << "\n";
+    std::cout << "Basic Block: " << BB->getName().str() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+    
+    return 0;
+}

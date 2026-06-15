@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Use.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "foo", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg1 = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallBase *CI = CallInst::Create(FuncTy, FunctionCtor::get(&Mod), {Arg1}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    assert(!CI->doesNotThrow() && "CallInst should not be nounwind");
+
+     
+    Intrinsic::ID ID = Intrinsic::not_an_intrinsic;  
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        II->setIntrinsicID(ID);
+    }
+
+     
+    assert(isa<CallBase>(CI) && "CI should be a CallBase");
+
+     
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+    return 0;
+}

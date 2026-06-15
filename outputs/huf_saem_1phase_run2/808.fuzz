@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Analysis/TargetTransformInfo.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->addAttr(Attribute::Returned);
+
+     
+    Value *IntrinsicVal = Intrinsic::getDeclaration(&Mod, Intrinsic::anymemintrinsic, FTy);
+    CallInst *CI = CallInst::Create(IntrinsicVal, {Arg}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(&*F->begin());
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        if (isa<AnyMemIntrinsic>(CI)) {
+             
+            uint64_t NumBytes = 0;  
+            if (!NumBytes || CI->isAtomicUnorderedWithCmpAndSwap() || CI->isAtomicRMW()) {
+                 
+            }
+        }
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+         
+        CallBase *CB = cast<CallBase>(CI);
+        auto IRPos = IRPosition::callsite_argument(CB, 0);
+
+         
+        if (IRPos.getKind() == IRP_CALL_SITE_ARGUMENT) {
+             
+        }
+    }
+
+     
+
+    return 0;
+}

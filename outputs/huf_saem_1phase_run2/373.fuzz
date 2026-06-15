@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", Mod.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context)}, {}, "", BB);
+    CI->addUse(Value::use_empty());  
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    AnyMemIntrinsic *AMII = cast<AnyMemIntrinsic>(II);
+    unsigned NumBytes = AMII->getNumElements();  
+    assert(!NumBytes || (NumBytes % 2 == 0) && "Length must be non-positive or not a multiple of element size");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *FalseVal = ConstantInt::get(Type::getInt1Ty(Context), false);
+    SelectInst *SI = new SelectInst(ConstantInt::get(Type::getInt1Ty(Context), true), TrueVal, FalseVal, "", BB);
+
+     
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "Select type must be integer");
+
+     
+
+    return 0;
+}

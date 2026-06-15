@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+
+int main() {
+     
+    int n = 10;  
+    std::vector<int> fib(n);
+    if (n >= 1) fib[0] = 0;
+    if (n >= 2) fib[1] = 1;
+    for (int i = 2; i < n; ++i) {
+        fib[i] = fib[i - 1] + fib[i - 2];
+    }
+
+     
+    std::cout << "Fibonacci sequence: ";
+    for (int i = 0; i < n; ++i) {
+        std::cout << fib[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    bool conditionMet = true;
+    for (int i = 2; i < n; ++i) {
+        if ((fib[i - 1] + fib[i - 2]) != fib[i]) {
+            conditionMet = false;
+            break;
+        }
+    }
+
+     
+    std::cout << "Condition met: " << (conditionMet ? "Yes" : "No") << std::endl;
+
+    return 0;
+}

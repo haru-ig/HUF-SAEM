@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, GlobalValue::InternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = Argument::Create(Type::getInt32Ty(Context), "arg", nullptr, F);
+    Arg->setParamAttr(0, Attribute::Returned);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, F, {Arg}, "", BB);
+    CI->addUse(F->getArgNo());  
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    IntrinsicInst *II = CallInst::Create(Intrinsic::any_memory, {}, "", BB);
+
+     
+    II->setDoesNotThrow();
+    II->addUse(0);  
+
+     
+
+    std::cout << "Test setup completed." << std::endl;
+    return 0;
+}

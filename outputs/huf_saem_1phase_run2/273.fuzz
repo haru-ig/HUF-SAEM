@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    F->addArgAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {PointerType::get(IntegerType::getInt8Ty(Context), 0), IntegerType::getInt32Ty(Context), Builder.getInt32(1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    CI->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+        assert(isa<AnyMemIntrinsic>(II) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+         
+        if (auto *AM = dyn_cast<AtomicRMWInst>(CI)) {
+            assert(AM->getOperation() == AtomicRMWInst::Xchg || AM->getNumElements() <= 0, "For atomic unordered memory intrinsics, the length must be non-positive or not a multiple of the element size");
+        }
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        CallBase *CB = cast<CallBase>(CI);
+        assert(CB && "Context instruction must be a CallBase instance");
+    }
+
+     
+    std::cout << "Function: " << F->getName().str() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+    return 0;
+}

@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 42)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), Args, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    Use &U = *CI->use_begin();
+    if (!U.getUser()->getName().equals("user")) {
+        std::cerr << "Error: CallInst does not have enough uses." << std::endl;
+        return 1;
+    }
+
+     
+    if (F->doesNotThrow()) {
+        std::cerr << "Error: Function is not marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || II->getIntrinsicID() != Intrinsic::memset) {
+        std::cerr << "Error: CallInst is not an AnyMemIntrinsic." << std::endl;
+        return 1;
+    }
+
+     
+    Type *Ty = CI->getType();
+    if (!Ty->isIntegerTy() && !Ty->isVectorTy()) {
+        std::cerr << "Error: CallInst type is not an integer or integer vector type." << std::endl;
+        return 1;
+    }
+
+     
+    std::cout << "Test passed successfully!" << std::endl;
+
+    return 0;
+}

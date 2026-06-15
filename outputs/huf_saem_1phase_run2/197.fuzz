@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setParamAttribute(0, AttributeSet::get(Context, 0, Attribute::Returned));
+    
+     
+    Intrinsic::ID IntrID = Intrinsic::fabs;
+    Value *IntrArg = Builder.getInt32(42);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, IntrID), { IntrArg }, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    CallBase *CB = CI;
+    assert(isa<CallBase>(CI) && "CI must be an instance of CallBase");
+    
+     
+     
+    
+    std::cout << "Test setup completed." << std::endl;
+    return 0;
+}

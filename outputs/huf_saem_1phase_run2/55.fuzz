@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "testFunc", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(F, {ConstantInt::get(Type::getInt32Ty(Context), 1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    assert(isa<AnyMemIntrinsic>(II) && "Intrinsic must be an AnyMemIntrinsic");
+
+     
+    if (auto *AMI = dyn_cast<AtomicRMWInst>(CI)) {
+        assert(AMI->getNumElements() <= 0 || !isMultipleOfElementSize(AMI->getNumElements(), F->arg_size()) && "Length must be non-positive or not a multiple of the element size");
+    } else if (auto *IMI = dyn_cast<MemIntrinsic>(CI)) {
+        assert(IMI->getLength() <= 0 || !isMultipleOfElementSize(IMI->getLength(), F->arg_size()) && "Length must be non-positive or not a multiple of the element size");
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+    auto IRP = IRPosition::callsite_argument((const Value *)CI, 0);
+    assert(IRP.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+
+     
+    Function *Func = F;
+    assert(Func && "Function must be non-null");
+
+     
+
+    std::cout << "All conditions satisfied!" << std::endl;
+    return 0;
+}

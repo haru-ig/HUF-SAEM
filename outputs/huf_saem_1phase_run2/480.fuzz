@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "foo", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 0)};
+    CallBase *CI = CallBase::Create(FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false), Intrinsic::memset, Args, "", BB);
+    
+     
+    CI->addUse(F->getArg(0));
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "Expected a memory intrinsic");
+    
+     
+    CallBase *CB = cast<CallBase>(CI);
+    
+     
+     
+     
+    
+     
+    verifyModule(*M);
+    
+    std::cout << "Test passed: All constraints satisfied." << std::endl;
+    
+    delete M;
+    return 0;
+}

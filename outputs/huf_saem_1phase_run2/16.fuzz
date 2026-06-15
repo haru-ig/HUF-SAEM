@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(FuncTy->getPointerTo(), {}, "", BB);
+    CI->addOperand(Arg);
+
+     
+    if (CI->use_empty()) {
+        std::cerr << "Error: The CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow();
+    if (F->doesNotThrow() || CI->doesNotThrow()) {
+        std::cerr << "Error: The function or call instruction should be marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "Error: The CallInst should be an intrinsic call." << std::endl;
+        return 1;
+    }
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    if (!II->isAnyMemIntrinsic()) {
+        std::cerr << "Error: The intrinsic call should be a memory intrinsic." << std::endl;
+        return 1;
+    }
+
+     
+    if (!isa<CallBase>(CI)) {
+        std::cerr << "Error: The context instruction should be a CallBase instance." << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

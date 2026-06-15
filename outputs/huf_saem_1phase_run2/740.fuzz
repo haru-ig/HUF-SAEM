@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {}, "", BB);
+
+     
+    if (CI->use_empty()) {
+        CI->addUse(Type::getInt32Ty(Context));
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        Intrinsic::ID IID = Intrinsic::not_intrinsic;
+        if (!CI->getIntrinsicID(IID) || IID != Intrinsic::memcpy) {
+            std::cerr << "Error: CallInst is not a memory intrinsic or does not match expected type." << std::endl;
+            return 1;
+        }
+    } else {
+        std::cerr << "Error: CallInst is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

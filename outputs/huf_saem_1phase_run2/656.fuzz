@@ -1,0 +1,117 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *Mod = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    AllocaInst *Alloca = new AllocaInst(Type::getInt32Ty(Context), 0, "arg_alloca", BB->getTerminator());
+
+     
+    F->setDoesNotThrow();
+    CallInst *CI = CallInst::Create(F, {Alloca}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    IntrinsicInst *II = IntrinsicInst::Create(Intrinsic::any_mem_intrinsic, {CI}, "", BB);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(II)) {
+        std::cout << "Intrinsic call is a memory intrinsic." << std::endl;
+    } else {
+        std::cout << "Intrinsic call is not a memory intrinsic." << std::endl;
+    }
+
+     
+    CallBase *CB = CI;
+    if (CallBase *CBCtx = dyn_cast<CallBase>(CB)) {
+        std::cout << "Context instruction is a CallBase." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a CallBase." << std::endl;
+    }
+
+     
+    Loop *L = nullptr;
+    if (BB->getTerminator()->isConditional()) {
+        L = LI.AllocateLoop();
+        L->initialize(BB);
+    }
+
+     
+    if (L->getLoopPreheader() && L->getLoopLatch()) {
+        std::cout << "Loop has valid preheader and latch blocks." << std::endl;
+    } else {
+        std::cout << "Loop does not have valid preheader and latch blocks." << std::endl;
+    }
+
+     
+    if (L->isSafeToClone()) {
+        std::cout << "Loop is safe to clone." << std::endl;
+    } else {
+        std::cout << "Loop is not safe to clone." << std::endl;
+    }
+
+     
+    if (!L->getHeader()->hasAddressTaken()) {
+        std::cout << "Loop header's address is not taken." << std::endl;
+    } else {
+        std::cout << "Loop header's address is taken." << std::endl;
+    }
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    if (ULO.Count > 0) {
+        std::cout << "Loop unroll count is greater than zero." << std::endl;
+    } else {
+        std::cout << "Loop unroll count is not greater than zero." << std::endl;
+    }
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = IntrinsicInst::Create(Intrinsic::ctpop, {TrueVal}, "", BB);
+    SelectInst *SI = new SelectInst(ICmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+     
+    if (SI->getCondition() && SI->getTrueValue() && SI->getFalseValue()) {
+        std::cout << "Select instruction has valid condition, true value, and false value." << std::endl;
+    } else {
+        std::cout << "Select instruction does not have valid condition, true value, or false value." << std::endl;
+    }
+
+     
+    Type *SelType = SI->getType();
+    if (SelType) {
+        std::cout << "Select instruction has a correct type." << std::endl;
+    } else {
+        std::cout << "Select instruction does not have a correct type." << std::endl;
+    }
+
+     
+    delete SI;
+    delete Mod;
+    return 0;
+}

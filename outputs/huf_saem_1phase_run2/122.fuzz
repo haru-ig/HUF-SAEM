@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+    Function *F = createFunction();   
+    Module *M = new Module("testModule", F->getContext());
+
+     
+    for (auto &BB : *F) {
+        for (auto &I : BB) {
+            if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+                if (!CI->use_empty() && CI->getFunction()->isNoUnwind()) {
+                     
+                    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+                        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+                             
+                            Value *Arg = II->getOperand(0);   
+                            Type *ArgType = Arg->getType();
+
+                            if (ArgType->isIntegerTy()) {
+                                errs() << "Found integer type argument\n";
+                            } else if (ArgType->isVectorTy()) {
+                                errs() << "Found vector type argument\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}

@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+ 
+Function *createFunctionWithCallInst() {
+    LLVMContext Context;
+    Module module("test_module", Context);
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "test_function", &module);
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Intrinsic::ID intrinID = Intrinsic::memset;  
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, intrinID), {}, "", bb);
+
+     
+    func->setDoesNotThrow();
+
+    return func;
+}
+
+ 
+void createSelectInstWithConditions(BasicBlock *bb) {
+    Value *trueVal = ConstantInt::get(Type::getInt32Ty(bb->getContext()), APInt(32, 1));
+    Value *falseVal = ConstantInt::get(Type::getInt32Ty(bb->getContext()), APInt(32, 2));
+    Value *condVal = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_ULT, trueVal, falseVal, "", bb);
+    SelectInst *SI = new SelectInst(condVal, trueVal, falseVal, "", bb);
+}
+
+int main() {
+    Function *func = createFunctionWithCallInst();
+    if (func) {
+        std::cout << "Function created successfully with CallInst.\n";
+    } else {
+        std::cout << "Failed to create function with CallInst.\n";
+    }
+
+     
+    if (func->getBasicBlockList().begin() != func->getBasicBlockList().end()) {
+        BasicBlock *bb = &*(func->getBasicBlockList().begin());
+        createSelectInstWithConditions(bb);
+        std::cout << "Added SelectInst with conditions in the function.\n";
+    } else {
+        std::cout << "Failed to add SelectInst, no basic block found.\n";
+    }
+
+    return 0;
+}

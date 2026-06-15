@@ -1,0 +1,68 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(LLVMContext()), {}, false);
+    Function* F = dyn_cast<Function>(new Function(*FT, "testfunc", nullptr));
+    BasicBlock* BB = BasicBlock::Create(LLVMContext(), "", F);
+    Instruction* CI = CallInst::Create(Intrinsic::getDeclaration(nullptr, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+    assert(F->doesNotThrow() && !CI->doesNotThrow() && "Function must be marked as nounwind and CallInst should not");
+
+     
+    Intrinsic::ID IID = CI->getIntrinsicID();
+    assert(IID == Intrinsic::memset && "CallInst must be an intrinsic call of a memory operation");
+
+     
+     
+     
+     
+     
+
+     
+     
+     
+     
+
+     
+     
+     
+
+     
+     
+     
+     
+
+     
+     
+     
+
+     
+     
+     
+     
+
+     
+     
+     
+     
+     
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

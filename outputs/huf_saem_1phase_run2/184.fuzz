@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test_module", Context);
+
+     
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *func = Function::Create(funcType, Function::ExternalLinkage, "test_function", &module);
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+    IRBuilder<> builder(entryBB);
+
+     
+    Intrinsic::ID intrinsicID = Intrinsic::abs;  
+    Value *arg = UndefValue::get(Type::getInt32Ty(Context));
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, intrinsicID), arg, "", entryBB);
+
+     
+    CI->addUse(func->arg_begin());
+
+     
+    assert(!func->doesNotThrow() && "Function should be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+
+     
+
+     
+    Value *trueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *falseVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 0));
+    SelectInst *SI = new SelectInst(CI->compare(), trueVal, falseVal, "", CI);
+
+     
+
+    std::cout << "Test program setup complete." << std::endl;
+
+    return 0;
+}

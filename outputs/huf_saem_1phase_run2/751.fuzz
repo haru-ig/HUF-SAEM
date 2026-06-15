@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("testmodule", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testfunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    CallInst *CI = CallInst::Create(Callee, {}, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    assert(!F->doesNotThrow() && "Function should not be nounwind");
+
+     
+    IntrinsicInst *II = IntrinsicInst::Create(Intrinsic::memset, {CI}, {"numBytes"}, BB);
+    assert(dyn_cast<IntrinsicInst>(II) && "Expected an AnyMemIntrinsic");
+
+     
+
+    std::cout << "Module before optimization: " << *Module << std::endl;
+
+    return 0;
+}

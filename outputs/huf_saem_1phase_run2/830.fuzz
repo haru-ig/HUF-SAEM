@@ -1,0 +1,90 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/TypeBuilder.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *C1 = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *C2 = ConstantFP::get(Type::getFloatTy(Context), 2.0);
+    
+     
+    ICmpInst *ICmp = new ICmpInst(*BB, ICmpInst::FCMP_ULT, C1, C2, "cmp");
+    
+     
+    SelectInst *Sel = SelectInst::Create(ICmp, C1, C2, "", BB);
+    
+     
+    Sel->setName("select_inst");
+    F->addInstruction(Sel);
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    CallInst *CI = cast<CallInst>(Sel);
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "Intrinsic call detected." << std::endl;
+    } else {
+        std::cout << "Not an intrinsic call." << std::endl;
+    }
+    
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function marked as nounwind and call does not throw." << std::endl;
+    } else {
+        std::cout << "Function does not meet nounwind or throws condition." << std::endl;
+    }
+    
+     
+    if (Sel->getTrueValue() == C1 && Sel->getFalseValue() == C2 && Sel->getType()->isFloatTy()) {
+        std::cout << "Select instruction has valid operands and type." << std::endl;
+    } else {
+        std::cout << "Select instruction does not meet operand or type conditions." << std::endl;
+    }
+    
+     
+    if (isa<CallBase>(CI)) {
+        std::cout << "Context instruction is a call base." << std::endl;
+    } else {
+        std::cout << "Context instruction is not a call base." << std::endl;
+    }
+    
+     
+    if (F->arg_size() > 0 && F->getArg(0)->hasRetAttr()) {
+        std::cout << "Function has at least one argument with the returned attribute." << std::endl;
+    } else {
+        std::cout << "Function does not meet argument condition." << std::endl;
+    }
+    
+     
+    if (IRPosition::callsite_argument(CI).isCallSiteArgument()) {
+        std::cout << "IRPosition is valid and has a call site argument position kind." << std::endl;
+    } else {
+        std::cout << "IRPosition does not meet condition." << std::endl;
+    }
+    
+     
+    if (F != nullptr) {
+        std::cout << "Function associated with the IRPosition exists." << std::endl;
+    } else {
+        std::cout << "Function does not exist for the IRPosition." << std::std

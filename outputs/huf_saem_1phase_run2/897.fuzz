@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Use.h>
+
+int main() {
+    llvm::LLVMContext Context;
+    std::unique_ptr<llvm::Module> Module = std::make_unique<llvm::Module>("test", Context);
+    llvm::Function *F = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(Context), false), llvm::GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    
+     
+    llvm::CallInst *CI = llvm::CallInst::Create(llvm::Intrinsic::getDeclaration(Module.get(), llvm::Intrinsic::memset), {   }, "", F);
+    
+     
+    CI->addUse(llvm::Value::use_empty());
+
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    
+    return 0;
+}

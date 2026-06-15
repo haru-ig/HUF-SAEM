@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(nullptr, F->getArg(0), "", BB);
+
+     
+    assert(!F->doesNotThrow() && "Function must be marked as nounwind");
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+
+     
+    if (II->getIntrinsicID() == Intrinsic::load || II->getIntrinsicID() == Intrinsic::store) {
+         
+        Value *Ptr = ConstantInt::get(IntegerType::getInt64Ty(Context), 0);
+        LoadInst *LI = new LoadInst(PointerType::get(IntegerType::getInt32Ty(Context), 0), Ptr, "", BB);
+        LI->setAlignment(MaybeAlign(1));  
+    }
+
+    std::cout << "Test program generated successfully!\n";
+    return 0;
+}

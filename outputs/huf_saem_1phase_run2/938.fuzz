@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CallInst = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::sqrt), {}, "", BB);
+
+     
+    CallInst->addUse(*F);
+
+     
+    if (dyn_cast<IntrinsicInst>(CallInst)) {
+        errs() << "The CallInst is an intrinsic.\n";
+    } else {
+        errs() << "The CallInst is not an intrinsic.\n";
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindDest(nullptr);
+
+     
+    if (F->doesNotThrow()) {
+        errs() << "The function is marked as nounwind.\n";
+    } else {
+        errs() << "The function is not marked as nounwind.\n";
+    }
+
+    return 0;
+}

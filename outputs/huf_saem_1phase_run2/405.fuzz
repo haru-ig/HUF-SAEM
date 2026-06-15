@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>  
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Value.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+     
+     
+    Function *F = nullptr;  
+    CallBase CI(nullptr, {}, "", F);  
+
+    if (!CI.use_empty()) {
+        std::cerr << "CallInst must have at least one use." << std::endl;
+        return 1;
+    }
+
+    if (F->hasFnAttribute(Attribute::NoUnwind)) {
+        std::cerr << "Function must be marked as nounwind." << std::endl;
+        return 1;
+    }
+
+    if (CI.doesNotThrow()) {
+        std::cerr << "CallInst itself must not be marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) {
+        std::cerr << "CallInst must be an intrinsic call." << std::endl;
+        return 1;
+    }
+
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    if (!isa<AnyMemIntrinsic>(II)) {
+        std::cerr << "The intrinsic call must be an AnyMemIntrinsic." << std::endl;
+        return 1;
+    }
+
+     
+
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

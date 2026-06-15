@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("testModule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {Constant::getNullValue(Type::getInt8PtrTy(Context))}, "", BB);
+    CI->addUse(F->arg_begin());  
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !II->isAnyMemory()) {
+        errs() << "Not a memory intrinsic!\n";
+        return 1;
+    }
+
+     
+     
+
+     
+    legacy::PassManager PM;
+    PM.add(createPrintModulePass([](const Module &M) { return false; }));
+    PM.run(*cast<Module>(&M));
+
+    return 0;
+}

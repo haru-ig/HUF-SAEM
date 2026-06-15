@@ -1,0 +1,135 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    IntrinsicInst *CI = CallInst::Create(Intrinsic::any_mem_intrinsic, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    CI->setDoesNotThrow();
+    
+     
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    auto *AII = dyn_cast<AnyMemIntrinsic>(CI);
+    assert(AII && "CallInst must be an AnyMemIntrinsic");
+    
+     
+    CallBase *CB = cast<CallBase>(CI);
+    CB->getCalledValue();
+    
+     
+    auto IRPos = IRPosition::callsite_argument(CB);
+    assert(IRPos.getKind() == IRPOK_CALL_SITE_ARGUMENT && "IRPosition must have the correct kind");
+    
+     
+    auto *AssocFunc = F;
+    assert(AssocFunc && "Associated function must be non-null");
+    
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<TreeEntry *, Type *> MinBWs;
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getIntegerBitWidth() > 0 && "MinBWs entry must provide a valid bit width");
+    }
+    
+     
+    assert(E->State == TreeEntry::SplitVectorize && E->CombinedEntriesWithIndices.size() == 2);
+    
+     
+    Value *CondVal = ConstantInt::getTrue(Context);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value *FalseVal = CallInst::Create(Instruction::FNeg, TrueVal, "", BB);
+    Type *SelType = Type::getInt32Ty(Context);
+    
+     
+    assert(!isa<SelectInst>(CI) || !simplifySelectInst(cast<SelectInst>(CI)) || 
+           !canonicalizeSelectToShuffle(cast<SelectInst>(CI)) || 
+           !canonicalizeScalarSelectOfVecs(cast<SelectInst>(CI)));
+    
+     
+    assert(FalseVal->getOpcode() == Instruction::FNeg && "FalseVal must be a fneg operation");
+    ICmpInst *ICmp = dyn_cast<ICmpInst>(CondVal);
+    assert(ICmp && ICmp->getPredicate() == ICmpInst::ICMP_ULT && "CondVal must be an icmp ult comparison");
+    
+     
+    Type *SelType = Type::getInt32Ty(Context);
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && "SelType must be an integer type or an integer vector type");
+    
+     
+    Type *CondType = Type::getInt32Ty(Context);
+    assert((CondType->isIntegerTy() || CondType->isVectorTy()) && "CondType must be a scalar or vector type");
+    
+     
+    assert(E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement);
+    
+     
+    Value *LastOperand = E->getOperand(1).back();
+    assert(!LastOperand->getType()->isVectorTy() && "The type of the last operand must not be a vector type");
+    
+     
+    Type *ScalarTy = Type::getInt32Ty(Context);
+    assert(isValidElementType(ScalarTy) && "ScalarTy must be a valid element type");
+    
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E]->getIntegerBitWidth() > 0 && "MinBWs entry must provide a valid bit width");
+    } else if (E->Idx == 0 && isReducedBitcastRoot(E)) {
+         
+        assert(isReducedBitcastRoot(E) && "isReducedBitcastRoot must return true");
+    }
+    
+     
+    Instruction *I = CallInst::Create(Instruction::FNeg, TrueVal, "", BB);
+    assert(isa<FNegInst>(I) && "I must be a fneg instruction");
+    Value *Operand = I->getOperand(0);
+    assert(Operand->hasOneUse() && "The operand of the fneg instruction must have exactly one use");
+    
+     
+    FPClass Known;
+    assert(Known == FPClass() && "Known must be in an uninitialized state");
+    
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest DemandedMask;
+    assert(DemandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+    
+     
+    DenseMap<BasicBlock *, BlockEdgeWeights> BlocksSchedules;
+    assert(!BlocksSchedules.empty() && "BlocksSchedules map must contain valid entries");
+    
+    std::cout << "All assertions passed." << std::endl;
+    return 0;
+}

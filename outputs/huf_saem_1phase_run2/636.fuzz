@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/LoopPass.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::any_mem_intrinsic), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    Func->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call.");
+    assert(II->getIntrinsicID() == Intrinsic::any_mem_intrinsic && "CallInst must be an AnyMemIntrinsic.");
+
+     
+    Function *F = createFunctionWithReturnedArgument(Func, Module.get());
+
+     
+
+     
+
+    std::cout << "Test case generated successfully!" << std::endl;
+    return 0;
+}

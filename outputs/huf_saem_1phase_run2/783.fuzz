@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg0 = &*F->arg_begin();   
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memcpy), {Arg0}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst has at least one use.\n";
+    } else {
+        errs() << "CallInst does not have any uses.\n";
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CI is an intrinsic call.\n";
+    } else {
+        errs() << "CI is not an intrinsic call.\n";
+    }
+
+     
+    BB->getTerminator()->eraseFromParent();
+    delete M;
+
+    return 0;
+}

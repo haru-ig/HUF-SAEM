@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *MemsetArgs[] = {
+        ConstantExpr::getBitCast(BB, Type::getInt8PtrTy(Context)),
+        ConstantInt::get(Type::getInt32Ty(Context), 4),
+        ConstantInt::get(Type::getInt64Ty(Context), 0)
+    };
+    IntrinsicInst *Memset = IntrinsicInst::Create(M.getContext(), Intrinsic::memset, ArrayRef<Value*>(MemsetArgs), "", BB);
+
+     
+    Memset->addUse(Type::getInt32Ty(Context));
+
+     
+    if (dyn_cast<IntrinsicInst>(Memset)) {
+        errs() << "The CallInst is an intrinsic call.\n";
+    } else {
+        errs() << "The CallInst is not an intrinsic call.\n";
+    }
+
+    return 0;
+}

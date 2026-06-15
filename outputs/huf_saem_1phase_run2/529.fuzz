@@ -1,0 +1,106 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+bool checkCallInst(const CallInst &CI) {
+    if (CI.use_empty()) return false;
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow() || func->hasFnAttr("nounwind")) return false;
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    Intrinsic::ID id = cast<IntrinsicInst>(&CI)->getIntrinsicID();
+    if (id != Intrinsic::anymemintrinsic) return false;
+    if (id == Intrinsic::anymemintrinsic && CI.getNumArgOperands() <= 0) return false;
+    return true;
+}
+
+bool checkSelectInst(const SelectInst &SI) {
+    Value *CondVal = SI.getCondition();
+    Value *TrueVal = SI.getTrueValue();
+    Value *FalseVal = SI.getFalseValue();
+    if (!CondVal || !TrueVal || !FalseVal) return false;
+    Type *SelType = TrueVal->getType();
+    if (!SelType) return false;
+    return true;
+}
+
+bool checkLoop(const Loop &L) {
+    if (!L.getLoopPreheader() || !L.getLoopLatch()) return false;
+    if (!L.isSafeToClone()) return false;
+    if (L.getHeader()->hasAddressTaken()) return false;
+    return true;
+}
+
+bool checkUnrollCount(const UnrollLoopOptions &ULO, unsigned MaxAnalysisRecursionDepth) {
+    if (ULO.Count <= 0) return false;
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    CallInst *CI = Intrinsic::getDeclaration(&M, Intrinsic::anymemintrinsic, {});
+    CI->setCalledFunction(F);
+
+     
+    if (checkCallInst(*CI)) {
+        outs() << "CallInst satisfies all constraints.\n";
+    } else {
+        errs() << "CallInst does not satisfy some constraints.\n";
+    }
+
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), APInt(1, 0));
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 42));
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 24));
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (checkSelectInst(*SI)) {
+        outs() << "SelectInst satisfies all constraints.\n";
+    } else {
+        errs() << "SelectInst does not satisfy some constraints.\n";
+    }
+
+     
+    BasicBlock *Preheader = BasicBlock::Create(Context, "", F);
+    BasicBlock *Latch = BasicBlock::Create(Context, "", F);
+    Latch->moveBefore(BB);
+    BranchInst *BI = new BranchInst(BB, Preheader, Latch, BB);
+    Loop *L = new Loop(&*F->begin(), &LI);
+
+     
+    if (checkLoop(*L)) {
+        outs() << "Loop satisfies all constraints.\n";
+    } else {
+        errs() << "Loop does not satisfy some constraints.\n";
+    }
+
+     
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;
+    if (checkUnrollCount(ULO, 10)) {
+        outs() << "UnrollLoopOptions satisfies all constraints.\n";
+    } else {
+        errs() << "UnrollLoopOptions does not satisfy some constraints.\n";
+    }
+
+    return 0;
+}

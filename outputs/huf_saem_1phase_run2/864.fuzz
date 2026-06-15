@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include <iostream>
+
+using namespace llvm;
+
+bool testFunction(Module &M, LLVMContext &Ctx) {
+    Function *F = createFunctionInModule(M, Ctx);  
+    if (!F) return false;
+
+    CallInst *CI = insertCallInstruction(*F);  
+    if (CI->use_empty()) return false;  
+
+     
+    if (!F->doesNotThrow() || F->hasFnAttr(Attribute::NoUnwind)) return false;
+
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !II->isAnyMemIntrinsic()) return false;  
+
+    CallBase *CB = cast<CallBase>(CI);
+    Value *CtxI = CB;  
+
+     
+    if (!CtxI) return false;
+
+     
+    Loop *L = getLoopForFunction(*F);
+    if (!L || !L->getLoopPreheader() || !L->getLoopLatch()) return false;
+
+    UnrollLoopOptions ULO;
+    ULO.Count = 4;  
+    if (ULO.Count <= 0) return false;
+
+     
+
+    std::cout << "Test function passed all constraints." << std::endl;
+    return true;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("testModule", Ctx);
+    if (testFunction(M, Ctx)) {
+         
+    } else {
+         
+    }
+    return 0;
+}

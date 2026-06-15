@@ -1,0 +1,69 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *I = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset, {Type::getInt8PtrTy(Context), Constant::getNullValue(Type::getInt8Ty(Context)), ConstantInt::get(Type::getInt32Ty(Context), 0)}), {}, "", BB);
+    assert(!I->use_empty() && "CallInst must have at least one use");
+    CallInst &CI = *cast<CallInst>(I);
+    Function *func = CI.getFunction();
+    assert(func && "Function must be non-null");
+    assert(func->doesNotThrow() && "Function must be marked as nounwind");
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+    unsigned NumBytes = 0;  
+    assert(NumBytes <= 0 || !isMultipleOfElementSize(NumBytes) && "For atomic unordered memory intrinsics, length must be non-positive or not a multiple of the element size");
+    CallBase *CB = dyn_cast<CallBase>(&CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    IRPosition Pos = IRPosition::callsite_argument(*CB);
+    assert(Pos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition obtained from IRPosition::callsite_argument must have position kind of IRP_CALL_SITE_ARGUMENT");
+    TreeEntry *E = nullptr;  
+    assert(E->Scalars.size() > 0 && "TreeEntry object E must have a non-empty Scalars list");
+    MinBWsMap[E];  
+    assert(E->State == TreeEntry::SplitVectorize && "E->State must be TreeEntry::SplitVectorize to reach the code path that handles split vectorization");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices must contain exactly two entries");
+    SelectInst *SI = nullptr;  
+    Value *CondVal = SI->getCondition();
+    Value *TrueVal = SI->getTrueValue();
+    Value *FalseVal = SI->getFalseValue();
+    Type *SelType = SI->getType();
+    assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst must have a valid condition, true value, false value, and selection type");
+    ConstantInt *CI2 = dyn_cast<ConstantInt>(CondVal);
+    ICmpInst *ICmp = dyn_cast<ICmpInst>(CondVal);
+    assert(ci2 && icmp && "Condition must be an icmp ult comparison of TrueVal with the integer constant 2");
+    Value *X = nullptr;  
+    assert(fabs(x)->hasOneUse() && "fabs(x) must have exactly one use");
+    KnownFPClass Known = {};  
+    assert(Known == KnownFPClass() && "Known must be in an uninitialized state");
+    Depth depth = 0;  
+    assert(depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+    DemandedMask demandedMask = {};  
+    assert(adjustDemandedMaskFromFlags(demandedMask) != FPClassTest::getInvalid() && "DemandedMask must be a valid FPClassTest value that can be adjusted by the adjustDemandedMaskFromFlags function");
+    Loop *L = nullptr;  
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header's address must not be taken");
+    UnrollOptions ULO{};  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    Instruction *I2 = nullptr;  
+    assert(I2->getType()->getScalarSizeInBits() == getBitWidth(demandedMask) && getBitWidth(known) && "Instruction type must have a scalar size in bits equal to the bit width of DemandedMask and Known");
+    assert(Depth < MaxAnalysisRecursionDepth && "Depth parameter must be less than or equal to MaxAnalysisRecursionDepth");
+    assert(getBitWidth(demandedMask) == getBitWidth(known) && "DemandedMask and Known must have the same bit width, which must match the scalar size in bits of the type of I");
+     
+
+    return 0;
+}

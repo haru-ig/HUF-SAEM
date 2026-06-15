@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &Mod);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt32Ty(Context)}, {}, "", BB);
+    CI->addUse(Value::use_empty());  
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    if (!II) return -1;
+
+     
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && "Expected a memory intrinsic");
+    if (!AMII) return -1;
+
+     
+    Value *TrueVal = Constant::getNullValue(Type::getInt32Ty(Context));
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    ICmpInst *Cmp = new ICmpInst(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    SelectInst *SI = new SelectInst(Cmp, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasOneUse() && "Expected at least one use of the select instruction");
+    if (!SI->hasOneUse()) return -1;
+
+     
+    Mod.print(errs(), nullptr);
+
+    return 0;
+}

@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/SimplifyIndVar.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Intrinsic::ID IntrID = Intrinsic::pow;  
+    std::vector<Value *> Args;
+    Args.push_back(ConstantInt::get(Type::getInt32Ty(Context), 2));
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), IntrID), Args, "", BB);
+
+     
+    CI->addUse(Func->arg_begin());
+
+     
+    Func->setDoesNotThrow();
+    Func->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == IntrID) {
+             
+            if (IntrID == Intrinsic::atomicrmw || IntrID == Intrinsic::cmpxchg) {
+                 
+                auto *MemOp = cast<AnyMemIntrinsic>(CI);
+                uint64_t NumBytes = MemOp->getMemoryLength();
+                if (NumBytes <= 0 || NumBytes % sizeof(int) != 0) {
+                     
+                }
+            }
+        }
+    }
+
+     
+    if (!CI->use_empty()) {
+         
+    }
+
+     
+    Module->print(outs(), nullptr);
+
+    return 0;
+}

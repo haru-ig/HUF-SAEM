@@ -1,0 +1,129 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value* Arg = &*(F->arg_begin());
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::memset), { Arg }, "", BB);
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst* II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Intrinsic call must be memset");
+    
+     
+    CallBase* CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRRet = IRPosition::callsite_argument(CB);
+    assert(IRRet.getPositionKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+    
+     
+    Function* Funct = IRRet.getFunction();
+    assert(Funct && "Associated function must be non-null");
+    
+     
+    auto E = std::make_unique<TreeEntry>();
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<const TreeEntry*, Type*> MinBWs;
+    if (!MinBWs.empty()) {
+        auto Entry = MinBWs.find(E.get());
+        assert(Entry != MinBWs.end() && "MinBWs map must contain an entry for E");
+        assert(Entry->second->isIntegerTy() && static_cast<IntegerType*>(Entry->second)->getBitWidth() > 0 && "Valid bit width must be provided");
+    }
+    
+     
+    assert(E->State == TreeEntry::SplitVectorize && "TreeEntry state must be SplitVectorize");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "Exactly two entries must be in CombinedEntriesWithIndices");
+    
+     
+    Value* CondVal = ConstantInt::getTrue(Context);
+    Value* TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(1.0));
+    Value* FalseVal = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::fabs), { TrueVal }, "", BB);
+    FalseVal = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::ctpop), { FalseVal }, "", BB);
+    SelectInst* SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    Type* SelType = SI->getType();
+    assert(SelType && "SelectInst type must be correctly retrievable");
+    
+     
+    assert(CondVal && "SelectInst condition must be a valid Value object");
+    assert(TrueVal && "SelectInst true value must be a valid Value object");
+    assert(FalseVal && "SelectInst false value must be a valid Value object");
+    
+     
+    assert(!simplifySelectInst(SI) && !canonicalizeSelectToShuffle(SI) && !canonicalizeScalarSelectOfVecs(SI) && "SelectInst should not simplify or transform further");
+    
+     
+    ICmpInst* Cmp = dyn_cast<ICmpInst>(CondVal);
+    assert(Cmp && Cmp->getPredicate() == ICmpInst::ICMP_ULT && "Condition must be an icmp ult comparison");
+    assert(TrueVal == Cmp->getOperand(0) && "Condition operand 0 must be TrueVal");
+    assert(ConstantInt::get(Type::getInt32Ty(Context), 2) == Cmp->getOperand(1) && "Condition operand 1 must be the integer constant 2");
+    
+     
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && "SelectInst type must be an integer type or an integer vector type");
+    assert((Cmp->getType()->isScalarTy() == CondVal->getType()->isScalarTy()) && "Condition and selection types must match");
+    
+     
+    assert(E->State == TreeEntry::Vectorize && "TreeEntry state must be Vectorize");
+    assert(E->getOpcode() == Instruction::InsertElement && "Instruction opcode must be InsertElement");
+    
+     
+    Value* Operand = E->getOperand(1).back();
+    assert(!Operand->getType()->isVectorTy() && "Last operand must not be a vector type");
+    
+     
+    Type* ScalarTy = VL[0];
+    assert(isValidElementType(ScalarTy) && "ScalarTy must be a valid element type");
+    
+     
+    if (!MinBWs.empty()) {
+        auto Entry = MinBWs.find(E.get());
+        assert((Entry != MinBWs.end() && static_cast<IntegerType*>(Entry->second)->getBitWidth() > 0) || (E->Idx == 0 && E->isReducedBitcastRoot()) && "ScalarTy must be updated based on precomputed smaller type");
+    }
+    
+     
+    Instruction* I = BinaryOperator::CreateFNeg(BinaryOperator::Create(Instruction::FABS, Arg, "", BB));
+    assert(I->getOpcode() == Instruction::FNEG && "Instruction must be a FNeg");
+    
+     
+    uint64_t MaskBase = 0;
+     
+    assert(MaskBase > 0 && "MaskBase must be correctly computed and used in further logic");
+    
+    std::cout << "All assertions passed!" << std::endl;
+    return 0;
+}

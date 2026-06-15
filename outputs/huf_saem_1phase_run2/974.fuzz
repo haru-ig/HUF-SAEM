@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::anymem_load), {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::NoUnwind);
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+        assert(II->getIntrinsicID() == Intrinsic::anymem_load && "CallInst must be an intrinsic call");
+        
+         
+        if (II->getIntrinsicID() == Intrinsic::atomicrmw || II->getIntrinsicID() == Intrinsic::cmpxchg) {
+            Value *Ptr = II->getArgOperand(0);
+            uint64_t NumBytes = 0;  
+            assert(NumBytes <= 0 || NumBytes % getElementTypeSize(Ptr->getType()) != 0, "Length must be non-positive or not a multiple of the element size");
+        }
+    }
+    
+     
+    if (auto *CB = dyn_cast<CallBase>(CI)) {
+        assert(CB->getCalledFunction() != nullptr && "Function associated with the CallInst must be non-null");
+        
+         
+    }
+    
+     
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

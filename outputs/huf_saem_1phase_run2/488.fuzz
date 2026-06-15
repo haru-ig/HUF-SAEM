@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+    
+     
+    FunctionType *funcTy = FunctionType::get(IntegerType::getInt32Ty(Context), {IntegerType::getInt32Ty(Context)}, false);
+    Function *func = Function::Create(funcTy, GlobalValue::ExternalLinkage, "testFunc", &module);
+    
+     
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+    
+     
+    Value *arg = &*(func->args().begin());
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&module, Intrinsic::memset), {arg}, "", entryBB);
+    
+     
+    CI->addUse(*func);
+    
+     
+    func->setDoesNotThrow();
+    func->setNoUnwind();
+    
+     
+    IntrinsicInst *memSetCall = dyn_cast<IntrinsicInst>(CI);
+    assert(memSetCall && "Expected a memset intrinsic call");
+    
+     
+    uint64_t NumBytes = 0;  
+    if (NumBytes > 0) {
+        memSetCall->setArgOperand(2, ConstantInt::get(IntegerType::getInt64Ty(Context), NumBytes));
+    } else {
+         
+        assert(NumBytes <= 0 && "Expected non-positive or not a multiple of element size");
+    }
+    
+     
+    CallBase *ctxI = dyn_cast<CallBase>(CI);
+    assert(ctxI && "Expected a CallBase instruction");
+    
+     
+    auto irPos = IRPosition::callsite_argument(*ctxI);
+    assert(irPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "Expected IRP_CALL_SITE_ARGUMENT position kind");
+    
+     
+    bool simplified = false;
+    if (!simplified) {
+         
+    }
+    
+     
+    module.print(errs(), nullptr);
+    
+    return 0;
+}

@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createFunctionWithAtLeastOneUse() {
+  LLVMContext Context;
+  Module module("testmodule", Context);
+  FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), false);
+  Function *func = Function::Create(funcType, Function::ExternalLinkage, "myfunc", &module);
+  BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+
+   
+  Constant *constVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 10));
+  new StoreInst(constVal, createPointer(Context, Type::getInt32Ty(Context)), entryBB);
+
+   
+  LoadInst *loadInst = new LoadInst(Type::getInt32Ty(Context), createPointer(Context, Type::getInt32Ty(Context)), "", entryBB);
+
+  return func;
+}
+
+ 
+void handleIntrinsicCall() {
+  LLVMContext Context;
+  Module module("testmodule", Context);
+  FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), false);
+  Function *func = Function::Create(funcType, Function::ExternalLinkage, "myfunc", &module);
+  BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+
+   
+  Value *arg = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, -10));
+  IntrinsicInst *intrinsicCall = CallInst::Create(Intrinsic::getDeclaration(&module, Intrinsic::abs), arg, "", entryBB);
+
+   
+  intrinsicCall->setDoesNotThrow();
+  func->setLinkage(GlobalValue::InternalLinkage);
+  func->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+
+   
+  if (true) {
+    legacy::PassManager passes;
+    passes.add(new SimplifyCFGPass());
+    passes.run(*func->getParent());
+  }
+}
+
+int main() {
+  handleIntrinsicCall();
+  return 0;
+}

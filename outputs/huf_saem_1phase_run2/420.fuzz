@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+
+ 
+bool hasAtLeastOneUse(const std::vector<int>& uses) {
+    return !uses.empty();
+}
+
+ 
+bool isValidFunctionCall(bool nounwind, bool doesNotThrow) {
+    return nounwind && !doesNotThrow;
+}
+
+ 
+bool isAnyMemIntrinsic(const std::vector<int>& intrinsicTypes) {
+     
+    return !intrinsicTypes.empty();
+}
+
+ 
+int main() {
+    std::vector<int> uses = {1};  
+    std::vector<int> intrinsicTypes = {2};  
+    bool nounwind = true;
+    bool doesNotThrow = false;
+
+    if (hasAtLeastOneUse(uses)) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+    if (isValidFunctionCall(nounwind, doesNotThrow)) {
+        std::cout << "Function call is valid according to constraints." << std::endl;
+    } else {
+        std::cout << "Function call does not meet the required constraints." << std::endl;
+    }
+
+    if (isAnyMemIntrinsic(intrinsicTypes)) {
+        std::cout << "CallInst is an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an AnyMemIntrinsic." << std::endl;
+    }
+
+    return 0;
+}

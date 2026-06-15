@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Verifier.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_function", &M);
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), Type::getInt32Ty(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "Memory intrinsic detected." << std::endl;
+    } else {
+        std::cout << "Not a memory intrinsic." << std::endl;
+    }
+
+     
+    if (verifyModule(M, &outs())) {
+        std::cerr << "Module verification failed!" << std::endl;
+        return 1;
+    } else {
+        std::cout << "Module verified successfully." << std::endl;
+    }
+
+    return 0;
+}

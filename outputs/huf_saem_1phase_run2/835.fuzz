@@ -1,0 +1,74 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallBase *CI = nullptr;
+
+     
+    if (F->empty()) {
+        BB = new BasicBlock(Context, "entry", F);
+        CI = CallInst::Create(nullptr, {}, "", BB);
+    } else {
+        auto &BBs = F->getBasicBlockList();
+        for (auto &B : BBs) {
+            if (&B != BB && !B.empty()) {
+                CI = CallInst::Create(nullptr, {}, "", &*std::prev(&B.end()));
+                break;
+            }
+        }
+    }
+
+     
+    Value *User = nullptr;
+    if (CI) {
+        User = CI;
+        for (auto &U : CI->users()) {
+            User = &U;
+            break;
+        }
+    }
+    assert(User && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    if (CI) {
+        Intrinsic::ID IntrID = Intrinsic::not_an_intrinsic;  
+        if (IntrID == Intrinsic::not_an_intrinsic) {
+            CI->setCalledFunction(nullptr);
+            auto *II = IntrinsicInst::Create(CI->getType(), IntrinsicID::get(Context, IntrID), {});
+            CI->replaceAllUsesWith(II);
+        }
+    }
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(II && "CallInst must be an intrinsic call");
+        auto *AM = dyn_cast<AnyMemIntrinsic>(II);
+        assert(AM && "Intrinsic call must be AnyMemIntrinsic");
+    }
+
+     
+    F->print(errs());
+    return 0;
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Module.get());
+    BasicBlock *EntryBB = BasicBlock::Create(Context, "", Func);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    std::vector<Value *> Args{Arg};
+    CallInst *CI = CallInst::Create(Func->getFunctionType(), Func, Args, "", EntryBB);
+
+     
+    CI->addUse(CI->getType());
+
+     
+    Func->setDoesNotThrow();
+    Func->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *II = IntrinsicInst::get(Intrinsic::any_mem, Args, "", EntryBB);
+    assert(II && "Failed to create an intrinsic instruction");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*CB);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+
+     
+
+    std::cout << "Test program completed successfully." << std::endl;
+    return 0;
+}

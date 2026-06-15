@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("testmodule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testfunc", Module.get());
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::memcpy, {}), Arg, "", BB);
+
+     
+    CI->setDoesNotThrow();
+    CI->addUse(CI->getType());   
+
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->setUnnamedAddr(GlobalValue::UnnamedAddr::Local);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    CI->setAtomicOrdering(AtomicOrdering::NotAtomic);   
+
+    std::cout << "Module: " << *Module << "\n";
+
+    return 0;
+}

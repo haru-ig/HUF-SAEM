@@ -1,0 +1,7 @@
+The cpp code below already starts with `#include <iostream>` and an open `int main() {` -- continue it by adding statements to the body of `main` (inspired by the compiler's instruction combining / peephole simplification pass).
+Use ONLY standard cpp headers/features already available -- do NOT add `#include` directives, top-level function/class definitions, another `main`, or any compiler-internal headers, types, or APIs; use local lambdas, local classes, or inline blocks instead if needed.
+Try to incorporate the following characteristics into the code:
+- Define a lambda or a local function that performs a call to another function and ensure that the result of this call is used in some way, such as being assigned to a variable or printed, to ensure the call has uses.
+- Ensure that the function being called within the lambda or local function is marked with the `noexcept` specifier to indicate that it does not throw exceptions.
+- Call the lambda or local function from within `main` to ensure the call instruction is executed and the conditions are met.
+IMPORTANT: `#include <iostream>` and `int main() {` are ALREADY written immediately after this comment -- do NOT repeat them or write them again in any form. Begin your output directly with the first statement of `main`'s body (e.g. a variable declaration), as if your text were pasted right after the `{`.

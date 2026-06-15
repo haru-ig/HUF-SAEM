@@ -1,0 +1,68 @@
+#include <iostream>
+int main() {
+ 
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function* F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", Module.get());
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setName("arg");
+    
+     
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::anymemintrinsic), {Arg}, "", BB);
+    
+     
+    if (!CI->use_empty()) {
+        errs() << "CallInst has at least one use.\n";
+    } else {
+        errs() << "CallInst does not have any uses.\n";
+    }
+    
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CallInst is an intrinsic call.\n";
+    } else {
+        errs() << "CallInst is not an intrinsic call.\n";
+    }
+    
+     
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value* FalseVal = BinaryOperator::CreateFNeg(BinaryOperator::CreateFABS(Arg), "", BB);
+    ICmpInst* Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, Arg, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst* SI = new SelectInst(Cmp, TrueVal, FalseVal, "", BB);
+    
+     
+    if (SI->getType()->isIntegerTy()) {
+        errs() << "SelectInst type is an integer type.\n";
+    } else {
+        errs() << "SelectInst type is not an integer type.\n";
+    }
+    
+     
+     
+    
+    return 0;
+}

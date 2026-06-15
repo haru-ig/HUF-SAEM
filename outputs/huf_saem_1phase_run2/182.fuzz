@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    Function* F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst* CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 10)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+    
+     
+    IntrinsicInst* IIC = dyn_cast<IntrinsicInst>(CI);
+    assert(IIC && "CallInst must be an intrinsic call");
+    AnyMemIntrinsic* AII = cast<AnyMemIntrinsic>(IIC);
+    
+     
+    uint64_t NumBytes = 10;
+    assert(NumBytes <= 0 || (NumBytes % sizeof(int8_t) != 0) && "Length must be non-positive or not a multiple of the element size");
+    
+     
+    Function::arg_iterator AI = F->arg_begin();
+    assert(AI != F->arg_end() && "Function must have at least one argument with the returned attribute");
+    
+     
+    CallBase* CB = CI;
+    assert(CB && "Context instruction must be a CallBase");
+    
+     
+    auto IRPos = IRPosition::callsite_argument(*CI);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+    
+     
+    Function* Func = CI->getFunction();
+    assert(Func && "Function must be non-null");
+    
+     
+    
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

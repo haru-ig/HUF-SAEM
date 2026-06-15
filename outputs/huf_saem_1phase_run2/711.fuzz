@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+#include <vector>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    Function *IntrinFunc = Intrinsic::getDeclaration(&M, Intrinsic::memset, { Arg->getType() });
+    std::vector<Value *> Args = { Builder.CreatePointerCast(Arg, IntegerType::getInt8PtrTy(Context)), ConstantInt::get(IntegerType::getInt8Ty(Context), 0), ConstantInt::get(IntegerType::getInt64Ty(Context), 1) };
+    CallInst *CI = CallInst::Create(IntrinFunc, Args, "", BB);
+
+     
+    F->setDoesNotThrow();
+    CI->addUse(F->getArg(0));
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+         
+        if (Intrinsic::memset == CI->getIntrinsicID()) {
+            Value *Length = Builder.CreateZExt(ConstantInt::get(IntegerType::getInt64Ty(Context), 0), IntegerType::getInt8Ty(Context));
+            CallInst *MemSetCall = CallInst::Create(CI, Length, "", BB);
+        }
+    }
+
+     
+    if (!CI->use_empty() && isa<CallBase>(CI)) {
+         
+        simplifyCall(CI);
+    }
+
+     
+    Loop *L = new Loop(*BB, nullptr);
+    L->initializeLoopInfo();
+
+     
+    if (L->getLoopPreheader() && L->getLoopLatch()) {
+         
+        llvm::UnrollLoopOptions ULO;
+        ULO.Count = 2;
+        unrollLoopWithMetadata(*F, *L, ULO);
+    }
+
+    return 0;
+}

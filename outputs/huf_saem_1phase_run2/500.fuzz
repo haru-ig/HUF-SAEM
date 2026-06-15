@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(nullptr, Value::get(Type::getInt32Ty(Context), nullptr, Instruction::Call));
+    BB->push_back(CI);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    AtomicCmpXchgInst *ACXI = dyn_cast<AtomicCmpXchgInst>(II);
+    assert(ACXI && "Expected an atomic compare and exchange intrinsic");
+
+     
+    if (!CI->use_empty()) {
+        std::unique_ptr<CallBase> CB = simplifyInstruction(CI, &TLI::get(*Mod));
+        if (CB) {
+            CI = dyn_cast<CallInst>(CB.get());
+        }
+    }
+
+     
+    assert(!F->doesNotThrow() && "Function should not be marked as no-throw");
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

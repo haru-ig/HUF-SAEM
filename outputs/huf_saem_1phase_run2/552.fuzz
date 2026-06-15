@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = &*(F->arg_begin());
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), {Arg}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    IntrinsicInst *AnyMemCI = dyn_cast<IntrinsicInst>(CI);
+    assert(AnyMemCI && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+     
+    if (verifyModule(M, &outs())) {
+        errs() << "Verification failed!\n";
+        return 1;
+    }
+
+    std::cout << "Test module created successfully with a CallInst that meets your criteria.\n";
+    return 0;
+}

@@ -1,0 +1,57 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::foo), {}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    assert(!CI->doesNotThrow() && "CallInst should not be nounwind");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *SI = new SelectInst(CI, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst type must be integer");
+
+     
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, F->arg_begin(), ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SI->setCondition(CondVal);
+    SI->setTrueValue(ConstantInt::get(Type::getInt32Ty(Context), 1));
+    SI->setFalseValue(ConstantInt::get(Type::getInt32Ty(Context), 0));
+
+     
+    F->print(outs());
+
+    return 0;
+}

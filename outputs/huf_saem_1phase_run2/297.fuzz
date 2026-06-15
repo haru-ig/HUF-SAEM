@@ -1,0 +1,46 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+    
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        assert(isa<AnyMemIntrinsic>(II) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+        
+         
+        if (auto *AMI = dyn_cast<AtomicRMWInst>(CI)) {
+            int64_t NumBytes = 0;  
+            assert(NumBytes <= 0 || NumBytes % sizeof(uint8_t) != 0, "NumBytes must be non-positive or not a multiple of the element size");
+        }
+    }
+    
+     
+    auto *CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "Context instruction must be a CallBase instance");
+    
+     
+    
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

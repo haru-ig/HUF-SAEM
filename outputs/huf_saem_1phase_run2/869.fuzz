@@ -1,0 +1,101 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    new Argument(Type::getInt32Ty(Context), Arg->getName(), nullptr, &M);
+
+     
+    CallInst *CI = CallInst::Create(F, {Arg}, "", BB);
+    CI->addUse(F);  
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    if (!AII || !AII->isMemIntrinsic()) {
+        std::cerr << "CallInst is not a memory intrinsic!" << std::endl;
+        return 1;
+    }
+
+     
+    Loop *L = new Loop();
+    L->initializeStandardLoopInfo(*F);
+
+     
+    unsigned int UnrollCount = 2;
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(TrueVal, FalseVal, TrueVal, "", BB);
+
+     
+    if (!SI->getType()->isIntegerTy() || !SI->getCondition()->getType()->isIntegerTy()) {
+        std::cerr << "SelectInst does not have a valid integer type!" << std::endl;
+        return 1;
+    }
+
+     
+    if (!SI->getTrueValue() || !SI->getFalseValue() || !SI->getCondition()) {
+        std::cerr << "SelectInst operands or condition are invalid!" << std::endl;
+        return 1;
+    }
+
+     
+    SI = simplifySelectInst(SI, BB);
+    if (isa<SelectInst>(SI)) {
+        std::cerr << "SelectInst simplification failed!" << std::endl;
+        return 1;
+    }
+
+     
+    L->setLoopAlreadyUnrolled();  
+
+     
+    unsigned int MaxAnalysisRecursionDepth = 10;
+    if (MaxAnalysisRecursionDepth < 1) {
+        std::cerr << "Maximum analysis recursion depth is too small!" << std::endl;
+        return 1;
+    }
+
+     
+    FPClassTest DemandedMask(FPClassTest::Zero);  
+    FEConditionInfo Known(FEConditionInfo::Unordered);
+
+    if (!isValidElementType(SI->getType())) {
+        std::cerr << "Invalid element type for SelectInst!" << std::endl;
+        return 1;
+    }
+
+     
+    if (NLZ > 0) {
+         
+    }
+
+     
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

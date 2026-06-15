@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setName("arg");
+    
+     
+    Value* Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value* One = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value* Vec = InsertElementInst::Create(UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4)), Zero, Zero, "", BB);
+    
+     
+    Value* CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Vec, One, "", BB);
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    Value* FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 20);
+    SelectInst* SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(SI->hasOneUse() && "SelectInst must have at least one use");
+    assert(!F->doesNotThrow() && "Function must not be marked as nounwind");
+    assert(isa<IntrinsicInst>(SI) && "CallInst must be an intrinsic call");
+    IntrinsicInst* II = cast<IntrinsicInst>(SI);
+    assert(II->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be a memcpy intrinsic");
+    
+     
+    delete SI;
+    
+    return 0;
+}

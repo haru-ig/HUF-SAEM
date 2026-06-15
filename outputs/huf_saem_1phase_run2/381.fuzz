@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = BinaryOperator::CreateFNeg(BinaryOperator::CreateFabs(ConstantFP::get(Type::getFloatTy(Context), APFloat(0.5))), "", BB);
+    SelectInst *SI = new SelectInst(CmpInst::create(Instruction::ICmp, CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+     
+    SI->setCondition(CmpInst::create(Instruction::ICmp, CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)));
+    SI->setTrueValue(TrueVal);
+    SI->setFalseValue(FalseVal);
+
+     
+    Type *SelType = SI->getType();
+
+     
+     
+
+    return 0;
+}

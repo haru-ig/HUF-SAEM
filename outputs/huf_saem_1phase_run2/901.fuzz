@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setAttr(AttributeList::ReturnIndex, Attribute::Returned);
+
+     
+    std::vector<Value *> Args;
+    Args.push_back(Arg);
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::anymemintrinsic, Args, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setFnAttr("nounwind", Attribute::NotPromote);
+    assert(!CI.doesNotThrow() && "CallInst should not be marked as doesNotThrow");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::anymemintrinsic && "CallInst must be an intrinsic call");
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    auto IRPos = IRPosition::callsite_argument(*CB, 0);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct position kind");
+
+     
+    Function *Func = IRPos.getAssociatedFunction();
+    assert(Func && "Function associated with the IRPosition must be non-null");
+
+     
+    std::cout << "Module: " << M->getName() << "\n";
+    std::cout << "Function: " << F->getName() << "\n";
+    std::cout << "BasicBlock: " << BB->getName() << "\n";
+    std::cout << "CallInst: " << *CI << "\n";
+
+     
+    delete M;
+    return 0;
+}

@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(IntegerType::getInt32Ty(Context), true);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+    Value *Arg1 = ConstantInt::get(IntegerType::getInt32Ty(Context), APInt(32, 1));
+    Argument *A1 = new Argument(FuncTy->getParamType(0), Arg1->getName(), F);
+    F->addArgument(0, A1);
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, FunctionCallee("llvm.fabs.f32", FuncTy), {A1}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    assert(II->getIntrinsicID() == Intrinsic::fabs, "Expected llvm.fabs intrinsic");
+
+     
+    assert(F->doesNotThrow(), "Function must be marked as nounwind");
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

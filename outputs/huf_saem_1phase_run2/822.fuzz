@@ -1,0 +1,119 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test_module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &Mod);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 42));
+    Arg = Builder.CreateAlloca(Arg->getType(), nullptr, "arg_ptr");
+    Builder.CreateStore(Arg, Arg);
+    
+     
+    LoadInst *Load = Builder.CreateLoad(Type::getInt32Ty(Context), Arg);
+    
+     
+    CallInst *CI = CallInst::Create(FTy, F, { Load }, "", BB->getTerminator());
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setOnlyRetainsAttr("nounwind");
+    
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "CallInst must be an intrinsic call");
+    assert(II->isAnyMemoryIntrinsic() && "CallInst must be a memory intrinsic");
+    
+     
+    if (II->isAtomic()) {
+        Value *NumBytes = II->getArgOperand(1);
+        assert(cast<ConstantInt>(NumBytes)->getValue().isNonNegative() && "NumBytes must be non-positive");
+    }
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRPos = IRPosition::callsite_argument(*II, 0);
+    assert(IRPos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition must have a callsite argument position kind");
+    
+     
+    Function *Funct = II->getFunction();
+    assert(Funct && "Associated function must be non-null");
+    
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        auto &entry = MinBWs[E];
+        assert(entry.hasValue() && "MinBWs entry must provide a valid bit width");
+    }
+    
+     
+    if (E->State == TreeEntry::SplitVectorize) {
+        assert(E->CombinedEntriesWithIndices.size() == 2 && "CombinedEntriesWithIndices must contain exactly two entries");
+    } else if (E->isGather() || E->State == TransformedToGatherNodes) {
+         
+    }
+    
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    Value *FalseVal = Intrinsic::fabs(TrueVal);
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB->getTerminator());
+    
+     
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "SelectInst must be an integer type");
+    
+     
+    unsigned Depth = 0;  
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Recursion depth must not exceed MaxAnalysisRecursionDepth");
+    
+     
+    FPClassTest KnownFPClass();  
+    FPClassTest DemandedMask;   
+    assert(DemandedMask.getBitWidth() == KnownFPClass().getBitWidth() && "DemandedMask and Known must have the same bit width");
+    
+     
+    Loop *L = nullptr;  
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header's address must not be taken");
+    
+     
+    UnrollOption ULO;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+    
+     
+    Instruction *I = nullptr;  
+    assert(I && "Instruction *I must be non-null");
+    assert(I->getType()->isIntegerTy() && "I must be an integer or integer vector type with a scalar size in bits equal to the bit width of DemandedMask and Known");
+    
+     
+     
+    
+    return 0;
+}

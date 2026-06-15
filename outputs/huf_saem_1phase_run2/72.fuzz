@@ -1,0 +1,5 @@
+#include <iostream>
+int main() {
+ It seems like you've provided a detailed set of constraints for code generation in a programming context, specifically for generating tests involving LLVM IR transformations. However, the text ends abruptly and does not include any actual code implementation or further elaboration on how to satisfy the given constraints. 
+
+If you need help with integrating these constraints into a C++ program that interacts with LLVM (or another specific library), please provide more context or clarify your requirements. Additionally, if you are looking for examples of how to generate test cases based on these constraints using C++, I can demonstrate how to create a simple example in LLVM IR manipulation within a C++ program.

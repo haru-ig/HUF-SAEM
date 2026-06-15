@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Use.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {Value::getNullValue(Type::getInt32Ty(Context))}, "", BB);
+    CI->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+
+     
+    Instruction *CtxI = CI;
+    assert(isa<CallBase>(CtxI) && "CtxI must be a CallBase");
+
+     
+
+    std::cout << "Test passed: Constraints satisfied." << std::endl;
+    return 0;
+}

@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+  
+ 
+
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+using namespace llvm;
+
+ 
+bool hypotheticalFunction(CallBase &CI, Function &F) {
+     
+    if (CI.use_empty() || !F.isNoUnwind()) return false;
+
+     
+    if (!dyn_cast<IntrinsicInst>(&CI)) return false;
+    auto *II = dyn_cast<IntrinsicInst>(&CI);
+    if (II->getIntrinsicID() != Intrinsic::memset && II->getIntrinsicID() != Intrinsic::memcpy) return false;
+
+     
+    if (II->getNumOperands() == 0 || !CI.doesNotThrow()) return false;
+
+     
+     
+
+     
+    if (!isa<CallBase>(&CI) || !F.getAttributes().hasAttribute(0, Attribute::Returns)) return false;
+
+     
+
+    return true;
+}
+
+int main() {
+     
+    CallBase *CI = nullptr;  
+    Function F("example", ...);  
+
+    if (hypotheticalFunction(*CI, F)) {
+        errs() << "The function satisfies all constraints.\n";
+    } else {
+        errs() << "One or more constraints are not satisfied.\n";
+    }
+
+    return 0;
+}
+
+ 

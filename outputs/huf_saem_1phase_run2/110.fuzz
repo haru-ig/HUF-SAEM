@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test_module", Context);
+    FunctionType *funcType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *func = Function::Create(funcType, GlobalValue::ExternalLinkage, "test_function", &module);
+    BasicBlock *entryBB = BasicBlock::Create(Context, "", func);
+
+     
+    Value *arg1 = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    CallInst *CI = CallInst::Create(nullptr, Intrinsic::getDeclaration(&module, Intrinsic::abs), {arg1}, "", entryBB);
+
+     
+    CI->addUse(func->arg_begin());
+
+     
+    func->setDoesNotThrow();
+    func->setUnwindPredecessors({});
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::abs) {
+            std::cout << "CallInst is a valid intrinsic call." << std::endl;
+        } else {
+            std::cout << "CallInst is not an AnyMemIntrinsic as required." << std::endl;
+            return 1;
+        }
+    } else {
+        std::cout << "CallInst is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+    if (CI->getFunction() == func) {
+        std::cout << "CallInst is in the correct function." << std::endl;
+    } else {
+        std::cout << "CallInst is not in the expected function." << std::endl;
+        return 1;
+    }
+
+     
+    if (!CI->doesNotThrow()) {
+        std::cout << "CallInst is marked as nounwind, which is correct." << std::endl;
+    } else {
+        std::cout << "CallInst is incorrectly marked as nounwind." << std::endl;
+        return 1;
+    }
+
+     
+
+    return 0;
+}

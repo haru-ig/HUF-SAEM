@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+void ensureCallInstHasAtLeastOneUse(Function &F) {
+    for (auto &BB : F) {
+        for (auto &I : BB) {
+            if (auto *CI = dyn_cast<CallInst>(&I)) {
+                if (!CI->use_empty()) {
+                    return;  
+                }
+            }
+        }
+    }
+    errs() << "Function does not contain a CallInst with at least one use.\n";
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    ensureCallInstHasAtLeastOneUse(*F);
+
+    return 0;
+}

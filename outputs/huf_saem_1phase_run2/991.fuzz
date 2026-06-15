@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    FunctionType *IntrinsicType = Intrinsic::getDeclaration(Mod.get(), Intrinsic::any_mem_intrinsic);
+    CallInst *CI = CallInst::Create(IntrinsicType, {}, "", BB);
+
+     
+    Use &U = F->args().begin();
+    new StoreInst(ConstantInt::get(Type::getInt32Ty(Context), 0), &(U.get()), false, BB);
+
+     
+    if (CI && !CI->use_empty()) {
+         
+        F->setDoesNotThrow();
+
+         
+        CI->removeAttribute(0, Attribute::NoUnwind);
+
+         
+        if (dyn_cast<IntrinsicInst>(CI)) {
+             
+            if (CI->getIntrinsicID() == Intrinsic::any_mem_intrinsic) {
+                Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+                CI->setArgOperand(0, NumBytes);  
+            }
+        }
+    }
+
+     
+    Mod->print(outs(), nullptr);
+
+    return 0;
+}

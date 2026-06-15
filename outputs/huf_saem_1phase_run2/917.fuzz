@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+    F->addFnAttr(Attribute::Nounwind);
+    assert(!CI->doesNotThrow() && "CallInst must not be marked as nounwind.");
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        auto *IMI = dyn_cast<AnyMemIntrinsic>(CI);
+        assert(IMI && "CallInst must be an intrinsic call.");
+        
+         
+        if (IMI->isAtomic() && IMI->getNumElements() > 0) {
+            auto NumBytes = IMI->getMemSizeInBits();
+            assert(NumBytes <= 0 || NumBytes % 8 != 0, "Length must be non-positive or not a multiple of the element size.");
+        }
+    }
+    
+     
+     
+    
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

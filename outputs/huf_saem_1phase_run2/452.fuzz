@@ -1,0 +1,82 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+ 
+void checkAndSatisfyConstraints(CallInst &CI, SelectInst &SI) {
+     
+    if (CI.use_empty()) {
+        errs() << "Error: CallInst does not have any uses.\n";
+        return;
+    }
+
+     
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow()) {
+        errs() << "Error: Function is not marked as nounwind.\n";
+        return;
+    }
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(&CI);
+    if (!II || !isa<AnyMemIntrinsic>(II)) {
+        errs() << "Error: CallInst is not a valid intrinsic or memory intrinsic.\n";
+        return;
+    }
+
+     
+    Value *CondVal = SI.getCondition();
+    Value *TrueVal = SI.getTrueValue();
+    Value *FalseVal = SI.getFalseValue();
+    if (!CondVal || !isa<Value>(CondVal) || !TrueVal || !isa<Value>(TrueVal) || !FalseVal || !isa<Value>(FalseVal)) {
+        errs() << "Error: SelectInst does not have valid values.\n";
+        return;
+    }
+
+     
+    Type *SelType = SI.getType();
+    if (!SelType->isIntegerTy()) {
+        errs() << "Error: SelectInst type is not integer.\n";
+        return;
+    }
+
+     
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = nullptr;
+    SelectInst *SI = nullptr;
+
+    if (F->empty()) {
+        errs() << "Error: Function has no basic blocks.\n";
+        return 1;
+    }
+
+     
+    CI = CallInst::Create(nullptr, {}, "", BB);
+    SI = new SelectInst(Builder.getInt1(true), Builder.getFNeg(Builder.getFAbs(Builder.createFAdd(...))), Builder.getFNeg(Builder.getFAbs(Builder.createFAdd(...))), "select_op", BB);
+
+     
+    checkAndSatisfyConstraints(*CI, *SI);
+
+    return 0;
+}

@@ -1,0 +1,84 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("myModule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "myFunction", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *One = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *Vec = InsertElementInst::Create(UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4)), One, Zero, "", BB);
+
+     
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Vec, ConstantInt::get(Type::getInt32Ty(Context), 2), "", BB);
+    Value *TrueVal = FNegInst::create(FAbsInst::create(Vec), "", BB);
+    Value *FalseVal = CallInst::Create(Intrinsic::ctpop, TrueVal, "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getCondition() && SI->getTrueValue() && SI->getFalseValue() && "SelectInst does not have valid operands");
+    Type *SelType = SI->getType();
+    assert(SelType->isIntegerTy() || SelType->isVectorTy() && "SelectInst type is not a scalar or vector integer type");
+
+     
+    F->getEntryBlock().push_back(SI);
+    assert(!F->use_empty() && "Function does not have any uses, ensure CI has at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    CallInst *CI = dyn_cast<CallInst>(SI);
+    assert(CI && "CallInst must be an intrinsic call");
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II->getIntrinsicID() == Intrinsic::anymemintrinsic && "CallInst must be an AnyMemIntrinsic");
+
+     
+    assert(!CI->doesNotThrow() && "CallInst should not have 'nounroll' attribute set");
+
+     
+    if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+        int NumBytes = 0;  
+        assert(NumBytes <= 0 || NumBytes % getElementTypeSize(SelType) != 0 && "Length must be non-positive or not a multiple of element size");
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(SI);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument((CallInst *)SI);
+    assert(Pos.getKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "IRPosition must have the correct kind");
+
+     
+    Function *Func = Pos.getFunction();
+    assert(Func && "Associated function must exist");
+
+     
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

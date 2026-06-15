@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+
+int main() {
+    llvm::LLVMContext Context;
+    std::unique_ptr<llvm::Module> Module = std::make_unique<llvm::Module>("test", Context);
+    llvm::Function *Func = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(Context), {}, false), llvm::GlobalValue::InternalLinkage, "func", Module.get());
+    
+     
+    llvm::IRBuilder<> Builder(&Func->getEntryBlock(), Func->getEntryBlock().begin());
+    llvm::Value *Size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), 4);
+    llvm::Value *Val = llvm::ConstantInt::get(llvm::Type::getInt8Ty(Context), 0);
+    llvm::CallInst *CI = Builder.CreateCall(llvm::Intrinsic::getDeclaration(Module.get(), llvm::Intrinsic::memset), { Val, Size }, "", true  );
+    
+     
+    CI->addUse(Func->arg_begin());
+    
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+        
+         
+        if (Func->doesNotThrow() && !CI->doesNotThrow()) {
+            std::cout << "Function is marked as nounwind and CallInst does not throw." << std::endl;
+            
+             
+            if (llvm::dyn_cast<llvm::IntrinsicInst>(CI)) {
+                std::cout << "CallInst is an intrinsic call." << std::endl;
+                
+                 
+            } else {
+                std::cout << "CallInst is not an intrinsic call." << std::endl;
+            }
+        } else {
+            std::cout << "Function is not marked as nounwind or CallInst throws." << std::endl;
+        }
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+    
+    return 0;
+}

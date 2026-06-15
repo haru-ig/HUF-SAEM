@@ -1,0 +1,150 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32PtrTy(Context) }, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "test_func", Mod.get());
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Argument* Arg = &(*F->arg_begin());
+    Arg->setAttr(Attribute::Returned);
+    
+     
+    Intrinsic::ID IID = Intrinsic::memcpy;
+    CallInst* CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), IID), { Arg, ConstantPointerNull::get(Type::getInt32PtrTy(Context)), ConstantInt::get(Type::getInt64Ty(Context), 4) }, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    AnyMemIntrinsic* AMI = dyn_cast<AnyMemIntrinsic>(CI);
+    assert(AMI && "Failed to cast CallInst to AnyMemIntrinsic");
+    
+     
+    if (CI->getIntrinsicID() != Intrinsic::memcpy) {
+        errs() << "CallInst is not a memcpy intrinsic\n";
+        return -1;
+    }
+    
+     
+    uint64_t NumBytes = 4;
+    if (!AMI->isZeroLength() && !((NumBytes % sizeof(int32_t)) == 0)) {
+        errs() << "Invalid length for atomic unordered memory intrinsic\n";
+        return -1;
+    }
+    
+     
+    CallBase* CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Failed to cast CI to CallBase");
+    
+     
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    assert(!Pos.isNull() && "IRPosition is null");
+    
+     
+    bool updated;
+    SimplifiedValues SV = checkAndUpdate(Pos, &updated);
+    
+     
+    TreeEntry E(Instruction::MemCpy, NumBytes, false, TreeEntry::SplitVectorize);
+    
+     
+    DenseMap<TreeEntry*, int> MinBWs;
+    if (!MinBWs.empty()) {
+        int BitWidth = MinBWs[&E];
+        assert(BitWidth > 0 && "Invalid bit width in MinBWs map");
+    }
+    
+     
+    if (E.getState() != TreeEntry::SplitVectorize || E.CombinedEntriesWithIndices.size() != 2) {
+        errs() << "Invalid state or combined entries for SplitVectorize\n";
+        return -1;
+    }
+    
+     
+    Value* CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, CI->getArgOperand(0), ConstantInt::get(Type::getInt32Ty(Context), 2));
+    Value* TrueVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(1.0f));
+    Value* FalseVal = CallInst::Create(Intrinsic::ctpop, TrueVal, "", BB);
+    SelectInst* SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    Type* SelType = SI->getType();
+    assert(SelType->isIntegerTy() && "SelectInst type is not integer");
+    
+     
+    if (!isa<ICmpInst>(CondVal) || !cast<ICmpInst>(CondVal)->getPredicate() == ICmpInst::ICMP_ULT) {
+        errs() << "Invalid condition for SelectInst\n";
+        return -1;
+    }
+    
+     
+    if (!isa<CallInst>(FalseVal) || cast<CallInst>(FalseVal)->getIntrinsicID() != Intrinsic::ctpop) {
+        errs() << "Invalid false value for SelectInst\n";
+        return -1;
+    }
+    
+     
+    Type* CondType = CondVal->getType();
+    assert((CondType->isIntegerTy() || CondType->isVectorTy()) && "Invalid condition type for SelectInst");
+    if (SelType->isVectorTy()) {
+        assert(SelType == FalseVal->getType() && "SelectInst types do not match");
+    } else {
+        assert(SelType == TrueVal->getType() && "SelectInst types do not match");
+    }
+    
+     
+    if (E.getState() != TreeEntry::Vectorize || E.getOpcode() != Instruction::InsertElement) {
+        errs() << "Invalid state or opcode for Vectorize\n";
+        return -1;
+    }
+    
+     
+    Value* Operand = E.getOperand(1).back();
+    if (Operand->getType()->isVectorTy()) {
+        errs() << "Last operand of E->getOperand(1) is a vector type\n";
+        return -1;
+    }
+    
+     
+    Type* ScalarTy = VL[0];
+    assert(isValidElementType(ScalarTy) && "Invalid scalar type");
+    
+     
+    if (!MinBWs.count(&E) && !(E.Idx == 0 && E.isReducedBitcastRoot())) {
+        errs() << "Invalid MinBWs map entry\n";
+        return -1;
+    }
+    
+     
+    Instruction* I = new FNegInst(fabs(E->getOperand(0)), "", BB);
+    assert(I && "Failed to create FNegInst");
+    
+     
+    LegacyPassManager Passes;
+    Passes.add(createScalarRepl

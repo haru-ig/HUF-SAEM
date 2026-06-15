@@ -1,0 +1,101 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(F, {Arg}, "", BB);
+
+     
+    CI->addUse(Builder.getInt32Ty());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::ExternalLinkage);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+             
+            Value *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+            if (!CI->use_empty() && !F->doesNotThrow() && dyn_cast<IntrinsicInst>(&CI) && II->getIntrinsicID() == Intrinsic::anymemintrinsic && NumBytes <= 0) {
+                 
+                if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+                     
+                    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+                    Value *FalseVal = Intrinsic::ctpop(TrueVal);
+                    SelectInst *SI = SelectInst::Create(ICmpInst::create(Instruction::ICmp, ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+                     
+                    if (SI->hasKnownValue() && SI->getType()->isIntegerTy()) {
+                         
+                        TreeEntry *E = nullptr;
+                        if (e->getOpcode() == Instruction::InsertElement) {
+                             
+                            Value *Operand = e->getOperand(1).back();
+                            if (!Operand->getType()->isVectorTy()) {
+                                 
+                                Type *ScalarTy = getElementType(*VL[0]);
+                                if (isValidElementType(ScalarTy)) {
+                                     
+                                    int Depth = 0;
+                                    const unsigned MaxAnalysisRecursionDepth = 10;
+                                    if (Depth <= MaxAnalysisRecursionDepth) {
+                                         
+                                        FPClassTest KnownFPClass();
+                                        FPClassTest DemandedMask;
+                                        adjustDemandedMaskFromFlags(DemandedMask, Known);
+
+                                         
+                                        Loop *L = nullptr;
+                                        if (l->getLoopPreheader() && l->getLoopLatch()) {
+                                             
+                                            UnrollOptions ULO;
+                                            ULO.Count = 2;
+                                            if (ULO.Count > 0) {
+                                                 
+                                                Instruction *I = nullptr;
+                                                Type *Ty = IntegerType::get(Context, DemandedMask.bitWidth());
+                                                if (I && I->getType()->isIntegerTy() && I->getType()->getScalarSizeInBits() == DemandedMask.bitWidth()) {
+                                                     
+                                                    if (E->State == TreeEntry::Vectorize && e->getOpcode() == Instruction::InsertElement) {
+                                                         
+                                                        Value *Op = e->getOperand(1).back();
+                                                        if (Op->getType()->isIntegerTy() && Op->getType()->getScalarSizeInBits() == DemandedMask.bitWidth()) {
+                                                             
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}

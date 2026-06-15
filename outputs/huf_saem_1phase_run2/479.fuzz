@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool checkCallInst(CallInst &CI) {
+    if (CI.use_empty()) return false;  
+    Function *func = CI.getFunction();
+    if (!func->doesNotThrow() || func->isNoReturn()) return false;  
+    if (!dyn_cast<IntrinsicInst>(&CI) || !isa<AnyMemIntrinsic>(&CI)) return false;  
+    return true;
+}
+
+bool checkLoopConditions(Loop *L) {
+    if (!L->getLoopPreheader() || !L->getLoopLatch()) return false;  
+    if (!L->isSafeToClone()) return false;  
+    if (L->getHeader()->hasAddressTaken()) return false;  
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 0)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memcpy), Args, "", BB);
+    
+    if (checkCallInst(*CI)) {
+         
+        std::cout << "CallInst is valid." << std::endl;
+    } else {
+        std::cout << "CallInst does not meet the required conditions." << std::endl;
+    }
+
+     
+    Loop *L = new Loop();  
+    if (checkLoopConditions(L)) {
+         
+        std::cout << "Loop conditions are valid." << std::endl;
+    } else {
+        std::cout << "Loop does not meet the required conditions." << std::endl;
+    }
+
+    return 0;
+}

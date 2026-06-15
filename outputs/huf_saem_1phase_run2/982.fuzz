@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+
+using namespace llvm;
+
+ 
+Function *createNounwindFunction(LLVMContext &Ctx, const std::string &Name) {
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, Name, &*Ctx.getContext());
+    F->setDoesNotThrow();  
+    return F;
+}
+
+ 
+CallInst *createCallInstWithoutThrow(FunctionType *FTy, BasicBlock *BB) {
+    Value *Callee = Constant::getNullValue(PointerType::get(FTy, 0));
+    CallInst *CI = CallInst::Create(FTy, Callee, "", BB);
+    CI->setDoesNotThrow();  
+    return CI;
+}
+
+int main() {
+    LLVMContext Ctx;
+    Module M("test_module", Ctx);
+    
+     
+    Function *F = createNounwindFunction(Ctx, "test_func");
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    
+     
+    CallInst *CI = createCallInstWithoutThrow(F->getFunctionType(), BB);
+    
+     
+    std::cout << "Function: " << F->getName().str() << "\n";
+    std::cout << (F->doesNotThrow() ? "Is nounwind\n" : "Is not nounwind\n");
+    std::cout << "CallInst at BB: " << CI->getParent()->getName().str() << "\n";
+    std::cout << (CI->doesNotThrow() ? "Does not throw\n" : "Throws\n");
+    
+    return 0;
+}

@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  std::unique_ptr<Module> M = std::make_unique<Module>("test", Context);
+  FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), false);
+  Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testfunc", M.get());
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+   
+  CallInst *CI = CallInst::Create(FuncTy, F, {}, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+
+   
+  F->setDoesNotThrow();
+  F->addFnAttr(Attribute::NoUnwind);
+  CI->setDoesNotThrow();
+
+   
+  IntrinsicInst *II = CallInst::Create(Intrinsic::any_mem_intrinsic, {}, "", BB);
+  assert(dyn_cast<IntrinsicInst>(II) && "Must be an intrinsic inst");
+  assert(isa<AnyMemIntrinsic>(II) && "Must be an AnyMemIntrinsic");
+
+   
+
+  return 0;
+}

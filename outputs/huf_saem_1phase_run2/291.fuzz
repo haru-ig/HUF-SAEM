@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+
+using namespace llvm;
+
+ 
+void createTestModule(LLVMContext &Ctx) {
+     
+    Module *M = new Module("test", Ctx);
+
+     
+    std::vector<Type *> FuncTyArgs;
+    FuncTyArgs.push_back(IntegerType::getInt32Ty(Ctx));
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Ctx), FuncTyArgs, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testFunc", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
+    CallInst *CI = CallInst::Create(nullptr, {Zero}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Ctx), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Ctx), 2);
+    SelectInst *SI = new SelectInst(CI, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "Select type must be integer");
+
+     
+    delete SI;
+}
+
+int main() {
+    LLVMContext Ctx;
+    createTestModule(Ctx);
+    return 0;
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "dummy_func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallBase *CI = CallBase::Create(Func->getFunctionType(), FunctionCallee(Func), {}, "", BB);
+    CI->addUse(...);  
+
+     
+    assert(!Func->doesNotThrow() && "Function should be marked as nounwind");
+    assert(!CI->doesNotThrow() && "CallInst should not throw");
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (const auto *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+             
+            if (!AMII->isZeroLength()) {
+                 
+                uint64_t NumBytes = 0;  
+                if (NumBytes <= 0 || !((NumBytes % getElementTypeSize(CI->getType())) == 0)) {
+                     
+                }
+            }
+        }
+    }
+
+     
+
+    return 0;
+}

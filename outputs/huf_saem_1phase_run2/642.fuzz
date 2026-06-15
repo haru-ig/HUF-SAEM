@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("myModule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {}, {}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use.\n";
+    } else {
+        std::cout << "CallInst does not have any uses.\n";
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "CallInst is an intrinsic call.\n";
+    } else {
+        std::cout << "CallInst is not an intrinsic call.\n";
+    }
+
+     
+    if (!CI->doesNotThrow()) {
+        std::cout << "CallInst does not throw.\n";
+    } else {
+        std::cout << "CallInst throws.\n";
+    }
+
+    return 0;
+}

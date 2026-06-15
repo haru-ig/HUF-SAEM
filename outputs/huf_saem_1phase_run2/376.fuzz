@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    IntrinsicInst *II = cast<IntrinsicInst>(CI);
+    assert(II->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be a memcpy intrinsic");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, CI->getType(), CI, ConstantInt::get(CI->getType(), 2), "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->hasValidName() && "SelectInst must have a valid name");
+    assert(SI->getCondition()->getType()->isIntegerTy() && "Condition type must be integer");
+    assert(SI->getTrueValue()->getType()->isIntegerTy() && "True value type must be integer");
+    assert(SI->getFalseValue()->getType()->isIntegerTy() && "False value type must be integer");
+
+     
+    assert(!isa<SimplifyableSelectInst>(SI) || !"SelectInst should not be simplifiable at this point");
+
+     
+    M.print(errs());
+
+    return 0;
+}

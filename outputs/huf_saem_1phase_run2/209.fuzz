@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/SimplifyIndVar.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void generateCallInst(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    Instruction *CallInst = CallBase::Create(FTy, F, {ConstantInt::get(Type::getInt32Ty(Ctx), 0)}, "", BB);
+}
+
+ 
+void markFunctionNounwind(Function &F) {
+    F.setDoesNotThrow();
+    F.addFnAttr(Attribute::NoUnwind);
+}
+
+ 
+void generateIntrinsicCall(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "intrinsic_function", &M);
+    
+    BasicBlock *BB = BasicBlock::Create(Ctx, "", F);
+    Instruction *IntrinsicInst = IntrinsicInst::get(FTy, {ConstantInt::get(Type::getInt32Ty(Ctx), 0)}, "", BB);
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    generateCallInst(M);
+
+     
+    Function *F = M.getFunction("test_function");
+    if (F) {
+        markFunctionNounwind(*F);
+    }
+
+     
+    generateIntrinsicCall(M);
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

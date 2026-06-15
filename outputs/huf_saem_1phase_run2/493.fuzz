@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", *Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 10);
+    Instruction *I = new LoadInst(Type::getInt32Ty(Context), Arg, "", BB);
+
+     
+    CallInst *CI = CallInst::Create(FTy, I, "", BB);
+
+     
+    Use &U = F->getBasicBlockList().front().back().use_begin();
+    U.getUser()->dump();
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II)) {
+            std::cout << "CallInst is a memory intrinsic" << std::endl;
+             
+        }
+    }
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+
+    return 0;
+}

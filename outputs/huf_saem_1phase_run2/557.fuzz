@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("testModule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunction", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::Create(nullptr, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwindExceptionHandling();
+
+     
+    Intrinsic::ID IID = Intrinsic::not_an_intrinsic;  
+    CallInst *IntrCI = CallInst::Create(Intrinsic::getDeclaration(&Mod, IID), {}, "", BB);
+    assert(isa<IntrinsicInst>(IntrCI) && "CallInst must be an intrinsic call");
+    auto *II = cast<IntrinsicInst>(IntrCI);
+    assert(dyn_cast<AnyMemIntrinsic>(II) && "Intrinsic must be AnyMemIntrinsic");
+
+     
+     
+
+    std::cerr << "Test passed!\n";
+    return 0;
+}

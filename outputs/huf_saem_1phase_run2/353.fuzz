@@ -1,0 +1,77 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymemset), {Arg}, "", BB);
+
+     
+    CI->addUse(123);  
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+
+     
+    AnyMemIntrinsic *AMIntr = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMIntr && "Expected a memory intrinsic");
+
+     
+    Value *NumBytes = AMIntr->getArgOperand(1);
+    if (isa<ConstantInt>(NumBytes)) {
+        int64_t Val = cast<ConstantInt>(NumBytes)->getValue().getLimitedValue();
+        assert(Val <= 0 || !isMultipleOfMinimuTypeWidth(Val, F->getParent()->getDataLayout()) && "Expected non-positive length or not a multiple of element size");
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Expected a CallBase instruction");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(*F, 0);
+    assert(Pos.getPositionKind() == IRPosition::IRP_CALL_SITE_ARGUMENT && "Expected IRP_CALL_SITE_ARGUMENT");
+
+     
+    bool updated = false;
+    if (CB) {
+        simplifiedCalleeInfo calleeInfo = simplifyCall(CI);
+        if (!calleeInfo.isNull()) {
+            CB->setCalledOperand(calleeInfo.calleeReplacement);
+            updated = true;
+        }
+    }
+
+     
+    outs() << (updated ? "CallInst simplified and updated\n" : "No simplification performed\n");
+
+    return 0;
+}

@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+#include <iostream>
+
+using namespace llvm;
+
+bool checkAndUpdate(const IRPosition &pos) {
+     
+    return true;
+}
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *Vec = InsertElementInst::Create(UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4)), Zero, Zero, "", BB);
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::memset), {}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Expected memset intrinsic");
+
+     
+    IRPosition pos(*CI);
+    if (!checkAndUpdate(pos)) {
+        std::cerr << "Failed to update instruction" << std::endl;
+        return 1;
+    }
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

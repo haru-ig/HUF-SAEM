@@ -1,0 +1,82 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolution.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+
+     
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), SI, nullptr);
+    F->arg_begin()->addUse(*CI);
+
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    CI->setDoesNotThrow();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        if (auto *AnyMemInt = dyn_cast<AnyMemIntrinsic>(CI)) {
+            if (AnyMemInt->getNumElements() > 0) {
+                 
+                CallBase *CB = CI;
+                auto IRPos = IRPosition::callsite_argument(CB,   0);
+                assert(!IRPos.isUnknown() && "IRPosition should be valid");
+
+                 
+                Function *Func = F;
+                assert(Func && "Function should be non-null");
+
+                 
+                FPClassTest KnownFPClass();
+
+                 
+                const unsigned MaxAnalysisRecursionDepth = 10;
+                unsigned Depth = 5;
+                assert(Depth <= MaxAnalysisRecursionDepth && "Depth exceeds max recursion limit");
+
+                 
+                FPClassTest DemandedMask();
+                adjustDemandedMaskFromFlags(&DemandedMask,   nullptr);
+
+                 
+                Loop *L = nullptr;  
+                assert(L->getLoopPreheader() && "Preheader should be non-null");
+                assert(L->getLoopLatch() && "Latch should be non-null");
+
+                 
+                assert(L->isSafeToClone() && !L->getHeader()->hasAddressTaken() && "Loop is not safe to clone or has address taken");
+
+                 
+                LoopUnrollOptions ULO;
+                ULO.Count = 2;
+                assert(ULO.Count > 0 && "Unroll count should be greater than zero");
+
+                 
+                Instruction *I = new FNegInst

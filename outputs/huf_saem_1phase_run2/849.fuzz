@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    F->arg_begin()->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(F, { Arg }, "", BB);
+    CI->setDoesNotThrow();
+    CI->setCallingConv(CallingConv::C);
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = CallInst::Create(Intrinsic::memcpy, { CI, Arg }, "", BB);
+    II->setOperand(0, CI);
+    II->setOperand(1, Arg);
+    II->setArgOperandUse(2, 0);  
+
+     
+    BinaryOperator *BO = BinaryOperator::CreateAdd(CI, CI, "", BB);
+    StoreInst *SI = new StoreInst(CI, (AllocaInst *)BB->getTerminator(), false, BB);
+
+     
+    M.print(errs());
+
+    return 0;
+}

@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/IRBuilder.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+
+    IRBuilder<> Builder(&BasicBlock::Create(Context, "entry", F));
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::sqrt), {}, "", Builder.GetInsertBlock());
+
+     
+    CI->addUse(Type::getInt32Ty(Context), "");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "CallInst is an intrinsic and specifically an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "CallInst is not an intrinsic or not specifically an AnyMemIntrinsic." << std::endl;
+    }
+
+     
+    if (!CI->doesNotThrow()) {
+        std::cout << "CallInst does not throw." << std::endl;
+    } else {
+        std::cout << "CallInst throws." << std::endl;
+    }
+
+    return 0;
+}

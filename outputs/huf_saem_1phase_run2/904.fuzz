@@ -1,0 +1,119 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(nullptr, {ConstantInt::get(Type::getInt32Ty(Context), 0)}, "", BB);
+
+     
+    Value *User = nullptr;
+    for (auto &U : CI->users()) {
+        User = U;
+        break;
+    }
+    assert(User && "CI must have at least one use");
+
+     
+    assert(!CI->doesNotThrow() && "CallInst must not be nounwind");
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow();
+
+     
+    Intrinsic::ID ID = Intrinsic::not_intrinsic;
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        ID = II->getIntrinsicID();
+    }
+    assert(ID == Intrinsic::anymemset || ID == Intrinsic::anymemcpy || ID == Intrinsic::anyread || ID == Intrinsic::anywrite && "CallInst must be an intrinsic call");
+
+     
+    if (ID == Intrinsic::anymemset || ID == Intrinsic::anymemcpy) {
+        Value *NumBytes = nullptr;
+        for (auto &Arg : F->args()) {
+            if (Arg.getType() == Type::getInt32Ty(Context)) {
+                NumBytes = &Arg;
+                break;
+            }
+        }
+        assert(NumBytes && "Function must have at least one argument with the returned attribute");
+        int64_t ByteSize = cast<ConstantInt>(NumBytes)->getSExtValue();
+        assert((ByteSize <= 0 || ByteSize % sizeof(int32_t) != 0) && "NumBytes must be non-positive or not a multiple of the element size");
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be CallBase");
+
+     
+    IRPosition Pos = IRPosition::callsite_argument(*CB);
+    assert(!Pos.isNull() && "IRPosition should not be null");
+    Function *Func = F;
+    assert(Func && "Function should not be null");
+
+     
+     
+     
+
+     
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    FPClassTest DemandedMask;
+    FPClassFlags Known;
+    assert((DemandedMask.getBitWidth() == Known.getBitWidth()) && "DemandedMask and Known must have the same bit width");
+
+     
+    DenseMap<BasicBlock *, BlockEdge> BlocksSchedules;
+    for (auto &Entry : BlocksSchedules) {
+        assert(Entry.first && "BlocksSchedules entry should not be null");
+    }
+
+     
+    SmallVector<TreeEntry, 8> VectorizableTree;
+    TreeEntry *E = nullptr;
+    unsigned Idx = 1;
+    assert(Idx != 0 && "Idx must be non-zero");
+
+     
+    Value *CondVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ICmpInst::makeICmp(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst should be valid");
+
+     
+    Loop *L = nullptr;
+    UnrollLoopOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Instruction *I = SI;
+    Type *Ty = I->getType();
+    int BitWidth = cast<IntegerType>(Ty)->getBitWidth();
+    assert(BitWidth == DemandedMask.getBitWidth() && "Instruction type must have a scalar size in bits equal to the bit width of DemandedMask");
+
+     
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    assert((DemandedMask.getBitWidth() == Known.getBitWidth()) && "DemandedMask and Known must have the same bit width");
+
+    std::cout << "All constraints satisfied!" << std::endl;
+    return 0;
+}

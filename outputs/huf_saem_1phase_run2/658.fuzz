@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/UnrollLoop.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Value *Callee = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    std::vector<Value *> Args;
+    CallInst *CI = CallInst::Create(Callee, Args, "", BB);
+
+     
+    Use &U = CI->use_begin();
+    Value *User = U.getUser();
+    assert(User && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    Func->addFnAttr(Attribute::Nounwind);
+
+     
+    Intrinsic::ID Intr = Intrinsic::not_an_intrinsic;  
+    CallInst *IntrCI = CallInst::Create(Intrinsic::getIntrinsic(Intr, {}), Args, "", BB);
+    assert(isa<IntrinsicInst>(IntrCI) && "CallInst must be an intrinsic call");
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::fabs, {TrueVal->getType()}), TrueVal, "", BB);
+    ICmpInst *Cond = new ICmpInst(*BB, ICmpInst::ICMP_ULT, CI, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = SelectInst::Create(Cond, TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be created successfully");
+
+     
+     
+
+    return 0;
+}

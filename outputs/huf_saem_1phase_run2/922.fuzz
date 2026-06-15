@@ -1,0 +1,140 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 1)}, "", BB);
+    
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    
+     
+    IntrinsicInst *AII = dyn_cast<IntrinsicInst>(CI);
+    assert(AII && "CallInst must be an intrinsic call");
+    
+     
+    if (AII->getIntrinsicID() == Intrinsic::memcpy) {
+        ConstantInt *Len = cast<ConstantInt>(AII->getArgOperand(2));
+        assert(Len->isZero() && "Length must be non-positive for atomic unordered memory intrinsics");
+    }
+    
+     
+    CallBase *CB = dyn_cast<CallBase>(CI);
+    assert(CB && "Context instruction must be a CallBase instance");
+    
+     
+    auto IRRet = IRPosition::callsite_argument(*CB);
+    assert(IRRet.getPositionKind() == IRPosition::CallSiteArgument && "IRPosition must have the correct position kind");
+    
+     
+    Function *Funct = IRRet.getFunction();
+    assert(Funct && "Associated function must be non-null");
+    
+     
+    TreeEntry *E = new TreeEntry();
+    E->Scalars.push_back(Type::getInt32Ty(Context));
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+    
+     
+    DenseMap<TreeEntry *, Type *> MinBWs;
+    MinBWs[E] = Type::getInt32Ty(Context);
+    assert(MinBWs.find(E)->second->isIntegerTy() && "MinBWs must provide a valid bit width");
+    
+     
+    E->State = TreeEntry::SplitVectorize;
+    E->CombinedEntriesWithIndices.push_back(E);
+    E->CombinedEntriesWithIndices.push_back(new TreeEntry());
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices must contain exactly two entries");
+    
+     
+    Value *CondVal = ICmpInst::create(ICmpInst::Predicate::ICMP_ULT, ConstantInt::get(Type::getInt32Ty(Context), 2), CI);
+    Value *TrueVal = ConstantFP::get(Type::getHalfTy(Context), APFloat(1.0));
+    Value *FalseVal = CallInst::Create("ctpop", TrueVal, "", BB);
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+    
+     
+    assert(!isa<Simplifyable>(SI) && "SelectInst should not be simplified");
+    
+     
+    Value *X = ConstantFP::get(Type::getHalfTy(Context), APFloat(1.0));
+    Value *FABS = CallInst::Create("fabs", X, "", BB);
+    Value *FNEG = CallInst::Create("fneg", FABS, "", BB);
+    assert(isa<CallInst>(FNEG) && "FalseVal must be a ctpop operation of fabs(x)");
+    
+     
+    Type *SelType = SI->getType();
+    Type *CondType = CondVal->getType();
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && (CondType->isScalarTy() || CondType->isVectorTy()));
+    
+     
+    assert(E->State == TreeEntry::Vectorize && E->getOpcode() == Instruction::InsertElement);
+    
+     
+    Value *Op = E->getOperand(1).back();
+    assert(!Op->getType()->isVectorTy());
+    
+     
+    Type *ScalarTy = E->Scalars.front();
+    assert(isValidElementType(ScalarTy));
+    
+     
+    if (!MinBWs.count(E)) {
+        assert(E->Idx == 0 && E->isReducedBitcastRoot());
+    }
+    
+     
+    Instruction *I = CallInst::Create("fneg", CallInst::Create("fabs", CI), "", BB);
+    assert(isa<FNegInst>(I));
+    
+     
+    FPKnown FPK;
+    assert(FPK == FPKnown());
+    
+     
+    unsigned Depth = 0;
+    const unsigned MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth);
+    
+     
+    FPClassTest DM;
+    adjustDemandedMaskFromFlags(DM, F->getFastMathFlags());
+    
+     
+    DenseMap<BasicBlock *, Schedule> BS;
+    assert(!BS.empty() && "BlocksSchedules must contain valid entries");
+    
+     
+    assert(VectorizableTree.size() > 0);
+    
+     
+    Instruction *ReductionRoot = CallInst::Create("reduction_root", "", BB);
+    assert(ReductionRoot->getParent());
+    
+     
+    std::vector<Value *> VVS;
+    
+    return 0;
+}

@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *Func = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", Module.get());
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    AllocaInst *Alloca = new AllocaInst(Type::getInt32Ty(Context), 0, "arg_alloca", BB->getFirstInsertionPt());
+
+     
+    LoadInst *Load = new LoadInst(Type::getInt32Ty(Context), Alloca, "load_arg", false, BB);
+    StoreInst *Store = new StoreInst(Load, Alloca, BB);
+
+     
+    CallInst *CI = CallInst::Create(Func, {Alloca}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    Intrinsic::ID IntrinID = Intrinsic::fabs;  
+    CallInst *IntrinsicCI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), IntrinID), {Alloca}, "", BB);
+    assert(dyn_cast<IntrinsicInst>(IntrinsicCI) && "CallInst must be an intrinsic call");
+
+     
+
+    return 0;
+}

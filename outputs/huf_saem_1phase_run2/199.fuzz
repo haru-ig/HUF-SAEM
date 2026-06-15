@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    AllocaInst *Alloca = new AllocaInst(Type::getInt32Ty(Context), 0, "arg", BB->getFirstInsertionPt());
+
+     
+    LoadInst *Load = new LoadInst(Type::getInt32Ty(Context), Alloca, "", BB);
+    StoreInst *Store = new StoreInst(Load, Alloca, BB);
+
+     
+    F->setDoesNotThrow();
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt32PtrTy(Context), Type::getInt32PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 4)}, "", BB);
+    CI->setDoesNotThrow();
+
+     
+    Use &U = *CI->use_begin();
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, Load, ConstantInt::get(Type::getInt32Ty(Context), 2), "");
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "SelectInst must have an integer type");
+
+     
+    TreeEntry *E = new TreeEntry();
+    E->State = TreeEntry::SplitVectorize;
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 0));
+    E->CombinedEntriesWithIndices.push_back(std::make_pair(nullptr, 1));
+
+     
+    assert(E->Scalars.size() > 0 && "TreeEntry must have a non-empty Scalars list");
+
+     
+     
+     
+
+    return 0;
+}

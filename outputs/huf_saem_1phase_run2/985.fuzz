@@ -1,0 +1,9 @@
+#include <iostream>
+int main() {
+  
+
+#include <iostream>
+int main() {
+    std::cout << "The constraints provided do not require any specific output from this program." << std::endl;
+    return 0;
+}

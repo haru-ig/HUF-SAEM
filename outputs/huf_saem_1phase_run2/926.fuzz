@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/IntrinsicInst.h>  
+#include <llvm/IR/CallBase.h>       
+#include <llvm/IR/Value.h>          
+#include <llvm/IR/Type.h>           
+#include <llvm/IR/Instruction.h>    
+
+using namespace llvm;
+
+int main() {
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(getGlobalContext()), {}, false);
+    Function* F = Function::Create(FT, GlobalValue::ExternalLinkage, "myfunc", getModule());
+
+     
+    BasicBlock* BB = BasicBlock::Create(getGlobalContext(), "", F);
+    Instruction* CI = CallInst::Create(F, {}, "", BB);
+
+     
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has at least one use." << std::endl;
+    } else {
+        std::cout << "CallInst does not have any uses." << std::endl;
+    }
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cout << "The CallInst is an intrinsic call." << std::endl;
+    } else {
+        std::cout << "The CallInst is not an intrinsic call." << std::endl;
+    }
+
+     
+    if (F->doesNotThrow()) {
+        std::cout << "Function F is marked as nounwind." << std::endl;
+    } else {
+        std::cout << "Function F is not marked as nounwind or CallInst throws." << std::endl;
+    }
+
+     
+
+    return 0;
+}

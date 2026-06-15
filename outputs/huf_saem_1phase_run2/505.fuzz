@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("my_module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Instruction *CallInst = CallBase::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), 
+                                             Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    
+     
+    assert(!CallInst->use_empty() && "CallInst must have at least one use");
+
+     
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+    assert(!CallInst->doesNotThrow() && "CallInst must not be marked as nounwind");
+
+     
+    auto *IntrinsicInst = dyn_cast<IntrinsicInst>(CallInst);
+    assert(IntrinsicInst && IntrinsicInst->getIntrinsicID() == Intrinsic::memset && "CallInst must be an intrinsic call");
+
+     
+     
+
+    std::cout << "All constraints satisfied!\n";
+    return 0;
+}

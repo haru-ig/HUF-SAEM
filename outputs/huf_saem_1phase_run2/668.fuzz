@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test_module", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallBase *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::memset), {}, "", BB);
+    CI->addUse(Value::use_empty() ? Value() : CI);  
+
+     
+    Func->setDoesNotThrow();
+    Func->setNoUnwind();
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+            Value *NumBytes = nullptr;  
+            if (!NumBytes || (NumBytes && cast<ConstantInt>(NumBytes)->isZero())) {
+                std::cerr << "Error: Invalid or zero length operation for memset intrinsic." << std::endl;
+                return 1;
+            }
+        }
+    } else {
+        std::cerr << "Error: The call instruction is not an intrinsic call." << std::endl;
+        return 1;
+    }
+
+     
+    Module->print(llvm::outs(), nullptr);
+
+    return 0;
+}

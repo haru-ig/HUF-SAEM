@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Module *createTestModule() {
+  LLVMContext Context;
+  Module *M = new Module("test", Context);
+  return M;
+}
+
+ 
+Function *addTestFunction(Module &M) {
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(M.getContext()), {}, false);
+  Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "testFunc", &M);
+  return F;
+}
+
+ 
+BasicBlock *createBasicBlock(Function &F) {
+  BasicBlock *BB = BasicBlock::Create(F.getContext(), "", &F);
+  return BB;
+}
+
+int main() {
+  Module *M = createTestModule();
+  Function *F = addTestFunction(*M);
+  BasicBlock *BB = createBasicBlock(*F);
+
+   
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+
+   
+  F->setDoesNotThrow();
+  assert(!CI->doesNotThrow() && "The CallInst must not be marked as nounwind");
+
+   
+  if (dyn_cast<IntrinsicInst>(CI)) {
+    Intrinsic::ID ID = CI->getIntrinsicID();
+    assert(ID == Intrinsic::any_mem_intrinsic && "CallInst must be an AnyMemIntrinsic");
+  }
+
+   
+
+  std::cout << "Test program created with all necessary constraints." << std::endl;
+  return 0;
+}

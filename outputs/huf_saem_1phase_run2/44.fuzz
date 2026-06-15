@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/CallSite.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Value.h"
+#include "llvm/Support/raw_ostream.h"
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+  Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), Function::ExternalLinkage, "testFunc", Module.get());
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Module.get(), Intrinsic::memset), {Constant::getNullValue(Type::getInt8PtrTy(Context))}, "", BB);
+
+   
+  Value *User = nullptr;
+  for (auto &U : CI->users()) {
+    User = U;
+    break;
+  }
+  assert(!CI->use_empty() && "CI must have at least one use");
+
+   
+  assert(F->doesNotThrow() && "Function must be nounwind");
+  assert(!CI->doesNotThrow() && "CallInst must not be nounwind");
+
+   
+  IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+  assert(II && II->getIntrinsicID() == Intrinsic::memset && "CI must be an intrinsic call");
+
+   
+  if (II->getIntrinsicID() == Intrinsic::memset) {
+    uint64_t NumBytes = 0;  
+    assert(NumBytes <= 0 || !(NumBytes % 8), "Atomic unordered memory intrinsics condition not met");
+  }
+
+   
+
+  std::cerr << "Test passed!\n";
+  return 0;
+}

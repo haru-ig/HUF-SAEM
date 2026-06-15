@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    Argument *Arg = &*F->arg_begin();
+    Arg->setParamAttribute(0, AttributeKind::Returned, Attribute::NoUnwind);
+
+     
+    Value *Callee = ConstantInt::get(IntegerType::getInt32Ty(Context), APInt(32, 1));
+    CallInst *CI = CallInst::Create(FTy, Callee, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    Value *V = Intrinsic::getDeclaration(&M, Intrinsic::anymemintrinsic, {CI->getType()});
+    CallInst *II = CallInst::Create(V, {}, "", BB);
+
+     
+    II->setDoesNotThrow();
+    F->setDoesNotThrow(false);
+
+     
+     
+
+     
+    if (auto *IIA = dyn_cast<AnyMemIntrinsic>(II)) {
+        Value *NumBytes = IIA->getArg(0);
+        if (!NumBytes->getType()->isVectorTy() && APIntOps::isNegativeOrZero(NumBytes->getValue())) {
+             
+        } else if (APIntOps::isMul乫ltipleOf(NumBytes->getValue(), 16)) {
+             
+        }
+    }
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+    return 0;
+}

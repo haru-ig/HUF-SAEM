@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_function", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memset, {Type::getInt8PtrTy(Context)}, {}, "", BB);
+    CI->addUse(0);  
+
+     
+    F->setLinkage(GlobalValue::ExternalLinkage);
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *AI = dyn_cast<IntrinsicInst>(CI);
+    assert(AI && "Expected an intrinsic instruction");
+    if (AI->getIntrinsicID() == Intrinsic::memset) {
+         
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

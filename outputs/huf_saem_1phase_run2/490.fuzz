@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Dominators.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+CallInst* createCallInst(Function& F, Module& M) {
+    LLVMContext &Ctx = M.getContext();
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Ctx), 1)};
+    CallInst *CI = CallInst::Create(&F, Args, "", nullptr);
+    return CI;
+}
+
+ 
+Function* createFunction(Module& M) {
+    LLVMContext &Ctx = M.getContext();
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", &M);
+    F->setDoesNotThrow();
+    return F;
+}
+
+ 
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+    Function *F = createFunction(M);
+    CallInst *CI = createCallInst(*F, M);
+
+     
+    assert(!CI->use_empty() && "CI must have at least one use");
+
+     
+    F->setDoesNotThrow(false);
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = CallInst::Create(&F, {}, "", nullptr);
+    assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+
+     
+    AnyMemIntrinsic *AMII = dyn_cast<AnyMemIntrinsic>(II);
+    assert(AMII && AMII->isAtomic() && !AMII->hasVolatileOrdering() && "Must be atomic unordered memory intrinsic");
+
+     
+
+    std::cout << "All constraints satisfied." << std::endl;
+    return 0;
+}

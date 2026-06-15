@@ -1,0 +1,5 @@
+#include <iostream>
+int main() {
+ It seems like you've provided a detailed set of constraints for generating code to satisfy various conditions. However, the last part of your message ends abruptly and does not contain a complete sentence or expression. To fulfill the request for a C++ program that generates test cases based on these constraints, I will need to clarify what specific tests are required. 
+
+If you provide more details about which types of tests should be generated (e.g., unit tests for functions, boundary value analysis, etc.), or if there is a particular function or scenario you want the code to handle, please let me know so that I can write a complete C++ program to meet your requirements.

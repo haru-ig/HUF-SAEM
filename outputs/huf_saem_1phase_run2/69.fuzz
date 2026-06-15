@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+ It seems like you've provided a detailed set of constraints for generating code for a specific function, possibly related to LLVM IR manipulation or optimization. However, the text ends abruptly and doesn't include any actual implementation or example code. 
+
+To help you effectively, I would need more context about what kind of code or functionality you are aiming to implement based on these constraints. If this is for a school project, homework assignment, or if you have specific requirements for an LLVM-based tool, please provide additional details so that I can generate a more tailored solution.
+
+If you're looking for general guidance on how to approach such a task in C++, especially given the constraints and conditions mentioned, here’s a structured way to start:
+
+1. **Understand the Requirements**: Make sure you thoroughly understand all the constraints listed above. They seem to be tailored for LLVM IR manipulation where precise handling of various instructions (like `CallInst`, `IntrinsicInst`, `SelectInst`) is crucial.
+
+2. **Set Up Development Environment**: Ensure you have a development environment set up with access to LLVM libraries if this is an internal or custom project. If not, consider using online compilers like Repl.it or Compiler Explorer for basic testing and experimentation.
+
+3. **Break Down the Problem**: Decompose the problem into smaller sub-problems:
+   - Understanding how to manipulate IR instructions (e.g., `CallInst`, `SelectInst`).
+   - Implementing logic that satisfies all listed conditions.
+   - Testing the implementation with various edge cases and constraints.
+
+4. **Start Small**: Begin by implementing simple parts of the functionality, like checking if a `CallInst` has uses or ensuring a function is marked as `nounwind`. Gradually build up complexity to handle more advanced scenarios.
+
+5. **Use Libraries and APIs**: Familiarize yourself with LLVM’s C++ API (e.g., clang library) which provides classes and methods for handling IR manipulation, such as `llvm::CallInst`, `llvm::Function`, etc.
+
+6. **Iterative Testing**: Continuously test your code snippets or functions in small steps to ensure that each part works correctly before moving on to the next. Use assert statements or simple printouts within your function implementations for debugging purposes.
+
+7. **Review and Refine**: If you encounter issues, review the code and refine it based on what doesn't work according to the constraints. You might need to adjust logic, add error handling, or tweak conditions accordingly.
+
+If this is an open-ended task with no specific implementation goal in mind, please provide more details so I can offer a more tailored example or guidance.

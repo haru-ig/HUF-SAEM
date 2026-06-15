@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "func", &Mod);
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    Value *Args[1] = {ConstantInt::get(Type::getInt32Ty(Context), 42)};
+    CallInst *CI = CallInst::Create(Func, makeArrayRef(Args), "", BB);
+
+     
+    Use &U = Func->args().begin();
+    new StoreInst(CI, (Value *)&*U, false, BB);
+
+     
+    Func->setDoesNotThrow();
+
+     
+    Intrinsic::ID ID = Intrinsic::not_an_intrinsic;  
+    IntrinsicInst *II = IntrinsicInst::Create(Intrinsic::getDeclaration(&Mod, static_cast<llvm::Intrinsic::ID>(ID)), {CI}, "", BB);
+
+     
+    new StoreInst((Value *)II, (Value *)&*Func->args().begin(), false, BB);
+
+     
+    Mod.print(outs(), nullptr);
+
+    return 0;
+}

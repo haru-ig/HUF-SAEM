@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Constants.h>
+
+using namespace llvm;
+
+ 
+Function* createExampleFunction(LLVMContext &ctx, Module &M) {
+     
+    FunctionType *FT = FunctionType::get(Type::getInt32Ty(ctx), {}, false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, "exampleFunc", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(ctx, "", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::memset), {}, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(ctx), 1);
+    Value *FalseVal = ConstantInt::get(Type::getInt32Ty(ctx), 0);
+    Value *CondVal = ICmpInst::create(ICmpInst::ICMP_ULT, CI->getType(), CI, ConstantInt::get(CI->getType(), 2));
+    SelectInst *SI = new SelectInst(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    F->setDoesNotThrow();
+
+    return F;
+}
+
+int main() {
+    LLVMContext ctx;
+    Module M("exampleModule", ctx);
+
+    Function *F = createExampleFunction(ctx, M);
+    if (F) {
+        std::cout << "Function created successfully." << std::endl;
+    } else {
+        std::cout << "Failed to create function." << std::endl;
+    }
+
+    return 0;
+}

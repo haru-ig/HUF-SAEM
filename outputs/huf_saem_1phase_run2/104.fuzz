@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+     
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(getGlobalContext()), {}, false), GlobalValue::ExternalLinkage, "testFunc");
+    BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "", F);
+    IRBuilder<> builder(BB);
+    CallInst *CI = CallInst::Create(nullptr, {Constant::getNullValue(Type::getInt32Ty(getGlobalContext()))}, "", BB);  
+
+     
+    Use &U = F->arg_begin();  
+    U.set(CI);
+
+    if (!CI->use_empty()) {
+        std::cout << "CallInst has uses, constraint satisfied.\n";
+    } else {
+        std::cout << "CallInst does not have any uses, constraint not satisfied.\n";
+    }
+
+     
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->isAnyMemory() && II->getIntrinsicID() == Intrinsic::not_an_intrinsic) {  
+            std::cout << "Intrinsic is an AnyMemIntrinsic, constraint satisfied.\n";
+        } else {
+            std::cout << "Intrinsic is not an AnyMemIntrinsic, constraint not satisfied.\n";
+        }
+    }
+
+     
+
+    return 0;
+}

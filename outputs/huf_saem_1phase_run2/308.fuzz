@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", Module.get());
+
+     
+    Value *X = ConstantFP::create(Type::getFloatTy(Context), APFloat(1.0));
+    Value *Y = ConstantFP::create(Type::getFloatTy(Context), APFloat(2.0));
+    Instruction *AddInst = BinaryOperator::CreateFAdd(X, Y, "", BB);
+
+     
+    AddInst->addUse(*AddInst);
+
+     
+    Module->print(errs());
+
+    return 0;
+}

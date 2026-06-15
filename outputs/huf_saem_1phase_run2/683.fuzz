@@ -1,0 +1,141 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module module("test", Context);
+
+     
+    FunctionType *funcTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *func = Function::Create(funcTy, GlobalValue::ExternalLinkage, "testFunc", &module);
+
+     
+    BasicBlock *bb = BasicBlock::Create(Context, "", func);
+
+     
+    Value *vec = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    Instruction *insertelem = InsertElementInst::Create(vec, ConstantInt::get(Type::getInt32Ty(Context), 1), ConstantInt::get(Type::getInt32Ty(Context), 0), "", bb);
+
+     
+    assert(insertelem->getNumOperands() == 3 && "InsertElementInst should have three operands");
+    Value *operand = insertelem->getOperand(1);
+    Type *opType = operand->getType();
+    assert(opType->isIntegerTy() && "Operand type should be integer");
+
+     
+    CallBase *ci = cast<CallBase>(insertelem);
+    assert(!ci->use_empty() && "CallInst must have at least one use");
+    assert(func->doesNotThrow() && "Function should be marked as nounwind");
+    assert(isa<IntrinsicInst>(ci) && "CallInst must be an intrinsic call");
+    IntrinsicInst *intrinsic = cast<IntrinsicInst>(ci);
+    assert(intrinsic->getIntrinsicID() == Intrinsic::memcpy || intrinsic->getIntrinsicID() == Intrinsic::memset, "CallInst must be a memory intrinsic");
+
+     
+    if (intrinsic->getIntrinsicID() == Intrinsic::memset) {
+        Value *numBytes = intrinsic->getArgOperand(2);
+        assert(isa<ConstantInt>(numBytes) && "Length must be a constant integer");
+        int64_t numBytesVal = cast<ConstantInt>(numBytes)->getValue().getSExtValue();
+        assert(numBytesVal <= 0 || numBytesVal % (insertelem->getType()->getScalarSizeInBits() / 8) != 0, "Length must be non-positive or not a multiple of the element size");
+    }
+
+     
+    Value *ctxI = ci;
+    assert(isa<CallBase>(ctxI) && "Context instruction must be a CallBase instance");
+    CallBase *callBase = cast<CallBase>(ctxI);
+
+     
+    auto irPos = IRPosition::callsite_argument(callBase, 0);
+    assert(irPos.isValid() && "IRPosition should be valid");
+
+     
+    Function *funcFromIRPos = irPos.getFunction();
+    assert(funcFromIRPos != nullptr && "Associated function must be non-null");
+
+     
+    TreeEntry *E = new TreeEntry();
+    E->Scalars.push_back(insertelem);
+    assert(!E->Scalars.empty() && "TreeEntry should have a non-empty Scalars list");
+
+    MinBWs[E] = 32;  
+    assert(MinBWs[E].has_value() && "MinBWs map entry must provide a valid bit width");
+
+    E->State = TreeEntry::SplitVectorize;
+    assert(E->State == TreeEntry::SplitVectorize && "E->State must be TreeEntry::SplitVectorize");
+    assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices should contain exactly two entries");
+
+     
+    if (E->isGather() || E->UserTreeIndex == UINT_MAX) {
+         
+    } else {
+         
+    }
+
+     
+    Value *condVal = ConstantInt::get(Type::getInt1Ty(Context), true);
+    Value *trueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *falseVal = ConstantInt::get(Type::getInt32Ty(Context), 0);
+    SelectInst *sel = SelectInst::Create(condVal, trueVal, falseVal, "", bb);
+    assert(sel != nullptr && "SelectInst should be non-null");
+
+     
+    Type *selType = sel->getType();
+    assert(selType->isIntegerTy() && "SelectInst type should be integer");
+
+     
+    Value *x = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Instruction *fabsInst = CallInst::CreateFABS(x, "", bb);
+    assert(fabsInst != nullptr && "fabs instruction should be created");
+    Instruction *fnegInst = CallInst::CreateFNEG(fabsInst, "", bb);
+    assert(fnegInst != nullptr && "fneg instruction should be created");
+
+     
+    KnownFPClass known;
+    assert(known == KnownFPClass() && "Known must be in an uninitialized state");
+
+     
+    int Depth = 0;
+    const int MaxAnalysisRecursionDepth = 10;
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    FPClassTest DemandedMask;
+    adjustDemandedMaskFromFlags(DemandedMask);
+
+     
+    Loop *L = nullptr;  
+    assert(L->getLoopPreheader() != nullptr && "Loop must have a valid preheader");
+    assert(L->getLoopLatch() != nullptr && "Loop must have a valid latch block");
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header's address should not be taken");
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Instruction *I = insertelem;
+    assert(I != nullptr && "Instruction should be non-null");
+    Type *instType = I->getType();
+    assert(instType->isIntegerTy() && instType->getScalarSizeInBits() == DemandedMask.getBitWidth(), "Instruction type and bit width must match");
+
+     
+    if (NLZ > 0) {
+         
+    }
+
+    return 0;
+}

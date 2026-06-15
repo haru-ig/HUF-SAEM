@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "foo", M);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+    Value *Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst *CI = CallInst::Create(nullptr, {Arg}, "", BB);
+    
+     
+    CI->addUse(F->arg_begin());
+    
+     
+    F->setDoesNotThrow();
+    F->setLinkage(GlobalValue::InternalLinkage);
+    
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::anymemintrinsic) {
+            errs() << "CallInst is a memory intrinsic.\n";
+            
+             
+            if (II->getIntrinsicID() == Intrinsic::atomicrmw || II->getIntrinsicID() == Intrinsic::cmpxchg) {
+                Type *Ty = CI->getType();
+                uint64_t NumBytes = Ty->getPrimitiveSizeInBits() / 8;  
+                if (NumBytes <= 0 || !isMultiple(NumBytes, getElementTypeByteWidth(Ty))) {
+                    errs() << "Atomic unordered memory intrinsic with valid length.\n";
+                }
+            }
+            
+             
+            Value *CtxI = CI;
+            if (auto *CB = dyn_cast<CallBase>(CtxI)) {
+                errs() << "Context instruction is a CallBase instance.\n";
+            }
+        }
+    }
+    
+     
+    M->print(outs(), nullptr);
+    
+    delete M;
+    return 0;
+}

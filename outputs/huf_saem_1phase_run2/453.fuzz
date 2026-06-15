@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+bool isValidElementType(Type *Ty) {
+   
+  return !Ty->isVectorTy();
+}
+
+int main() {
+  LLVMContext Context;
+  Module M("test_module", Context);
+
+  FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+  Function *F = Function::Create(FT, Function::ExternalLinkage, "test_function", &M);
+
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  Instruction *I = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::anymem_intrinsic), {}, "", BB);
+
+   
+  I->addUse(Type::getInt32Ty(Context));
+
+   
+  F->setDoesNotThrow();
+
+   
+  IntrinsicInst *II = dyn_cast<IntrinsicInst>(I);
+  if (!II || !II->isAnyMemIntrinsic()) {
+    errs() << "Error: CallInst is not an AnyMemIntrinsic!\n";
+    return 1;
+  }
+
+   
+
+  std::cout << "Test program completed successfully.\n";
+  return 0;
+}

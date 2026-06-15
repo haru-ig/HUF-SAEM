@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType* FuncType = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+
+     
+    Function *IntrinsicFunc = Intrinsic::getDeclaration(&M, Intrinsic::your_intrinsic, FuncType);
+
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "entry", Function::Create(FuncType, Function::ExternalLinkage, "testfunc", &M));
+    Instruction* CallInst = CallInst::Create(IntrinsicFunc, "", BB);
+
+     
+    assert(!CallInst->use_empty() && "The CallInst must have at least one use");
+
+    return 0;
+}

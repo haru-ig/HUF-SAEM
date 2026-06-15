@@ -1,0 +1,68 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+Function *createExampleFunction(LLVMContext &ctx) {
+    Module *mod = new Module("test", ctx);
+    FunctionType *funcTy = FunctionType::get(Type::getVoidTy(ctx), {}, false);
+    Function *F = Function::Create(funcTy, GlobalValue::ExternalLinkage, "exampleFunc", mod);
+
+     
+     
+
+    return F;
+}
+
+int main() {
+    LLVMContext ctx;
+    Function *F = createExampleFunction(ctx);
+
+    if (!F) {
+        errs() << "Failed to create function\n";
+        return 1;
+    }
+
+     
+    BasicBlock &entryBB = F->getBasicBlockList().push_back(new BasicBlock("entry", F));
+    IRBuilder<> builder(&entryBB);
+
+     
+    Function *callee = Intrinsic::getDeclaration(F->getParent(), IntrinsicType::memcpy, {});
+    CallInst *CI = CallInst::Create(callee, {}, "", &entryBB);
+    CI->setDoesNotThrow();  
+    CI->addUse({});  
+
+    if (!CI) {
+        errs() << "Failed to create CallInst\n";
+        return 1;
+    }
+
+     
+    F->setDoesNotThrow(false);
+    F->setUnwindFunc("llvm.trap");
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        errs() << "CI is an intrinsic call\n";
+    } else {
+        errs() << "CI is not an intrinsic call\n";
+    }
+
+     
+    legacy::PassManager PM;
+    PM.add(createPrintModulePass(outs()));
+    PM.run(*F->getParent());
+
+    return 0;
+}

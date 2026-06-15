@@ -1,0 +1,49 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *Func = Function::Create(FuncTy, Function::ExternalLinkage, "testfunc", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    IRBuilder<> Builder(BB);
+    CallInst *CI = CallInst::Create(FuncTy, Intrinsic::getDeclaration(Module.get(), Intrinsic::abs), {}, "", BB);
+
+     
+    Value *User = CI->user_begin();
+    if (User != CI->user_end()) {
+        std::cerr << "CI has a user.\n";
+    } else {
+        std::cerr << "CI does not have any users.\n";
+    }
+
+     
+    Func->setDoesNotThrow();
+    Func->setLinkage(GlobalValue::InternalLinkage);  
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "CI is an intrinsic.\n";
+    } else {
+        std::cerr << "CI is not an intrinsic.\n";
+    }
+
+     
+    Module->print(outs(), nullptr);
+
+    return 0;
+}

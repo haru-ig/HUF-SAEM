@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {Constant::getNullValue(Type::getInt8PtrTy(Context))}, "", BB);
+
+     
+    CI->addUse(F->arg_begin());
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic instruction");
+    assert(II->getIntrinsicID() == Intrinsic::memset && "Expected memset intrinsic");
+
+     
+    CallBase *CB = cast<CallBase>(CI);
+    IRPosition Pos = IRPosition::callsite_argument(CB, 0);
+    assert(!Pos.isNull() && "IRPosition should not be null");
+    assert(Pos.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "Expected IRP_CALL_SITE_ARGUMENT position kind");
+
+     
+    CB->simplifyCall();
+
+    return 0;
+}

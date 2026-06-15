@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), Type::getInt32Ty(Context)}, {}, "", BB);
+
+     
+    CI->addUse(Value::use_iterator(), nullptr);
+
+     
+    assert(!F->doesNotThrow() && "Function should be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (II) {
+        auto *AnyMemIntrinsic = dyn_cast<AnyMemIntrinsic>(II);
+        if (AnyMemIntrinsic) {
+             
+            uint64_t NumBytes = AnyMemIntrinsic->getNumElements();
+            assert(NumBytes > 0 && "Number of bytes must be non-zero");
+        }
+    }
+
+     
+    M.print(llvm::errs(), nullptr);
+
+    return 0;
+}

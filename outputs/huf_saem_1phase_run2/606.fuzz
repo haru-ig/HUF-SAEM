@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/SimplifyCFG.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "testFunction", &M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value* X = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value* Y = ConstantFP::get(Type::getFloatTy(Context), -2.0);
+    ICmpInst::Predicate Pred = ICmpInst::ICMP_ULT;
+    Value* CondVal = new ICmpInst(Pred, X, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    FNegInst *TrueVal = FNegInst::Create(FabsInst::Create(X), "", BB);
+    FNegInst *FalseVal = FNegInst::Create(FabsInst::Create(Y), "", BB);
+
+     
+    Type* FloatTy = Type::getFloatTy(Context);
+    SelectInst *Sel = SelectInst::Create(CondVal, TrueVal, FalseVal, "", BB);
+
+     
+    if (!Sel->use_empty()) {
+        std::cout << "SelectInst must have at least one use to trigger simplification.\n";
+        return 1;
+    }
+
+     
+    if (Sel->hasOneUse() && Sel->getOperand(0)->getType()->isVectorTy()) {
+        std::cout << "SelectInst has been simplified correctly as expected.\n";
+    } else {
+        std::cout << "Simplification of SelectInst did not occur as expected.\n";
+        return 1;
+    }
+
+     
+    if (!F->doesNotThrow()) {
+        std::cout << "Function must be marked as nounwind to test this case.\n";
+        return 1;
+    }
+
+     
+    X->eraseFromParent();
+    Y->eraseFromParent();
+    CondVal->eraseFromParent();
+    TrueVal->eraseFromParent();
+    FalseVal->eraseFromParent();
+    Sel->eraseFromParent();
+
+    return 0;
+}

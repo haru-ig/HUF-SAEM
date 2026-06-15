@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Intrinsics.h"
+#include <iostream>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    IntrinsicInst *CI = CallInst::Create(Intrinsic::anymemintrinsic, {}, "", BB);
+    assert(CI && "Failed to create anymemintrinsic");
+
+     
+    CI->addUse(F->getReturnType());
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    if (dyn_cast<AnyMemIntrinsic>(CI)) {
+        std::cout << "The CallInst is an AnyMemIntrinsic." << std::endl;
+    } else {
+        std::cout << "The CallInst is not an AnyMemIntrinsic." << std::endl;
+    }
+
+     
+    assert(F->doesNotThrow() && "Function should be marked as nounwind");
+
+    return 0;
+}

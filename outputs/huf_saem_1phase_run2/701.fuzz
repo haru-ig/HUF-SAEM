@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    Function* F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "main", M);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value* Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst* CI = CallInst::Create(nullptr, Intrinsic::getDeclaration(M, Intrinsic::sqrt), {Arg}, "", BB);
+    
+     
+    Use& U = CI->use_begin();
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    
+     
+    F->setDoesNotThrow();
+    F->setUnhandledExceptionMode(false);
+    
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        assert(isa<AnyMemIntrinsic>(CI) && "CallInst must be an intrinsic call and specifically an AnyMemIntrinsic");
+        
+         
+        Value* NumBytes = CI->getArgOperand(2);  
+        if (NumBytes) {
+            APInt IntVal = cast<ConstantInt>(NumBytes)->getValue();
+            assert(IntVal.isNonNegative() && "Length must be non-negative for atomic unordered memory intrinsics");
+        }
+    }
+    
+     
+    M->print(errs());
+    
+    return 0;
+}

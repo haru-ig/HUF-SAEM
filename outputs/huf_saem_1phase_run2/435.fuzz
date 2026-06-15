@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <llvm/IR/Instruction.h>  
+#include <llvm/IR/Intrinsics.h>   
+#include <llvm/IR/CallBase.h>     
+#include <llvm/IR/Value.h>        
+#include <llvm/IR/Type.h>         
+#include <llvm/IR/Function.h>     
+#include <llvm/IR/BasicBlock.h>   
+#include <llvm/IR/Constants.h>    
+#include <llvm/IR/LLVMContext.h>  
+#include <llvm/IR/Module.h>       
+#include <llvm/Support/raw_ostream.h>  
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("testmodule", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "myfunc", M);
+
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+    IRBuilder<> Builder(BB);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+    assert(!CI->use_empty() && "CI must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    F->setUnwind(false);
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        auto *II = dyn_cast<IntrinsicInst>(CI);
+        if (II->getIntrinsicID() == Intrinsic::memset) {
+             
+            Value *Arg = II->getArgOperand(0);  
+            assert(!Arg->getType()->isVectorTy() && "Not a vector type");
+        }
+    }
+
+     
+    F->addParamAttr(0, Attribute::Returned);
+
+     
+
+    std::cout << "Module: " << *M << std::endl;
+
+    delete M;
+    return 0;
+}

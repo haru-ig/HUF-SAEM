@@ -1,0 +1,76 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module* M = new Module("test", Context);
+    
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32PtrTy(Context), false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "testFunc", M);
+    
+     
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    
+     
+    AllocaInst* AI = new AllocaInst(Type::getInt32Ty(Context), 0, "arg", BB->getFirstInsertionPt());
+    
+     
+    LoadInst* LI = new LoadInst(AI, "", false, BB->getFirstInsertionPt());
+    
+     
+    CallInst* CI = CallInst::Create(LI, {}, "", BB->getLastNonDebugInstruction());
+    
+     
+    if (!CI->use_empty()) {
+        std::cerr << "CallInst does not have any uses." << std::endl;
+        return 1;
+    }
+    
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+    
+     
+    if (!dyn_cast<IntrinsicInst>(CI) || !isa<AnyMemIntrinsic>(CI)) {
+        std::cerr << "CallInst is not an intrinsic or not a memory intrinsic." << std::endl;
+        return 1;
+    }
+    
+     
+    if (!isa<CallBase>(CI)) {
+        std::cerr << "Context instruction is not a CallBase." << std::endl;
+        return 1;
+    }
+    
+     
+    Value* TrueVal = ConstantInt::get(Type::getInt32Ty(Context), APInt(32, 1));
+    Value* FalseVal = ICmpInst::makeICmp(ICmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst* SI = new SelectInst(FalseVal, TrueVal, TrueVal, "", BB->getLastNonDebugInstruction());
+    
+     
+    if (!SI || !TrueVal->getType()->isIntegerTy() || !FalseVal->getType()->isIntegerTy()) {
+        std::cerr << "SelectInst does not have valid operands or type." << std::endl;
+        return 1;
+    }
+    
+     
+    if (!TrueVal || !FalseVal) {
+        std::cerr << "Invalid TrueVal or FalseVal in SelectInst." << std::endl;
+        return 1;
+    }
+    
+     
+    M->print(outs(), nullptr);
+    
+    return 0;
+}

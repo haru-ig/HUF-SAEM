@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    CallInst *CI = CallInst::Create(FuncTy, FunctionCallee(&*M.getFunction("test_func")), { Arg }, "", BB);
+    CI->setCalledOperand(FunctionCallee(&*M.getFunction("llvm.abs")));  
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    CallBase *CB = CI;
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    if (!II || !II->isAnyMemory() || II->getIntrinsicID() != Intrinsic::memset) {
+        std::cerr << "Error: CallInst is not an intrinsic memory operation." << std::endl;
+        return 1;
+    }
+
+     
+    if (!F->getReturnType()->isIntegerTy()) {
+        std::cerr << "Error: Function does not have a integer type return value." << std::endl;
+        return 1;
+    }
+
+     
+     
+
+     
+    M.print(errs(), nullptr);
+
+    return 0;
+}

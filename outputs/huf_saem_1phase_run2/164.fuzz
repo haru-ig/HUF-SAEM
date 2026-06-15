@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test_module", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addArgAttr(1, Attribute::Returned);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Args[] = {ConstantInt::get(Type::getInt32Ty(Context), 0)};
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, Args, "", BB);
+    CI->setDoesNotThrow();  
+
+     
+    if (!CI->use_empty() && dyn_cast<IntrinsicInst>(CI) && cast<AnyMemIntrinsic>(CI)->isZeroLength()) {
+        errs() << "Memory intrinsic with zero length detected.\n";
+    } else {
+        return 1;  
+    }
+
+     
+    if (!F->doesNotThrow() && CI->doesNotThrow()) {
+        errs() << "Function and CallInst attributes are correctly set.\n";
+    } else {
+        return 1;  
+    }
+
+     
+    if (isa<CallBase>(CI)) {
+        errs() << "Context instruction is a CallBase.\n";
+    } else {
+        return 1;  
+    }
+
+     
+
+    return 0;  
+}

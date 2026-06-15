@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType* FT = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function* F = Function::Create(FT, Function::ExternalLinkage, "func", &Mod);
+    BasicBlock* BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value* Arg = ConstantInt::get(Type::getInt32Ty(Context), 42);
+    CallInst* CI = CallInst::Create(FT, F->getName(), {Arg}, "", BB);
+
+     
+    if (CI->use_empty()) return -1;
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) return -1;
+    IntrinsicInst* IIC = dyn_cast<IntrinsicInst>(CI);
+    if (IIC->getIntrinsicID() != Intrinsic::anymemintrinsic) return -1;
+
+     
+    legacy::PassManager Passes;
+    Passes.add(createInstructionCombiningPass());
+    Passes.run(*F);
+
+     
+    if (!isa<CallBase>(CI)) return -1;
+    CallBase* CB = cast<CallBase>(CI);
+
+     
+    SimplifyQuery SQ(Simplification::AllowRedundantBackwardTransformations);
+    Value* SimplifiedCB = simplifyCall(CB, SQ);
+    if (SimplifiedCB != nullptr) {
+        CB->replaceAllUsesWith(SimplifiedCB);
+    }
+
+     
+    Mod.print(outs(),  false);
+
+    return 0;
+}

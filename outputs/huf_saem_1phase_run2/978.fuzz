@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Mod = std::make_unique<Module>("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getVoidTy(Context), {}, false), GlobalValue::ExternalLinkage, "testFunc", Mod.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+
+     
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(Mod.get(), Intrinsic::memcpy), {}, "", BB);
+    CI->setDoesNotThrow();  
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    assert(F->doesNotThrow() && "Function must be marked as nounwind");
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && II->getIntrinsicID() == Intrinsic::memcpy && "CallInst must be an intrinsic call");
+
+     
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = BinaryOperator::CreateFNeg(UnaryOperator::createFABS(TrueVal), "fneg_fabs", BB);
+    SelectInst *SI = new SelectInst(CmpInst::createICMP(CmpInst::FCMP_ULT, TrueVal, ConstantFP::get(Type::getFloatTy(Context), 2.0)), TrueVal, FalseVal, "", BB);
+    assert(SI && "SelectInst must be created");
+
+     
+    Value *CondVal = SI->getCondition();
+    Type *SelType = SI->getType();
+    assert(CondVal && TrueVal && FalseVal && SelType && "SelectInst values must be valid");
+
+     
+    assert((SelType->isIntegerTy() || SelType->isVectorTy()) && "SelectInst type must be integer or integer vector type");
+
+     
+    Mod.reset();
+    return 0;
+}

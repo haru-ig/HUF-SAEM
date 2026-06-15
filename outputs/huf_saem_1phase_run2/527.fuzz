@@ -1,0 +1,71 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Arg = new Argument(Type::getInt32Ty(Context), "arg", F);
+    Arg->setParamAttrs(AttributeSet::get(Context, {Attribute::Returned}));
+
+     
+    Intrinsic::ID IntrId = Intrinsic::fabs;
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IntrId), Arg, "", BB);
+
+     
+    CI->addUse(Type::getInt32Ty(Context));
+
+     
+    F->setDoesNotThrow();
+    F->setNoUnwind();
+
+     
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+    assert(II && "Expected an intrinsic call");
+    assert(II->getIntrinsicID() == IntrId && "Expected a specific intrinsic call");
+
+     
+    CallBase *CB = cast<CallBase>(CI);
+
+     
+    for (const Argument &A : F->args()) {
+        if (A.hasParamAttr(Attribute::Returned)) {
+            break;
+        }
+    }
+
+     
+    assert(CB && "Expected a CallBase");
+    assert(II && "Expected an intrinsic call");
+
+     
+    if (verifyModule(M, &outs())) {
+        errs() << "Verification failed!\n";
+        return 1;
+    }
+
+    std::cout << "Test passed successfully!\n";
+    return 0;
+}

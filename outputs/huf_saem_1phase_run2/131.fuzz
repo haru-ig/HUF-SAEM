@@ -1,0 +1,73 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    Function *F = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "test_func", M);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::sqrt, {}, "", BB);
+
+     
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    if (!dyn_cast<IntrinsicInst>(CI)) {
+        std::cerr << "CI is not an intrinsic!" << std::endl;
+        return 1;
+    }
+
+     
+    Argument *Arg = F->addParam(Type::getInt32Ty(Context), "arg");
+    Arg->setAttr(Attribute::Returned);
+
+     
+
+     
+    CallBase *CB = CI;  
+
+     
+    Function *Func = F;
+    if (!Func) {
+        std::cerr << "Function is null!" << std::endl;
+        return 1;
+    }
+
+     
+    Value *X = ConstantFP::get(Type::getFloatTy(Context), APFloat(0.5));
+    Instruction *FNeg = BinaryOperator::CreateFNeg(X, "", BB);
+    Instruction *FAbs = CallInst::Create(Intrinsic::fabs, X, "", FNeg);
+    SelectInst *SI = SelectInst::Create(FCmpInst::createICMP(CmpInst::ICMP_ULT, FAbs, ConstantInt::get(Type::getInt32Ty(Context), 2)), FAbs, ConstantFP::get(Type::getFloatTy(Context), APFloat(0.5)));
+
+     
+    Value *TrueVal = SI->getTrueValue();
+    Value *FalseVal = SI->getFalseValue();
+    Type *SelType = SI->getType();
+    if (!TrueVal || !FalseVal || !SelType) {
+        std::cerr << "SelectInst does not meet specific conditions!" << std::endl;
+        return 1;
+    }
+
+     
+     
+     
+
+    std::cout << "Test passed!" << std::endl;
+    return 0;
+}

@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+  LLVMContext Context;
+  Module M("test", Context);
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), true);
+  Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  IRBuilder<> Builder(BB);
+
+   
+  CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, Intrinsic::any_mem_intrinsic), {}, "", BB);
+  assert(!CI->use_empty() && "CallInst must have at least one use");
+  assert(!F->doesNotThrow() && "Function must not be marked as nounwind");
+  assert(dyn_cast<IntrinsicInst>(CI) && "CallInst must be an intrinsic call");
+  IntrinsicInst *II = cast<IntrinsicInst>(CI);
+  assert(isa<AnyMemIntrinsic>(II) && "Intrinsic must be a memory intrinsic");
+
+   
+  F->setDoesNotThrow();
+  F->setLinkage(GlobalValue::InternalLinkage);
+  F->addFnAttr(Attribute::NoUnwind);
+
+   
+  CallBase *CB = CI;
+  assert(isa<CallBase>(CB) && "Context instruction must be a CallBase");
+
+   
+  auto IRPos = IRPosition::callsite_argument(*CI);
+  assert(IRPos.isValid() && "IRPosition must be valid");
+  assert(IRPos.getKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition kind must be CALL_SITE_ARGUMENT");
+
+   
+  if (!CI->use_empty()) {
+    SimplifyQuery SQ;
+    Value *Simplified = simplifyCall(CI, F->getReturnType(), CI->getArgList(), &SQ);
+    if (Simplified) {
+      CI->replaceAllUsesWith(Simplified);
+      CI->eraseFromParent();
+    }
+  }
+
+   
+  M.print(errs(), nullptr);
+
+  return 0;
+}

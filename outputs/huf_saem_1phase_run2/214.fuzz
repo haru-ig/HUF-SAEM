@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/ScalarEvolutionExpander.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType* FuncTy = FunctionType::get(Type::getInt32Ty(Context), {Type::getInt32PtrTy(Context)}, false);
+    Function *F = Function::Create(FuncTy, Function::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    IRBuilder<> Builder(BB);
+
+     
+    Value* Arg = Builder.CreateAlloca(Type::getInt32Ty(Context));
+    Builder.CreateStore(ConstantInt::get(Type::getInt32Ty(Context), 42), Arg);
+    CallInst *CI = Builder.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::abs), {Arg}, "", BB);
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use.");
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::Nounwind);
+
+     
+    if (auto *II = dyn_cast<IntrinsicInst>(CI)) {
+        if (II->getIntrinsicID() == Intrinsic::abs) {
+             
+            if (auto *AMII = dyn_cast<AtomicMemCmpInst>(II)) {
+                Value* NumBytes = ConstantInt::get(Type::getInt64Ty(Context), -1);
+                assert(NumBytes->getSExtValue() <= 0 || !isMultipleOfElementSize(NumBytes, F->getParent()->getDataLayout().getPointerSizeInBits()), "Atomic unordered memory intrinsic length must be non-positive or not a multiple of the element size.");
+            }
+        }
+    }
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

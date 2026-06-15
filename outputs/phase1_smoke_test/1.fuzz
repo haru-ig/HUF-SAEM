@@ -1,0 +1,8 @@
+#include <iostream>
+int main() {
+    int result = [](int x) noexcept -> int {
+         
+        return x + 5;
+    }(3);  
+
+    std::cout << "Result after adding 5: " << result << std::endl;

@@ -1,0 +1,123 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/CallInst.h>
+#include <llvm/IR/InstructionBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "testFunc", M);
+    F->addParamAttribute(0, AttributeSet::ReturnIndex, Attribute::NoUnwind);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    IRBuilder<> Builder(BB);
+
+     
+    Value *Arg0 = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(M, Intrinsic::memset), {}, "", BB);
+
+     
+    CI->addUse(F->getArg(0));
+
+     
+    if (dyn_cast<IntrinsicInst>(CI) && dyn_cast<AnyMemIntrinsic>(CI)) {
+         
+        assert(!F->doesNotThrow() && "Function should not be marked as nounwind");
+
+         
+        assert(!CI->doesNotThrow() && "CallInst should not be marked as nounwind");
+
+         
+        if (AtomicMemIntrinsic *AMII = dyn_cast<AtomicMemIntrinsic>(CI)) {
+            uint64_t NumBytes = AMII->getNumElements() * AMII->getElementSize();
+            assert(NumBytes <= 0 || !(NumBytes % F->getArg(0)->getType()->getScalarSizeInBits()) && "Invalid atomic unordered memory intrinsic length");
+        }
+
+         
+        if (CallBase *CB = dyn_cast<CallBase>(CI)) {
+            Value *CtxI = CB->getCalledOperand();
+            assert(isa<CallInst>(CtxI) && "Context instruction must be a CallInst");
+        }
+
+         
+        if (auto *CB = dyn_cast<CallBase>(CI)) {
+            auto IREPI = CB->getIterator();
+            assert(IREPI.get()->getKind() == Instruction::Call && "IRPosition must be a callsite argument");
+        }
+
+         
+        if (auto *CB = dyn_cast<CallBase>(CI)) {
+            auto *F = CB->getFunction();
+            assert(F != nullptr && "Associated function must be non-null");
+        }
+
+         
+        if (auto *CB = dyn_cast<CallBase>(CI)) {
+            auto *E = CB->getFunction()->arg_begin();
+            assert(E != nullptr && "TreeEntry must have a non-empty Scalars list");
+        }
+
+         
+        if (auto *CB = dyn_cast<CallBase>(CI)) {
+            auto *E = CB->getFunction()->arg_begin();
+            if (!MinBWs.empty()) {
+                assert(MinBWs.find(E)->second > 0 && "Invalid bit width in MinBWs map");
+            }
+        }
+
+         
+        if (auto *CB = dyn_cast<CallBase>(CI)) {
+            auto *E = CB->getFunction()->arg_begin();
+            assert(E->getState() == TreeEntry::SplitVectorize && "State must be SplitVectorize");
+            assert(E->CombinedEntriesWithIndices().size() == 2 && "Exactly two entries in CombinedEntriesWithIndices");
+        }
+
+         
+        if (auto *CB = dyn_cast<CallBase>(CI)) {
+            auto *E = CB->getFunction()->arg_begin();
+            if (!E->isGather() && !E->inTransformedToGatherNodes()) {
+                 
+            } else {
+                 
+            }
+        }
+
+         
+        if (auto *SI = Builder.CreateSelect(Builder.getInt1(true), Builder.CreateFNeg(Builder.CreateFAbs(Arg0)), Builder.CreateCTPop(Arg0))) {
+            Value *CondVal = SI->getCondition();
+            Value *TrueVal = SI->getTrueValue();
+            Value *FalseVal = SI->getFalseValue();
+            Type *SelType = SI->getType();
+
+             
+            assert(!SI->hasOneUse() && "SelectInst must have at least one use");
+        }
+
+         
+        if (auto *SI = Builder.CreateSelect(Builder.getInt1(true), Builder.CreateFNeg(Builder.CreateFAbs(Arg0)), Builder.CreateCTPop(Arg0))) {
+            Value *CondVal = SI->getCondition();
+            Value *TrueVal = SI->getTrueValue();
+            Value *FalseVal = SI->getFalseValue();
+
+            assert(isa<ICmpInst>(CondVal) && "Condition must be an icmp ult comparison");
+            auto *ICmp = dyn_cast<ICmpInst>(CondVal);
+            assert(ICmp->getPredicate() == ICmpInst::ICMP_ULT && "Condition must be an icmp ult comparison");
+            assert(isa<ConstantInt>(ICmp->getOperand(1)) && cast<ConstantInt>(ICmp->getOperand(1))->

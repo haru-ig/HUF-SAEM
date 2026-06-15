@@ -1,0 +1,85 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("module", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), Type::getInt32PtrTy(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+
+     
+    Value *Vec = UndefValue::get(VectorType::get(Type::getInt32Ty(Context), 4));
+    Vec = InsertElementInst::Create(Vec, ConstantInt::get(Type::getInt32Ty(Context), 0), ConstantInt::get(Type::getInt32Ty(Context), 0), "", BB);
+
+     
+    CallInst *CI = CallInst::Create(F, {Arg}, "", BB);
+    CI->setCalledFunction(F);
+
+     
+    F->setDoesNotThrow();
+
+     
+    IntrinsicInst *II = IntrinsicInst::Create(Intrinsic::any_mem_intrinsic, {Vec}, "", BB);
+    II->setArgOperand(0, Vec);
+
+     
+    ConstantInt *NumBytes = ConstantInt::get(Type::getInt64Ty(Context), -1);
+    II->setArgOperand(1, NumBytes);
+
+     
+    CallBase *CB = dyn_cast<CallBase>(II);
+
+     
+    if (CB) {
+        IRPosition Pos = IRPosition::callsite_argument(CB->getCalledOperand(), 0, &M);
+        assert(!Pos.isNull() && "IRPosition should not be null");
+
+         
+        Function *Func = Pos.getFunction();
+        assert(Func && "Function should not be null");
+
+         
+    }
+
+     
+    Loop *L = new Loop(&BB->front(), &M, nullptr, BB);
+    assert(L->getLoopPreheader() && "Loop preheader should be non-null");
+    assert(L->getLoopLatch() && "Loop latch should be non-null");
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = IntrinsicInst::Create(Intrinsic::ctpop, TrueVal, "", BB);
+    SelectInst *SI = new SelectInst(CmpInst::create(Instruction::ICmp, CmpInst::ICMP_ULT, TrueVal, ConstantInt::get(Type::getInt32Ty(Context), 2)), TrueVal, FalseVal, "", BB);
+
+     
+    assert(SI->getType()->isIntegerTy() && "Select type should be integer");
+    assert(SI->getCondition()->getType()->isIntegerTy() && "Condition type should be integer");
+    assert(SI->getTrueValue()->getType()->isIntegerTy() && "True value type should be integer");
+    assert(SI->getFalseValue()->getType()->isIntegerTy() && "False value type should be integer");
+
+     
+
+    return 0;
+}

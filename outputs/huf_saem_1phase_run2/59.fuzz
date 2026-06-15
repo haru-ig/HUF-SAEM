@@ -1,0 +1,115 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), IntegerType::getInt32Ty(Context), false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", &M);
+    F->addParamAttr(0, Attribute::Returned);
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Callee = ConstantInt::get(IntegerType::getInt32Ty(Context), 1);
+    CallInst *CI = CallInst::Create(F, {Callee}, "call", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    F->setDoesNotThrow();
+    CI->setDoesNotThrow(false);
+
+     
+    Intrinsic::ID ID = Intrinsic::memcpy;  
+    CallInst *MemCpy = CallInst::Create(Intrinsic::getDeclaration(&M, ID), Callee, "", BB);
+    assert(dyn_cast<IntrinsicInst>(MemCpy) && "CallInst must be an intrinsic call");
+    IntrinsicInst *MI = cast<IntrinsicInst>(MemCpy);
+    assert((ID == Intrinsic::memcpy || ID == Intrinsic::memmove || ID == Intrinsic::memset) && "Intrinsic should be one of memcpy, memmove, or memset");
+
+     
+    if (MI->getIntrinsicID() == Intrinsic::memcpy || MI->getIntrinsicID() == Intrinsic::memmove || MI->getIntrinsicID() == Intrinsic::memset) {
+        Value *NumBytes = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);  
+        assert(NumBytes->isNotMultipleOfElementSize() && "NumBytes must be non-positive or not a multiple of the element size");
+    }
+
+     
+    CallBase *CB = dyn_cast<CallBase>(MemCpy);
+    assert(CB && "Context instruction must be a CallBase instance");
+
+     
+    auto IRP = IRPosition::callsite_argument(*CI);
+    assert(IRP.getPositionKind() == IRP_CALL_SITE_ARGUMENT && "IRPosition should have position kind of IRP_CALL_SITE_ARGUMENT");
+
+     
+    Function *F2 = IRP.getAnchorScope();
+    assert(F2 && "Function associated with IRPosition must be non-null");
+
+     
+    TreeEntry *E = nullptr;  
+    assert(!E->Scalars.empty() && "TreeEntry must have a non-empty Scalars list");
+
+     
+    if (MinBWs.find(E) != MinBWs.end()) {
+        assert(MinBWs[E].getBitWidth() > 0 && "Precomputed type bit width must be valid");
+    }
+
+     
+    if (E->State == TreeEntry::SplitVectorize) {
+        assert(E->CombinedEntriesWithIndices.size() == 2 && "E->CombinedEntriesWithIndices must contain exactly two entries");
+    } else if (E->isGather() || E->in(TransformedToGatherNodes)) {
+         
+    }
+
+     
+    Value *CondVal = ConstantInt::get(IntegerType::getInt1Ty(Context), true);
+    Value *TrueVal = ConstantFP::get(Type::getFloatTy(Context), 1.0);
+    Value *FalseVal = CallInst::Create(F, {TrueVal}, "false_val", BB);  
+    assert(CondVal && TrueVal && FalseVal && "SelectInst conditions must be valid");
+    Type *SelType = TrueVal->getType();
+    assert(SelType && "SelType must be correctly retrievable");
+
+     
+    if (SelType->isIntegerTy()) {
+        Value *CTPop = CallInst::Create(F, {TrueVal}, "ctpop", BB);  
+        assert(Ctpop && "FalseVal must be a ctpop operation of TrueVal");
+    }
+
+     
+    unsigned MaxAnalysisRecursionDepth = 10;
+    unsigned Depth = 5;  
+    assert(Depth <= MaxAnalysisRecursionDepth && "Depth must not exceed MaxAnalysisRecursionDepth");
+
+     
+    FPClassTest DemandedMask = FPClassTest::all();  
+    assert(DemandedMask.isValid() && "DemandedMask must be a valid FPClassTest value");
+
+     
+    Loop *L = nullptr;  
+    assert(L->isSafeToClone() && "Loop must be safe to clone");
+    assert(!L->getHeader()->hasAddressTaken() && "Loop header's address must not be taken");
+
+     
+    LoopUnrollOptions ULO;
+    ULO.Count = 2;  
+    assert(ULO.Count > 0 && "Unroll count must be greater than zero");
+
+     
+    Instruction *I = nullptr;  
+    Type *Ty = I->getType();
+    assert(Ty->isIntegerTy() && Ty->getScalarSizeInBits() == DemandedMask.getBitWidth() && "Instruction must be of integer type with scalar size in bits equal to the bit width of DemandedMask");
+
+     
+     
+
+    return 0;
+}

@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module Mod("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), { Type::getInt32Ty(Context) }, false);
+    Function *F = Function::Create(FTy, GlobalValue::InternalLinkage, "test_func", &Mod);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = new Argument(Type::getInt32Ty(Context), "arg", BB);
+    Arg->setReturnValue();
+
+     
+    Value *CallVal = nullptr;
+    if (F->getName() == "llvm.memcpy") {
+        ConstantInt *NumBytes = ConstantInt::get(Type::getInt32Ty(Context), 0);
+        CallVal = CallInst::Create(F, { Arg }, "", BB);
+        CallVal->setArgOperand(1, NumBytes);
+    } else if (F->getName() == "llvm.atomicrmw") {
+        CallVal = CallInst::Create(F, { Arg }, "", BB);
+    }
+
+     
+    CallVal->addUse(Arg);
+
+     
+    Function *Func = F;
+    if (Func->doesNotThrow() && Func->isNoUnwind()) {
+        CallVal->setDoesNotThrow();
+        CallVal->setNoUnwind();
+    }
+
+     
+    Intrinsic::ID ID = F->getName().startswith("llvm.") ? Intrinsic::memcpy : Intrinsic::atomicrmw;
+    if (ID == Intrinsic::memcpy || ID == Intrinsic::memset) {
+        CallVal = CallInst::Create(F, { Arg }, "", BB);
+    } else if (ID == Intrinsic::atomicrmw) {
+        CallVal = CallInst::Create(F, { Arg }, "", BB);
+    }
+
+     
+    Func->setNoUnwind();
+    Func->setDoesNotThrow();
+
+     
+    Mod.print(errs(), nullptr);
+
+    return 0;
+}

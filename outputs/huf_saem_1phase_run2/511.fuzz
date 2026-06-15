@@ -1,0 +1,68 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/CallBase.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+void exampleFunction(Function &F) {
+  LLVMContext &Ctx = F.getContext();
+  IRBuilder<> Builder(&F.getEntryBlock(), F.begin());
+
+   
+  FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Ctx), {}, false);
+  FunctionCallee Callee = F.getParent()->getOrInsertFunction("llvm.memset.p0i8.i64", FTy);
+  std::vector<Value *> Args;
+  Args.push_back(Builder.CreatePointerCast(ConstantInt::get(Type::getInt64Ty(Ctx), 0), Type::getInt8PtrTy(Ctx)));
+  Args.push_back(ConstantInt::get(Type::getInt64Ty(Ctx), 1));
+  Args.push_back(Builder.CreatePointerCast(ConstantInt::get(Type::getInt64Ty(Ctx), 0), Type::getInt8PtrTy(Ctx)));
+  CallInst *CI = Builder.CreateCall(Callee, Args);
+
+   
+  assert(!CI->use_empty() && "CI must have at least one use");
+
+   
+  F.setDoesNotThrow();
+  CI->setDoesNotThrow(false);
+
+   
+  IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+  assert(II && II->getIntrinsicID() == Intrinsic::memset && "Call must be an intrinsic");
+
+   
+  if (II->getIntrinsicID() == Intrinsic::memset) {
+    Value *NumBytes = Args[1];
+    assert(cast<ConstantInt>(NumBytes)->isZero() || !cast<ConstantInt>(NumBytes)->getValue().isMultipleOf(8), "Atomic unordered memory intrinsic must have non-positive length or not a multiple of element size");
+  }
+
+   
+}
+
+int main() {
+  LLVMContext Context;
+  Module *M = new Module("test", Context);
+  FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "exampleFunction", M);
+  BasicBlock *BB = BasicBlock::Create(Context, "", F);
+  IRBuilder<> Builder(BB);
+
+   
+  exampleFunction(*F);
+
+   
+  M->print(outs(), nullptr);
+
+  delete M;
+  return 0;
+}

@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
+#include <llvm/Analysis/LoopPass.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+ 
+bool attemptLoopUnrolling(Function &F) {
+     
+    auto *LI = getAnalysisIfAvailable<LoopInfoWrapperPass>(F).getLoopInfo();
+    if (!LI || LI->empty()) return false;
+
+    for (auto &L : *LI) {
+        if (!L->isLoopExit(L->getHeader())) continue;  
+
+        auto *Unroll = new UnrollLoopPass(*L);
+        bool Changed = Unroll.run();
+        if (Changed) {
+            outs() << "Loop was successfully unrolled.\n";
+            return true;
+        } else {
+            outs() << "Failed to unroll the loop.\n";
+            return false;
+        }
+    }
+}
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+    FunctionType *FTy = FunctionType::get(IntegerType::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_function", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Value *Zero = ConstantInt::get(IntegerType::getInt32Ty(Context), 0);
+    StoreInst *Store = new StoreInst(Zero, nullptr, BB);
+    LoadInst *Load = new LoadInst(IntegerType::getInt32Ty(Context), Zero, "", false, BB);
+
+     
+    BasicBlock *PreHeader = BasicBlock::Create(Context, "", F);
+    BranchInst *Br = BranchInst::Create(BB, PreHeader);
+
+     
+    std::unique_ptr<LoopInfoWrapperPass> LIP(new LoopInfoWrapperPass());
+    LIP->getLoopInfo().push_back(std::make_unique<Loop>(BB));
+
+    attemptLoopUnrolling(*F);
+
+    return 0;
+}

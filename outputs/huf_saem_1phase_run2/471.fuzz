@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module M("test", Context);
+
+     
+    FunctionType *FTy = FunctionType::get(Type::getDoubleTy(Context), {Type::getInt32Ty(Context)}, false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "test_func", &M);
+
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+
+     
+    Argument *Arg = &*F->arg_begin();
+    Arg->setName("arg");
+
+     
+    Intrinsic::ID IID = Intrinsic::pow;
+    Value *Operands[2] = {ConstantInt::get(Type::getInt32Ty(Context), 2), ConstantInt::get(Type::getInt32Ty(Context), 3)};
+    CallInst *CI = CallInst::Create(Intrinsic::getDeclaration(&M, IID), ArrayRef<Value*>(Operands, 2), "", BB);
+
+     
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+
+     
+    Arg->addUse(*CI);
+
+     
+    M.print(outs(), nullptr);
+
+    return 0;
+}

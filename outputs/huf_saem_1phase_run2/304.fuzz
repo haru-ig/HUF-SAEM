@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    Module *M = new Module("test", Context);
+    
+     
+    FunctionType *FTy = FunctionType::get(Type::getInt32Ty(Context), {}, false);
+    Function *F = Function::Create(FTy, GlobalValue::ExternalLinkage, "test_func", M);
+    F->setDoesNotThrow();
+    F->addFnAttr(Attribute::NoUnwind);
+    
+     
+    BasicBlock *BB = BasicBlock::Create(Context, "", F);
+    
+     
+    Value *Args[1] = { ConstantInt::get(Type::getInt32Ty(Context), 42) };
+    CallInst *CI = CallInst::Create(F->getFunctionType(), F, Args, "", BB);
+    
+     
+    if (CI->use_empty()) {
+        CI->addUse(F->getArg(0));
+    }
+    
+     
+    Intrinsic::ID MemIntr = Intrinsic::memcpy;
+    CallInst *MemCI = CallInst::CreateMalloc(Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 10), MemIntr, {}, CI);
+    
+     
+    if (!CI->doesNotThrow()) {
+        CI->setDoesNotThrow();
+    }
+    
+     
+    Value *TrueVal = ConstantInt::get(Type::getInt32Ty(Context), 1);
+    Value *FalseVal = ConstantFP::get(Type::getFloatTy(Context), APFloat(0.0));
+    ICmpInst *Cmp = new ICmpInst(*BB, ICmpInst::ICMP_ULT, CI, ConstantInt::get(Type::getInt32Ty(Context), 2));
+    SelectInst *SI = new SelectInst(Cmp, TrueVal, FalseVal, "", BB);
+    
+     
+    if (!SI->hasOneUse() || !SI->getType()->isIntegerTy()) {
+        SI->setOperand(0, CI);
+        SI->setOperand(1, TrueVal);
+        SI->setOperand(2, FalseVal);
+    }
+    
+     
+    F->print(errs());
+    BB->print(errs());
+    CI->print(errs());
+    MemCI->print(errs());
+    SI->print(errs());
+
+    return 0;
+}

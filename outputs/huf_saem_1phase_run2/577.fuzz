@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+int main() {
+    LLVMContext Context;
+    std::unique_ptr<Module> Module = std::make_unique<Module>("test", Context);
+    Function *Func = Function::Create(FunctionType::get(Type::getInt32Ty(Context), {}, false), GlobalValue::ExternalLinkage, "func", Module.get());
+    BasicBlock *BB = BasicBlock::Create(Context, "", Func);
+
+     
+    CallInst *CI = CallInst::CreateIntrinsic(Intrinsic::memcpy, {Type::getInt8PtrTy(Context), Type::getInt8PtrTy(Context), ConstantInt::get(Type::getInt64Ty(Context), 10)}, {}, "", BB);
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+
+     
+    Func->setDoesNotThrow();
+    Func->setNoUnwind();
+
+     
+    if (dyn_cast<IntrinsicInst>(CI)) {
+        auto *MI = dyn_cast<AnyMemIntrinsic>(CI);
+        assert(MI && "CI must be an intrinsic call and specifically an AnyMemIntrinsic");
+
+         
+        if (auto NumBytes = MI->getLength()) {
+            assert(*NumBytes <= 0 || *NumBytes % 8 != 0 && "Length must be non-positive or not a multiple of the element size");
+        }
+    }
+
+     
+    assert(!CI->use_empty() && "CallInst must have at least one use");
+    Func->setDoesNotThrow();
+    Func->setNoUnwind();
+
+     
+    Module->print(errs(), nullptr);
+
+    return 0;
+}
