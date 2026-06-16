@@ -2,9 +2,46 @@
 
 from __future__ import annotations
 
+import re
 from typing import Dict, List
 
 from Fuzz4All.util.api_request import create_config, request_engine
+
+# Maps each standard header to the function/type names that require it.
+# Used to auto-detect which headers the constraint text implies.
+_CPP_EXTRA_HEADERS: Dict[str, List[str]] = {
+    "<cstring>": [
+        "strcmp", "strlen", "strcpy", "strcat", "strncmp", "strncpy",
+        "memcpy", "memmove", "memset", "memcmp", "strchr", "strstr", "strtok",
+    ],
+    "<cstdio>": [
+        "printf", "scanf", "fprintf", "sprintf", "sscanf", "fopen", "fclose",
+        "fread", "fwrite", "fgets", "fputs", "puts", "FILE",
+    ],
+    "<cstdlib>": [
+        "malloc", "calloc", "realloc", "free", "rand", "srand",
+        "atoi", "atof", "strtol", "strtod", "exit", "abort", "qsort",
+    ],
+    "<cmath>": [
+        "sqrt", "pow", "sin", "cos", "tan", "log", "exp",
+        "floor", "ceil", "fabs", "fmod", "atan",
+    ],
+    "<cassert>": ["assert"],
+    "<cstdint>": [
+        "int8_t", "int16_t", "int32_t", "int64_t",
+        "uint8_t", "uint16_t", "uint32_t", "uint64_t",
+    ],
+}
+
+
+def infer_extra_cpp_headers(text: str) -> List[str]:
+    """Return sorted list of extra C++ standard headers implied by names in *text*."""
+    needed = []
+    for header, triggers in _CPP_EXTRA_HEADERS.items():
+        pattern = r"\b(?:" + "|".join(re.escape(t) for t in triggers) + r")\b"
+        if re.search(pattern, text):
+            needed.append(header)
+    return needed
 
 _SYSTEM = """\
 You are helping build test inputs for a compiler fuzzer. You will be shown a short \
@@ -128,8 +165,19 @@ class DistillationAgent:
             if chosen.get("pass_category")
             else ""
         )
+
+        # Detect which extra standard headers the constraint text needs and
+        # list them in the scaffold description so the LLM knows they are
+        # available without needing to add its own #include directives.
+        extra_headers: List[str] = []
+        if language in ("cpp", "c"):
+            extra_headers = infer_extra_cpp_headers(chosen["text"])
+
+        all_includes = ["<iostream>"] + extra_headers
+        includes_str = ", ".join(f"`#include {h}`" for h in all_includes)
+
         return (
-            f"The {language} code below already starts with `#include <iostream>` "
+            f"The {language} code below already starts with {includes_str} "
             f"and an open `int main() {{` -- continue it by adding statements to "
             f"the body of `main`{category_note}.\n"
             f"Use ONLY standard {language} headers/features already available -- "
@@ -139,7 +187,7 @@ class DistillationAgent:
             f"instead if needed.\n"
             f"Try to incorporate the following characteristics into the code:\n"
             f"{chosen['text']}\n"
-            f"IMPORTANT: `#include <iostream>` and `int main() {{` are ALREADY "
+            f"IMPORTANT: {includes_str} and `int main() {{` are ALREADY "
             f"written immediately after this comment -- do NOT repeat them or "
             f"write them again in any form. Begin your output directly with the "
             f"first statement of `main`'s body (e.g. a variable declaration), "

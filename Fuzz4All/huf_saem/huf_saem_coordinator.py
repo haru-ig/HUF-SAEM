@@ -69,7 +69,10 @@ class HUFSAEMCoordinator:
             self._init_phase4(p4)
 
     def _init_phase1(self, cfg: Dict) -> None:
-        from Fuzz4All.huf_saem.phase1_distillation_agent import DistillationAgent
+        from Fuzz4All.huf_saem.phase1_distillation_agent import (
+            DistillationAgent,
+            infer_extra_cpp_headers,
+        )
         from Fuzz4All.huf_saem.phase1_prompt_injector import PromptInjector
         from Fuzz4All.huf_saem.phase1_source_analyzer import SourceAnalyzer
 
@@ -86,26 +89,44 @@ class HUFSAEMCoordinator:
         self._p1_prompt_injector = PromptInjector()
 
         # Use cached constraints if the file exists and is non-empty.
+        loaded_from_cache = False
         if cache_path and os.path.exists(cache_path):
             with open(cache_path, "r", encoding="utf-8") as f:
                 cached = f.read()
             if cached.strip():
                 self._p1_constraint_spec = cached
-                return
+                loaded_from_cache = True
             # File exists but is empty — fall through and regenerate.
 
-        analyzer = SourceAnalyzer(source_dir, source_language, threshold)
-        # Request 4× the configured top_k so batch_distill has a larger
-        # filtered pool to draw from — many GCC snippets return
-        # NO_TRANSLATION, so we need more candidates than we ultimately use.
-        snippets = analyzer.top_k_snippets(top_k * 4)
-        agent = DistillationAgent(model=model)
-        constraints = agent.batch_distill(snippets, self.language)
-        self._p1_constraint_spec = agent.build_constraint_spec(constraints, self.language)
-        if cache_path and self._p1_constraint_spec:
-            os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
-            with open(cache_path, "w", encoding="utf-8") as f:
-                f.write(self._p1_constraint_spec)
+        if not loaded_from_cache:
+            analyzer = SourceAnalyzer(source_dir, source_language, threshold)
+            # Request 4× the configured top_k so batch_distill has a larger
+            # filtered pool to draw from — many GCC snippets return
+            # NO_TRANSLATION, so we need more candidates than we ultimately use.
+            snippets = analyzer.top_k_snippets(top_k * 4)
+            agent = DistillationAgent(model=model)
+            constraints = agent.batch_distill(snippets, self.language)
+            self._p1_constraint_spec = agent.build_constraint_spec(constraints, self.language)
+            if cache_path and self._p1_constraint_spec:
+                os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
+                with open(cache_path, "w", encoding="utf-8") as f:
+                    f.write(self._p1_constraint_spec)
+
+        # Patch the code scaffold to include any extra standard headers the
+        # constraint text needs (e.g. <cstring> when strcmp is mentioned).
+        # This must run for both cached and freshly-built specs so the LLM
+        # always sees a scaffold that actually provides the headers it needs.
+        if self._p1_constraint_spec and self.language in ("cpp", "c"):
+            extra = infer_extra_cpp_headers(self._p1_constraint_spec)
+            if extra and self.target.prompt_used:
+                begin = self.target.prompt_used["begin"]
+                for h in extra:
+                    include_line = f"#include {h}"
+                    if include_line not in begin:
+                        main_idx = begin.find("int main")
+                        if main_idx >= 0:
+                            begin = begin[:main_idx] + include_line + "\n" + begin[main_idx:]
+                self.target.prompt_used["begin"] = begin
 
     def _init_phase2(self, cfg: Dict) -> None:
         from Fuzz4All.huf_saem.phase2_bug_ingester import BugIngester
