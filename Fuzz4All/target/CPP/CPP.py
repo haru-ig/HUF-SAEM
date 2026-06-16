@@ -88,6 +88,15 @@ class CPPTarget(Target):
 
     def clean(self, code: str) -> str:
         code = comment_remover(code)
+        # generate() always prepends prompt_used["begin"] to the LLM output.
+        # Ollama sometimes echoes the scaffold at the start of its response,
+        # producing a double-header.  If begin appears again immediately after
+        # the first copy, keep only the first and drop the echo.
+        begin = self.prompt_used["begin"]
+        after_first = code[len(begin):]
+        stripped = after_first.lstrip("\n")
+        if stripped.startswith(begin):
+            code = begin + "\n" + stripped[len(begin):]
         code = _close_open_braces(code)
         return code
 
