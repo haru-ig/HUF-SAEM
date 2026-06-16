@@ -16,6 +16,42 @@ return 0;
 """
 
 
+def _close_open_braces(code: str) -> str:
+    """Append closing braces to balance any unclosed blocks from a truncated generation.
+
+    Scans character-by-character, skipping string/char literals so that
+    braces inside quotes are not counted.
+    """
+    depth = 0
+    i = 0
+    n = len(code)
+    while i < n:
+        c = code[i]
+        if c in ('"', "'"):
+            quote = c
+            i += 1
+            while i < n:
+                if code[i] == "\\":
+                    i += 2  # skip escaped character
+                elif code[i] == quote:
+                    i += 1
+                    break
+                else:
+                    i += 1
+        elif c == "{":
+            depth += 1
+            i += 1
+        elif c == "}":
+            if depth > 0:
+                depth -= 1
+            i += 1
+        else:
+            i += 1
+    if depth > 0:
+        code = code.rstrip() + "\n" + "}\n" * depth
+    return code
+
+
 class CPPTarget(Target):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -52,6 +88,7 @@ class CPPTarget(Target):
 
     def clean(self, code: str) -> str:
         code = comment_remover(code)
+        code = _close_open_braces(code)
         return code
 
     # remove any comments, or blank lines
