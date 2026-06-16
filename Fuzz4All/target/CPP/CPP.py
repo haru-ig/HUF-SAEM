@@ -90,13 +90,23 @@ class CPPTarget(Target):
         code = comment_remover(code)
         # generate() always prepends prompt_used["begin"] to the LLM output.
         # Ollama sometimes echoes the scaffold at the start of its response,
-        # producing a double-header.  If begin appears again immediately after
-        # the first copy, keep only the first and drop the echo.
+        # producing a double-header.  Three observed forms:
+        #   1. Full echo:   LLM repeats begin verbatim.
+        #   2. Extra-include echo: LLM adds extra #includes before int main().
+        #   3. Partial echo: LLM emits only "int main() {" without the headers.
+        # A single regex covers all three: optional #include lines followed by
+        # int main() { at position 0 of the content after begin.
         begin = self.prompt_used["begin"]
         after_first = code[len(begin):]
         stripped = after_first.lstrip("\n")
-        if stripped.startswith(begin):
-            code = begin + "\n" + stripped[len(begin):]
+        echo_pat = re.compile(
+            r'(?:#include\s*<[^>]+>\s*)*'   # zero or more #include lines
+            r'\s*'                            # optional blank lines
+            r'int\s+main\s*\(\s*\)\s*\{'    # int main() {
+        )
+        m = echo_pat.match(stripped)
+        if m:
+            code = begin + "\n" + stripped[m.end():]
         code = _close_open_braces(code)
         return code
 

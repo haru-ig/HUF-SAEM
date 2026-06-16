@@ -31,6 +31,19 @@ _CPP_EXTRA_HEADERS: Dict[str, List[str]] = {
         "int8_t", "int16_t", "int32_t", "int64_t",
         "uint8_t", "uint16_t", "uint32_t", "uint64_t",
     ],
+    # STL containers / algorithms — commonly mentioned in fallback specs
+    "<vector>": ["vector"],
+    "<array>": ["std::array"],
+    "<string>": ["std::string"],
+    "<algorithm>": [
+        "std::sort", "std::find", "std::transform", "std::for_each",
+        "std::count", "lower_bound", "upper_bound", "std::binary_search",
+        "std::copy", "std::fill", "std::reverse", "std::unique",
+    ],
+    "<functional>": ["std::function", "std::bind"],
+    "<numeric>": ["std::accumulate", "std::iota", "std::inner_product"],
+    "<utility>": ["std::pair", "std::move", "std::swap", "std::make_pair"],
+    "<type_traits>": ["std::is_same", "std::is_same_v", "std::enable_if"],
 }
 
 
@@ -126,10 +139,10 @@ _FALLBACK_CONSTRAINT_TEXTS: List[Dict] = [
     },
     {
         "text": (
-            "- Write a constexpr function that computes a value at compile time via "
-            "recursion or a loop.\n"
-            "- Use the result as a template non-type argument or array size.\n"
-            "- Verify the compile-time value with a static_assert."
+            "- Declare a constexpr auto lambda that computes a value at compile time "
+            "via a loop or simple arithmetic (lambdas can be constexpr in C++17+).\n"
+            "- Use the result as an array size (e.g. int arr[lambda()]) or in a static_assert.\n"
+            "- Verify the compile-time value with a static_assert inside main."
         ),
         "pass_category": "constant folding / constexpr",
     },
@@ -177,10 +190,10 @@ _FALLBACK_CONSTRAINT_TEXTS: List[Dict] = [
     },
     {
         "text": (
-            "- Declare a template function or local class template parameterized on a "
-            "type or non-type parameter.\n"
-            "- Instantiate it with at least two different arguments.\n"
-            "- Use if constexpr or std::is_same_v inside to select different code paths."
+            "- Declare a local class or struct template (inside main) parameterized on "
+            "a type or non-type parameter — local class templates are valid in C++.\n"
+            "- Instantiate the local class template with at least two different arguments.\n"
+            "- Add an if constexpr branch or std::is_same_v check inside a member method."
         ),
         "pass_category": "template instantiation / if constexpr",
     },
