@@ -91,15 +91,22 @@ class CPPTarget(Target):
         code = _close_open_braces(code)
         return code
 
-    # remove any comments, or blank lines
+    # remove any comments, blank lines, or scaffold header lines
     def clean_code(self, code: str) -> str:
         code = comment_remover(code)
+        # Build a set of individual lines from the scaffold "begin" block so
+        # they are excluded from the cleaned code.  The previous comparison
+        # tested each line against the full multiline begin string (always
+        # False), leaving scaffold headers in the update-strategy example and
+        # causing the LLM to echo them (double-header bug).
+        begin_lines = {
+            ln.strip()
+            for ln in self.prompt_used["begin"].splitlines()
+            if ln.strip()
+        }
         code = "\n".join(
-            [
-                line
-                for line in code.split("\n")
-                if line.strip() != "" and line.strip() != self.prompt_used["begin"]
-            ]
+            ln for ln in code.split("\n")
+            if ln.strip() and ln.strip() not in begin_lines
         )
         return code
 

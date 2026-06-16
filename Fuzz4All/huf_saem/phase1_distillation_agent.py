@@ -103,6 +103,99 @@ lambdas/classes/blocks instead if needed. Start each bullet with '- '.
 """
 
 
+# Built-in fallback constraints used when GPT-4o distillation yields too few
+# unique results (e.g. most GCC snippets return NO_TRANSLATION).
+_FALLBACK_CONSTRAINT_TEXTS: List[Dict] = [
+    {
+        "text": (
+            "- Declare local variables of mixed arithmetic types (int, double, unsigned long) "
+            "and perform arithmetic between them, exercising implicit conversions.\n"
+            "- Iterate over a stack-allocated array of those values with a range-based for loop.\n"
+            "- Compare results with both == and != to exercise integer promotion rules."
+        ),
+        "pass_category": "arithmetic type promotion",
+    },
+    {
+        "text": (
+            "- Declare a local struct or class with a constructor, destructor, and at least "
+            "one copy or move operation.\n"
+            "- Create stack instances and let them go out of scope, exercising RAII cleanup.\n"
+            "- Pass one instance by value to a local lambda to trigger copy/move elision."
+        ),
+        "pass_category": "object lifetime / RAII",
+    },
+    {
+        "text": (
+            "- Write a constexpr function that computes a value at compile time via "
+            "recursion or a loop.\n"
+            "- Use the result as a template non-type argument or array size.\n"
+            "- Verify the compile-time value with a static_assert."
+        ),
+        "pass_category": "constant folding / constexpr",
+    },
+    {
+        "text": (
+            "- Use std::vector or std::array with at least one erase, insert, or resize call.\n"
+            "- Iterate with both index-based and iterator-based loops.\n"
+            "- Sort the container and perform a binary search or lower_bound lookup."
+        ),
+        "pass_category": "STL container / iterator",
+    },
+    {
+        "text": (
+            "- Use a local lambda with a capture list (by value and by reference) and "
+            "call it multiple times with different arguments.\n"
+            "- Store the lambda in an auto variable and pass it to std::for_each.\n"
+            "- Return a value from the lambda that depends on the captured state."
+        ),
+        "pass_category": "lambda / closure",
+    },
+    {
+        "text": (
+            "- Use bit-manipulation operators (&, |, ^, ~, <<, >>) on unsigned integers.\n"
+            "- Pack several boolean flags into a single unsigned word and test individual bits.\n"
+            "- Shift values by a runtime amount and verify with equality comparisons."
+        ),
+        "pass_category": "bitwise operations",
+    },
+    {
+        "text": (
+            "- Declare a pointer to a stack-allocated object, dereference it, and pass "
+            "its address to a local lambda.\n"
+            "- Perform pointer arithmetic on a stack array (offset, compare two pointers).\n"
+            "- Include nullptr checks before dereferencing."
+        ),
+        "pass_category": "pointer arithmetic / null check",
+    },
+    {
+        "text": (
+            "- Use a try/catch block to handle an exception thrown with throw.\n"
+            "- Catch the exception by const reference and inspect its what() or type.\n"
+            "- Ensure a destructor (RAII guard) runs on both the normal and exceptional paths."
+        ),
+        "pass_category": "exception handling / unwind",
+    },
+    {
+        "text": (
+            "- Declare a template function or local class template parameterized on a "
+            "type or non-type parameter.\n"
+            "- Instantiate it with at least two different arguments.\n"
+            "- Use if constexpr or std::is_same_v inside to select different code paths."
+        ),
+        "pass_category": "template instantiation / if constexpr",
+    },
+    {
+        "text": (
+            "- Declare a local function pointer or std::function variable and assign "
+            "two different callables to it at runtime.\n"
+            "- Call through the pointer in a loop, varying the argument each iteration.\n"
+            "- Include a branch that selects the callable based on a runtime condition."
+        ),
+        "pass_category": "indirect call / function pointer",
+    },
+]
+
+
 class DistillationAgent:
     def __init__(self, model: str = "gpt-4o", max_tokens: int = 512) -> None:
         self.model = model
@@ -133,12 +226,18 @@ class DistillationAgent:
         except Exception:
             return ""
 
-    def batch_distill(self, snippets: List[Dict], language: str = "cpp") -> List[Dict]:
+    def batch_distill(
+        self,
+        snippets: List[Dict],
+        language: str = "cpp",
+        min_specs: int = 5,
+    ) -> List[Dict]:
         """Distill each snippet, dropping empty/untranslatable/duplicate results.
 
         Returns a list of {"text": <bullet points>, "pass_category": <str>} dicts,
-        ordered the same as `snippets` (i.e. highest-complexity first, per
-        SourceAnalyzer.top_k_snippets).
+        ordered the same as `snippets` (highest-complexity first).  If fewer than
+        *min_specs* unique constraints survive, built-in fallback constraints are
+        appended so the caller always has enough to rotate through.
         """
         results: List[Dict] = []
         seen: set = set()
@@ -148,6 +247,16 @@ class DistillationAgent:
                 continue
             seen.add(text)
             results.append({"text": text, "pass_category": snippet.get("pass_category", "")})
+
+        # Supplement with built-in fallbacks when GPT-4o yields too few specs.
+        if len(results) < min_specs:
+            for fb in _FALLBACK_CONSTRAINT_TEXTS:
+                if len(results) >= min_specs:
+                    break
+                if fb["text"] not in seen:
+                    results.append(fb)
+                    seen.add(fb["text"])
+
         return results
 
     def _build_single_spec(self, chosen: Dict, language: str) -> str:

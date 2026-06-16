@@ -15,6 +15,21 @@ if TYPE_CHECKING:
 
 
 class HUFSAEMCoordinator:
+    # Per-batch style directives appended to the active constraint spec so the
+    # LLM sees a fresh "theme" every batch even when only one spec was distilled.
+    _VARIATION_HINTS: List[str] = [
+        "STYLE HINT: Prefer unsigned integer types (unsigned int, unsigned long) as the primary data type.",
+        "STYLE HINT: Prefer floating-point arithmetic (double or float) as the primary data type.",
+        "STYLE HINT: Use std::string and string operations as the primary data type.",
+        "STYLE HINT: Use nested loops (for, while, do-while) as the primary control structure.",
+        "STYLE HINT: Express logic through local structs or classes with member variables.",
+        "STYLE HINT: Use stack-allocated C-style arrays or std::array as the primary container.",
+        "STYLE HINT: Use bit-manipulation operators (&, |, ^, <<, >>) prominently.",
+        "STYLE HINT: Replace if-else with the ternary operator (?:) wherever possible.",
+        "STYLE HINT: Use local lambdas that capture variables from the enclosing scope.",
+        "STYLE HINT: Use raw pointer variables with address-of (&) and dereference (*) operations.",
+    ]
+
     def __init__(self, config_dict: Dict[str, Any], target: "Target") -> None:
         self.config = config_dict.get("huf_saem", {})
         self.language = config_dict["target"]["language"]
@@ -28,7 +43,9 @@ class HUFSAEMCoordinator:
         self._p1_constraint_spec: Optional[str] = None   # current spec (for compat)
         self._p1_constraint_specs: List[str] = []        # all specs, ordered by complexity
         self._p1_spec_index: int = 0                     # which spec is active
+        self._p1_variation_index: int = 0                # which style hint is active
         self._p1_rotation_interval: int = 50             # files between constraint rotations
+        self._p1_batch_size: int = config_dict.get("llm", {}).get("batch_size", 5)
 
         # Phase 2
         self._p2_mutator_registry = None
@@ -242,25 +259,39 @@ class HUFSAEMCoordinator:
     # Phase 1 — Source-Aware Autoprompting
     # ------------------------------------------------------------------
 
+    def _augmented_spec(self, spec_idx: int, var_idx: int) -> str:
+        """Return the spec at *spec_idx* with the variation hint at *var_idx* appended."""
+        spec = self._p1_constraint_specs[spec_idx]
+        hint = self._VARIATION_HINTS[var_idx % len(self._VARIATION_HINTS)]
+        return spec + "\n" + hint
+
     def get_source_aware_prompt_augmentation(self) -> Optional[str]:
-        """Return the currently-active constraint spec (index 0 on first call)."""
+        """Return the initial constraint spec + variation hint (batch 0)."""
         if self._p1_constraint_specs and self._p1_prompt_injector:
-            return self._p1_constraint_specs[self._p1_spec_index]
+            return self._augmented_spec(self._p1_spec_index, self._p1_variation_index)
         return None
 
     def maybe_rotate_phase1_constraint(self, iteration: int) -> None:
-        """Rotate to the next constraint spec every *rotation_interval* files.
+        """Update the active constraint spec and/or variation hint when due.
 
-        Called from the fuzz loop after each batch.  No-op when Phase 1 is
-        disabled or only one spec was distilled.
+        - Spec rotates every *rotation_interval* files (across different GCC passes).
+        - Variation hint rotates every *batch_size* files (every single batch),
+          so the LLM sees a fresh style directive each generation even when only
+          one spec was distilled.
+        Called from the fuzz loop after each batch.
         """
-        if not self._p1_constraint_specs or len(self._p1_constraint_specs) <= 1:
+        if not self._p1_constraint_specs:
             return
-        new_idx = (iteration // self._p1_rotation_interval) % len(self._p1_constraint_specs)
-        if new_idx != self._p1_spec_index:
-            self._p1_spec_index = new_idx
-            self._p1_constraint_spec = self._p1_constraint_specs[new_idx]
-            self.target.apply_source_aware_prompt(self._p1_constraint_spec)
+        n_specs = len(self._p1_constraint_specs)
+        n_vars = len(self._VARIATION_HINTS)
+        new_spec_idx = (iteration // self._p1_rotation_interval) % n_specs
+        new_var_idx = (iteration // self._p1_batch_size) % n_vars
+        if new_spec_idx != self._p1_spec_index or new_var_idx != self._p1_variation_index:
+            self._p1_spec_index = new_spec_idx
+            self._p1_variation_index = new_var_idx
+            aug = self._augmented_spec(new_spec_idx, new_var_idx)
+            self._p1_constraint_spec = aug
+            self.target.apply_source_aware_prompt(aug)
 
     # ------------------------------------------------------------------
     # Phase 2 — Mutator application
