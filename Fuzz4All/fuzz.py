@@ -104,6 +104,9 @@ def fuzz(
                         if f_result == FResult.SAFE:
                             coordinator.run_coverage_and_update(file_name)
             target.update(prev=prev)
+            # Phase 1: rotate to the next constraint spec when due
+            if coordinator:
+                coordinator.maybe_rotate_phase1_constraint(count)
             # Phase 4: periodically attempt constraint-solver injection
             if coordinator:
                 solver_code = coordinator.maybe_run_constraint_solver(count)

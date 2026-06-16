@@ -25,7 +25,10 @@ class HUFSAEMCoordinator:
         self._p1_source_analyzer = None
         self._p1_distillation_agent = None
         self._p1_prompt_injector = None
-        self._p1_constraint_spec: Optional[str] = None
+        self._p1_constraint_spec: Optional[str] = None   # current spec (for compat)
+        self._p1_constraint_specs: List[str] = []        # all specs, ordered by complexity
+        self._p1_spec_index: int = 0                     # which spec is active
+        self._p1_rotation_interval: int = 50             # files between constraint rotations
 
         # Phase 2
         self._p2_mutator_registry = None
@@ -68,6 +71,9 @@ class HUFSAEMCoordinator:
         if p4.get("enabled", False):
             self._init_phase4(p4)
 
+    # Delimiter used to join/split multiple constraint specs in the cache file.
+    _SPEC_DELIMITER = "\n\n===PHASE1_SPEC_BREAK===\n\n"
+
     def _init_phase1(self, cfg: Dict) -> None:
         from Fuzz4All.huf_saem.phase1_distillation_agent import (
             DistillationAgent,
@@ -85,42 +91,50 @@ class HUFSAEMCoordinator:
         top_k = cfg.get("top_k_snippets", 10)
         model = cfg.get("distillation_model", "gpt-4o")
         cache_path = cfg.get("constraint_cache")
+        self._p1_rotation_interval = int(cfg.get("rotation_interval", 50))
 
         self._p1_prompt_injector = PromptInjector()
 
-        # Use cached constraints if the file exists and is non-empty.
+        # Load from cache when available.  Old single-spec caches (no
+        # delimiter) are treated as a list of one.
         loaded_from_cache = False
         if cache_path and os.path.exists(cache_path):
             with open(cache_path, "r", encoding="utf-8") as f:
                 cached = f.read()
             if cached.strip():
-                self._p1_constraint_spec = cached
-                loaded_from_cache = True
-            # File exists but is empty — fall through and regenerate.
+                parts = [s for s in cached.split(self._SPEC_DELIMITER) if s.strip()]
+                if parts:
+                    self._p1_constraint_specs = parts
+                    loaded_from_cache = True
 
         if not loaded_from_cache:
             analyzer = SourceAnalyzer(source_dir, source_language, threshold)
-            # Request 4× the configured top_k so batch_distill has a larger
-            # filtered pool to draw from — many GCC snippets return
-            # NO_TRANSLATION, so we need more candidates than we ultimately use.
+            # Request 4× top_k so batch_distill has a larger filtered pool.
             snippets = analyzer.top_k_snippets(top_k * 4)
             agent = DistillationAgent(model=model)
             constraints = agent.batch_distill(snippets, self.language)
-            self._p1_constraint_spec = agent.build_constraint_spec(constraints, self.language)
-            if cache_path and self._p1_constraint_spec:
+            self._p1_constraint_specs = agent.build_constraint_specs(constraints, self.language)
+            if cache_path and self._p1_constraint_specs:
                 os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
                 with open(cache_path, "w", encoding="utf-8") as f:
-                    f.write(self._p1_constraint_spec)
+                    f.write(self._SPEC_DELIMITER.join(self._p1_constraint_specs))
 
-        # Patch the code scaffold to include any extra standard headers the
-        # constraint text needs (e.g. <cstring> when strcmp is mentioned).
-        # This must run for both cached and freshly-built specs so the LLM
-        # always sees a scaffold that actually provides the headers it needs.
-        if self._p1_constraint_spec and self.language in ("cpp", "c"):
-            extra = infer_extra_cpp_headers(self._p1_constraint_spec)
-            if extra and self.target.prompt_used:
+        if not self._p1_constraint_specs:
+            return
+
+        # Keep backward-compat attribute pointing at the current (first) spec.
+        self._p1_spec_index = 0
+        self._p1_constraint_spec = self._p1_constraint_specs[0]
+
+        # Patch the scaffold once with the union of headers needed by ANY spec
+        # so the scaffold is valid regardless of which spec is active.
+        if self.language in ("cpp", "c"):
+            all_extra: set = set()
+            for spec in self._p1_constraint_specs:
+                all_extra.update(infer_extra_cpp_headers(spec))
+            if all_extra and self.target.prompt_used:
                 begin = self.target.prompt_used["begin"]
-                for h in extra:
+                for h in sorted(all_extra):
                     include_line = f"#include {h}"
                     if include_line not in begin:
                         main_idx = begin.find("int main")
@@ -229,9 +243,24 @@ class HUFSAEMCoordinator:
     # ------------------------------------------------------------------
 
     def get_source_aware_prompt_augmentation(self) -> Optional[str]:
-        if self._p1_constraint_spec and self._p1_prompt_injector:
-            return self._p1_constraint_spec
+        """Return the currently-active constraint spec (index 0 on first call)."""
+        if self._p1_constraint_specs and self._p1_prompt_injector:
+            return self._p1_constraint_specs[self._p1_spec_index]
         return None
+
+    def maybe_rotate_phase1_constraint(self, iteration: int) -> None:
+        """Rotate to the next constraint spec every *rotation_interval* files.
+
+        Called from the fuzz loop after each batch.  No-op when Phase 1 is
+        disabled or only one spec was distilled.
+        """
+        if not self._p1_constraint_specs or len(self._p1_constraint_specs) <= 1:
+            return
+        new_idx = (iteration // self._p1_rotation_interval) % len(self._p1_constraint_specs)
+        if new_idx != self._p1_spec_index:
+            self._p1_spec_index = new_idx
+            self._p1_constraint_spec = self._p1_constraint_specs[new_idx]
+            self.target.apply_source_aware_prompt(self._p1_constraint_spec)
 
     # ------------------------------------------------------------------
     # Phase 2 — Mutator application

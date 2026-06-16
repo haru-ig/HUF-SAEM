@@ -363,9 +363,15 @@ class Target(object):
             self.v_logger.logo("{} timed out".format(file_name), LEVEL.VERBOSE)
 
     def apply_source_aware_prompt(self, augmentation: str) -> None:
-        """Prepend source-derived constraint specification into the initial prompt."""
+        """Prepend source-derived constraint specification into the initial prompt.
+
+        Safe to call multiple times: subsequent calls swap the existing spec
+        instead of stacking, so the base prompt never grows unboundedly.
+        """
         comment = self.wrap_in_comment(augmentation)
-        self.initial_prompt = comment + "\n" + self.initial_prompt
+        if not hasattr(self, "_p1_base_prompt"):
+            self._p1_base_prompt = self.initial_prompt
+        self.initial_prompt = comment + "\n" + self._p1_base_prompt
         self.prompt = self.initial_prompt
 
     def validate_all(self):

@@ -54,6 +54,8 @@ huf_saem:
     # Cached outside output_folder: _init_phase1 runs (and may create this
     # path's parent dir) before fuzz.py's "folder must not exist" check.
     constraint_cache: outputs/phase1_constraints_cache/gcc_full.txt
+    # Rotate to the next distilled constraint every N generated files (0 = no rotation)
+    rotation_interval: 50
 
   # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
   # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.

@@ -150,32 +150,18 @@ class DistillationAgent:
             results.append({"text": text, "pass_category": snippet.get("pass_category", "")})
         return results
 
-    def build_constraint_spec(self, constraints: List[Dict], language: str) -> str:
-        """Build a single, coherent constraint spec from the best distilled snippet.
-
-        Only the first (highest-complexity) constraint set is used so the
-        injected prompt stays focused on one theme, instead of concatenating
-        many unrelated snippets into one incoherent block.
-        """
-        if not constraints:
-            return ""
-        chosen = constraints[0]
+    def _build_single_spec(self, chosen: Dict, language: str) -> str:
+        """Build a constraint spec string for one distilled constraint dict."""
         category_note = (
             f" (inspired by the compiler's {chosen['pass_category']} pass)"
             if chosen.get("pass_category")
             else ""
         )
-
-        # Detect which extra standard headers the constraint text needs and
-        # list them in the scaffold description so the LLM knows they are
-        # available without needing to add its own #include directives.
         extra_headers: List[str] = []
         if language in ("cpp", "c"):
             extra_headers = infer_extra_cpp_headers(chosen["text"])
-
         all_includes = ["<iostream>"] + extra_headers
         includes_str = ", ".join(f"`#include {h}`" for h in all_includes)
-
         return (
             f"The {language} code below already starts with {includes_str} "
             f"and an open `int main() {{` -- continue it by adding statements to "
@@ -193,3 +179,16 @@ class DistillationAgent:
             f"first statement of `main`'s body (e.g. a variable declaration), "
             f"as if your text were pasted right after the `{{`."
         )
+
+    def build_constraint_specs(self, constraints: List[Dict], language: str) -> List[str]:
+        """Build one constraint spec string per distilled constraint.
+
+        Returns specs in the same order as *constraints* (highest-complexity
+        first).  Returns an empty list when *constraints* is empty.
+        """
+        return [self._build_single_spec(c, language) for c in constraints]
+
+    def build_constraint_spec(self, constraints: List[Dict], language: str) -> str:
+        """Return the first (best) constraint spec.  Kept for backward compat."""
+        specs = self.build_constraint_specs(constraints, language)
+        return specs[0] if specs else ""
