@@ -61,13 +61,13 @@ sudo dnf install -y gcc gcc-c++ clang
 
 (`gcov` is included with `gcc` on Amazon Linux 2023.)
 
-### 5. Clone LLVM source (required for Phase 1)
+### 5. Clone GCC source (required for Phase 1)
 
 ```bash
-git clone --depth 1 https://github.com/llvm/llvm-project /home/ec2-user/llvm-project
+git clone --depth 1 https://github.com/gcc-mirror/gcc /home/ec2-user/gcc
 ```
 
-Set `phase1.source_dir: /home/ec2-user/llvm-project/llvm/lib/Transforms` in your config to point Phase 1 at it.
+Set `phase1.source_dir: /home/ec2-user/gcc` in your config to point Phase 1 at the full GCC source tree.
 
 ### 6. Install Ollama and pull the generation model
 

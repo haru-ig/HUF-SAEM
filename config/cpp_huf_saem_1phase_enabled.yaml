@@ -41,8 +41,8 @@ huf_saem:
   # Scans compiler source, distills constraints via GPT-4o, injects into prompt.
   phase1:
     enabled: true
-    # Path to a compiler source directory to scan (e.g. llvm/lib/Transforms)
-    source_dir: /home/ec2-user/llvm-project/llvm/lib/Transforms
+    # Path to the GCC source tree (shallow clone of gcc-mirror/gcc)
+    source_dir: /home/ec2-user/gcc
     # Grammar for tree-sitter: "cpp" | "c" | "python"
     source_language: cpp
     # Minimum conditional nesting depth to flag a function
@@ -53,7 +53,7 @@ huf_saem:
     # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
     # Cached outside output_folder: _init_phase1 runs (and may create this
     # path's parent dir) before fuzz.py's "folder must not exist" check.
-    constraint_cache: outputs/phase1_constraints_cache/cpp_transforms.txt
+    constraint_cache: outputs/phase1_constraints_cache/gcc_full.txt
 
   # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
   # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.

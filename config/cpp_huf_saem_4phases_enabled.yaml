@@ -41,8 +41,8 @@ huf_saem:
   # Scans compiler source, distills constraints via GPT-4o, injects into prompt.
   phase1:
     enabled: true
-    # Path to a compiler source directory to scan (e.g. llvm/lib/Transforms)
-    source_dir: /home/ec2-user/llvm-project/llvm/lib/Transforms
+    # Path to the GCC source tree (shallow clone of gcc-mirror/gcc)
+    source_dir: /home/ec2-user/gcc
     # Grammar for tree-sitter: "cpp" | "c" | "python"
     source_language: cpp
     # Minimum conditional nesting depth to flag a function
@@ -58,7 +58,7 @@ huf_saem:
   phase2:
     enabled: true
     # GitHub repo to fetch closed bug reports from
-    github_repo: llvm/llvm-project
+    github_repo: gcc-mirror/gcc
     # Local CSV with existing bug data (see bugs/*.csv for format)
     csv_path: null           # e.g. bugs/clang.csv
     # GitHub token (or set GITHUB_TOKEN env var)

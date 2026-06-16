@@ -8,7 +8,8 @@ from typing import Dict, List
 
 
 _OPTIMIZER_ENTRY_PATTERNS = frozenset(
-    ["run", "visit", "transform", "optimize", "rewrite", "lower", "emit", "codegen"]
+    ["fold", "expand", "emit", "gimplify", "optimize", "lower", "simplify",
+     "parse", "analyze", "resolve", "check", "rewrite", "codegen", "generate"]
 )
 
 _EXTENSIONS: dict = {
@@ -27,22 +28,16 @@ _LANGUAGE_MODULES: dict = {
 
 _DECLARATOR_WRAPPERS = ("pointer_declarator", "reference_declarator", "array_declarator")
 
-# Human-readable descriptions for the top-level subdirectories of LLVM's
-# llvm/lib/Transforms (and similar layouts), used to give the distillation
-# step context about *what kind* of optimization a snippet comes from
-# without leaking compiler-internal class/API names.
+# Human-readable descriptions for the top-level subdirectories of the GCC
+# source tree, used to give the distillation step context about what area
+# a snippet comes from without leaking compiler-internal class/API names.
 _PASS_CATEGORY_NAMES: dict = {
-    "InstCombine": "instruction combining / peephole simplification",
-    "AggressiveInstCombine": "aggressive instruction combining",
-    "Scalar": "scalar loop and value optimizations",
-    "Vectorize": "loop and SLP vectorization",
-    "IPO": "interprocedural optimization (inlining, attribute inference)",
-    "Utils": "IR transformation utilities",
-    "Coroutines": "coroutine lowering",
-    "ObjCARC": "Objective-C ARC optimization",
-    "CFGuard": "control-flow integrity instrumentation",
-    "Instrumentation": "sanitizer/coverage instrumentation",
-    "HipStdPar": "HIP standard-parallelism lowering",
+    "gcc": "GCC core compiler (frontend, middle-end, backend, optimizers)",
+    "libstdc++-v3": "C++ standard library implementation",
+    "libgcc": "GCC low-level runtime library",
+    "libiberty": "portability and utility library",
+    "include": "GCC public headers",
+    "fixincludes": "system header fixups",
 }
 
 def _extract_relevant_lines(snippet: str, max_chars: int = 800) -> str:
