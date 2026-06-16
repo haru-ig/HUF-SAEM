@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+    for (const auto& value : values) {
+        int result_int;
+        double result_double;
+        unsigned long result_ulong;
+
+        if (std::holds_alternative<int>(value)) {
+            result_int = std::get<int>(value);
+            result_double = static_cast<double>(result_int);
+            result_ulong = static_cast<unsigned long>(result_int);
+        } else if (std::holds_alternative<double>(value)) {
+            result_double = std::get<double>(value);
+            result_int = static_cast<int>(result_double);
+            result_ulong = static_cast<unsigned long>(result_double);
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            result_ulong = std::get<unsigned long>(value);
+            result_int = static_cast<int>(result_ulong);
+            result_double = static_cast<double>(result_ulong);
+        }
+
+         
+        std::cout << "Value: " << value.index() << ", int: " << result_int;
+        std::cout << ", double: " << result_double << ", ulong: " << result_ulong << std::endl;
+
+         
+        if (result_int == static_cast<int>(result_double) && result_int == static_cast<int>(result_ulong)) {
+            std::cout << "Result int matches double and ulong" << std::endl;
+        } else {
+            std::cout << "Result int does not match double or ulong" << std::endl;
+        }
+    }
+
+    return 0;
+}

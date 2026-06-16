@@ -1,0 +1,15 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    
+    double e = 3.5, f = 2.0, g = 4.0, h = 2.5;
+    bool complexResult = ((e * f) != (g / h)) || ((f + h) == (g - e));
+    
+    std::cout << "result: " << result << std::endl;
+    std::cout << "result2: " << result2 << std::endl;
+    std::cout << "complexResult: " << complexResult << std::endl;
+}

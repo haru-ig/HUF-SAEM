@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2; 
+    bool result = (a != b) || (c != d);  
+
+    int x = 1, y = 1, z = 2, w = 2; 
+    bool result2 = (x == y) && (z == w);  
+
+    std::string str1 = "hello";
+    std::string str2 = "world";
+    if (str1.length() != str2.length()) {
+        std::cout << "Strings are of different lengths." << std::endl;
+    } else {
+        std::cout << "Strings are of the same length." << std::endl;
+    }
+
+    int num = 7;
+    if (num % 2 == 0 || num % 3 == 0) {
+        std::cout << "The number is divisible by 2 or 3." << std::endl;
+    } else {
+        std::cout << "The number is not divisible by 2 or 3." << std::endl;
+    }
+}

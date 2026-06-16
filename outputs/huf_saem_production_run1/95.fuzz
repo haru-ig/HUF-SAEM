@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000UL;
+
+     
+    auto arr = {a, static_cast<int>(b), static_cast<int>(c)};
+
+     
+    for (const auto& val : arr) {
+        std::cout << "Value: " << val;
+        
+        if (&val == &a) {
+            std::cout << ", Address of a";
+        } else if (&val == &b) {
+            std::cout << ", Address of b (promoted to double)";
+        } else if (&val == &c) {
+            std::cout << ", Address of c (promoted to int)";
+        }
+
+         
+        auto sum = val + static_cast<int>(b);
+        auto diff = val - static_cast<int>(b);
+        auto product = val * b;
+        auto quotient = val / 2.0;  
+
+        std::cout << ", Sum with b: " << sum;
+        std::cout << ", Diff with b: " << diff;
+        std::cout << ", Product with b: " << product;
+        std::cout << ", Quotient by 2.0: " << quotient;
+
+         
+        if (sum == static_cast<int>(val + b)) {
+            std::cout << ", Sum comparison OK";
+        } else {
+            std::cout << ", Sum comparison FAILED";
+        }
+
+        if (diff != 0) {
+            std::cout << ", Diff comparison OK";
+        } else {
+            std::cout << ", Diff comparison FAILED";
+        }
+
+        if (product == val * b) {
+            std::cout << ", Product comparison OK";
+        } else {
+            std::cout << ", Product comparison FAILED";
+        }
+
+        if (quotient == static_cast<double>(val) / 2.0) {
+            std::cout << ", Quotient comparison OK";
+        } else {
+            std::cout << ", Quotient comparison FAILED";
+        }
+
+        std::cout << std::endl;
+    }
+}

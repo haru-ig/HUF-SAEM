@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+     
+    class LocalObject {
+    public:
+        int value;
+        
+         
+        LocalObject(int val) : value(val) {}
+        
+         
+        ~LocalObject() {
+            std::cout << "Destroying LocalObject with value: " << value << std::endl;
+        }
+        
+         
+        LocalObject(const LocalObject& other) : value(other.value) {}
+        
+         
+        LocalObject(LocalObject&& other) noexcept : value(other.value) {
+            other.value = 0;  
+        }
+    };
+    
+     
+    LocalObject obj(42);
+    
+    auto lambda = [obj]() {
+        std::cout << "Inside lambda, accessing copied/moved obj: " << obj.value << std::endl;
+    };
+    
+     
+    lambda();
+    
+     
+}

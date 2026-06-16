@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+     
+    std::vector<std::string> words = {"apple", "banana", "cherry", "date"};
+
+     
+    words.push_back("elderberry");
+
+     
+    for (size_t i = 0; i < words.size(); ++i) {
+        std::cout << "Index-based: " << words[i] << std::endl;
+    }
+
+     
+    std::sort(words.begin(), words.end());
+
+     
+    for (const auto& word : words) {
+        std::cout << "Iterator-based: " << word << std::endl;
+    }
+
+     
+    std::string target = "banana";
+    auto it = std::find(words.begin(), words.end(), target);
+    if (it != words.end()) {
+        std::cout << "Found: " << *it << std::endl;
+    } else {
+        std::cout << "Not found: " << target << std::endl;
+    }
+
+     
+    words.insert(words.begin(), "fig");
+
+     
+    words.resize(words.size() / 2);
+
+     
+    for (size_t i = 0; i < words.size(); ++i) {
+        std::cout << "Resized and Index-based: " << words[i] << std::endl;
+    }
+
+    return 0;
+}

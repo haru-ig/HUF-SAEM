@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr uint64_t fib(uint64_t n) noexcept {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <uint64_t N>
+    struct FibArray {
+        static constexpr uint64_t value = fib(N);
+    };
+
+     
+    static_assert(FibArray<8>::value == 21, "Compile-time Fibonacci number calculation is incorrect");
+
+     
+    std::cout << "The 8th Fibonacci number is: " << FibArray<8>::value << '\n';
+}

@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fibonacci(unsigned int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <unsigned long long N>
+    struct FibArray {
+        static constexpr unsigned long long value = N;
+    };
+
+     
+    constexpr unsigned int fibIndex = 10;
+    static_assert(fibonacci(fibIndex) == FibArray<fibIndex>::value, "Fibonacci computation failed");
+
+     
+    const unsigned long long fibValue = fibonacci(fibIndex);
+    unsigned long long fibArray[fibValue];
+
+     
+    std::cout << "The " << fibIndex << "th Fibonacci number is: " << fibValue << std::endl;
+
+}

@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+    auto resultAdd = [a, b, c]() -> void {
+        std::cout << "Sum: " << a + b + static_cast<double>(c) << std::endl;
+    };
+    auto resultSubtract = [a, b, c]() -> void {
+        std::cout << "Difference: " << a - static_cast<int>(b) << std::endl;
+    };
+    auto resultMultiply = [a, b, c]() -> void {
+        std::cout << "Product: " << a * static_cast<int>(b) * static_cast<long>(c) << std::endl;
+    };
+    auto resultDivide = [a, b, c]() -> void {
+        if (static_cast<double>(c) != 0) {
+            std::cout << "Quotient: " << a / static_cast<int>(b) << std::endl;
+        } else {
+            std::cout << "Division by zero is not allowed." << std::endl;
+        }
+    };
+    resultAdd();
+    resultSubtract();
+    resultMultiply();
+    resultDivide();
+    int array[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (const auto& val : array) {
+        std::cout << "Value: " << val << std::endl;
+    }
+    if (a == static_cast<int>(b)) {
+        std::cout << "Comparison a == b: true" << std::endl;
+    } else {
+        std::cout << "Comparison a == b: false" << std::endl;
+    }
+    if (a != c) {
+        std::cout << "Comparison a != c: true" << std::endl;
+    } else {
+        std::cout << "Comparison a != c: false" << std::endl;
+    }
+}

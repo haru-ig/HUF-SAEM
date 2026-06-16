@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto result1 = a + static_cast<double>(c) * b;
+    auto result2 = (a + c) / b;
+
+     
+    std::cout << "result1: " << result1 << std::endl;
+    std::cout << "result2: " << result2 << std::endl;
+
+     
+    bool isEqual = (result1 == static_cast<int>(result1)) ? true : false;
+    bool isNotEqual = (result1 != result2) ? true : false;
+
+    std::cout << "isEqual: " << isEqual << std::endl;
+    std::cout << "isNotEqual: " << isNotEqual << std::endl;
+}

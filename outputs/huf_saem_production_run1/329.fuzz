@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30;
+
+     
+    std::array<double, 3> arr = {a, b, static_cast<double>(c)};
+
+     
+    for (auto &val : arr) {
+        val += 1;  
+    }
+
+     
+    if (arr[0] + arr[1] * arr[2] == static_cast<double>(a + b * c)) {
+        std::cout << "Comparison passed: " << arr[0] + arr[1] * arr[2] << " == " << a + b * c << std::endl;
+    } else {
+        std::cout << "Comparison failed: " << arr[0] + arr[1] * arr[2] << " != " << a + b * c << std::endl;
+    }
+
+     
+    double result = (arr[0] / 3) - (arr[1] * 2) + static_cast<double>(c);
+    if (result == ((a / 3.0) - (b * 2) + c)) {
+        std::cout << "Comparison passed: " << result << " == " << ((a / 3.0) - (b * 2) + c) << std::endl;
+    } else {
+        std::cout << "Comparison failed: " << result << " != " << ((a / 3.0) - (b * 2) + c) << std::endl;
+    }
+}

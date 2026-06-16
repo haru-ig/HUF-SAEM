@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+     
+    int a = 10;
+    double b = 5.5;
+    unsigned long c = 20;
+
+     
+    std::array<double, 3> arr = {a, b, static_cast<double>(c)};
+
+     
+    double sum = 0;
+    for (auto val : arr) {
+        sum += val;
+    }
+
+     
+    if (sum == a + b + c) {
+        std::cout << "Sum: " << sum << " is equal to " << a + b + c << std::endl;
+    } else {
+        std::cout << "Sum: " << sum << " is not equal to " << a + b + c << std::endl;
+    }
+
+     
+    if (sum != a + b + static_cast<double>(c)) {
+        std::cout << "Sum: " << sum << " is not equal to " << a + b + static_cast<double>(c) << std::endl;
+    } else {
+        std::cout << "Sum: " << sum << " is equal to " << a + b + static_cast<double>(c) << std::endl;
+    }
+
+    return 0;
+}

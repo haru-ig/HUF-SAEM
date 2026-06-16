@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+int main() {
+    struct ResourceGuard {
+        int* resource;
+        ResourceGuard(int value = 0) : resource(new int(value)) {}
+        ~ResourceGuard() { delete resource; }
+        ResourceGuard(ResourceGuard&& other) noexcept : resource(other.resource) {
+            other.resource = nullptr;
+        }
+        ResourceGuard& operator=(ResourceGuard&& other) noexcept {
+            if (this != &other) {
+                delete resource;
+                resource = other.resource;
+                other.resource = nullptr;
+            }
+            return *this;
+        }
+        ResourceGuard(const ResourceGuard& other) : resource(new int(*other.resource)) {}
+        ResourceGuard& operator=(const ResourceGuard& other) {
+            if (this != &other) {
+                delete resource;
+                resource = new int(*other.resource);
+            }
+            return *this;
+        }
+    };
+    ResourceGuard guard1(42);
+    auto lambda = [guard = std::move(guard1)]() {
+        std::cout << "Resource value: " << *guard.resource << std::endl;
+    };
+    lambda();
+    if (guard1.resource == nullptr) {
+        std::cout << "Guard1 has been moved and its resource is no longer valid." << std::endl;
+    }
+}
+}

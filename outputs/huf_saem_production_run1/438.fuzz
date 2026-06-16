@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+
+    int size = 10;  
+    int arr[size];  
+
+    for (int i = 0; i < size; ++i) {
+        arr[i] = fibonacci(i);  
+    }
+
+    for (int i = 0; i < size; ++i) {
+        std::cout << "fibonacci(" << i << ") = " << arr[i] << std::endl;
+    }
+}

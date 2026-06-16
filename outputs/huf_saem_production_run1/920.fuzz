@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template<int N>
+    struct FibArray {
+        static_assert(N > 0, "Array size must be positive");
+        int arr[N];
+    };
+
+     
+    constexpr int fibNum = fibonacci(10);  
+    static_assert(fibNum > 0, "Fibonacci number must be positive");
+
+     
+    FibArray<fibNum> fibArrayInstance;
+
+     
+    static_assert(fibNum == 55, "Fibonacci number must be 55");
+
+     
+    std::cout << "The " << fibNum << "-th Fibonacci number is: " << fibNum << "\n";
+    std::cout << "Array size: " << sizeof(fibArrayInstance.arr) / sizeof(fibArrayInstance.arr[0]) << "\n";
+}

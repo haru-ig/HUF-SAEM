@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 2, 9, 1, 7};
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    for (unsigned int i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    auto lb = std::lower_bound(vec.begin(), vec.end(), 7);
+    if (lb != vec.end() && *lb == 7) {
+        std::cout << "Found 7 at position: " << std::distance(vec.begin(), lb) << std::endl;
+    } else {
+        std::cout << "7 not found" << std::endl;
+    }
+    
+     
+    vec.insert(vec.begin() + 2, 3);
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    vec.resize(4);
+    
+     
+    for (unsigned int i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

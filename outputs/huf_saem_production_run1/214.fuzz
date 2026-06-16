@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<std::string> words(n);
+    
+    for (auto &word : words) {
+        std::cin >> word;
+    }
+    
+     
+    std::sort(words.begin(), words.end());
+    
+     
+    std::string target;
+    std::cin >> target;
+    
+    auto it = std::lower_bound(words.begin(), words.end(), target);
+    
+    if (it != words.end() && *it == target) {
+        std::cout << "Found: " << target << std::endl;
+    } else {
+        std::cout << "Not found: " << target << std::endl;
+    }
+    
+     
+    for (size_t i = 0; i < words.size(); ++i) {
+        std::cout << words[i] << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

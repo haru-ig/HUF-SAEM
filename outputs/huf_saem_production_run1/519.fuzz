@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result1 = (a != b) || (c != d);
+    std::cout << "Result of logical OR operation: " << result1 << std::endl;
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of logical AND operation: " << result2 << std::endl;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if ((i + j) % 2 == 0) {
+                std::cout << "i: " << i << ", j: " << j << " - Even sum" << std::endl;
+            } else {
+                std::cout << "i: " << i << ", j: " << j << " - Odd sum" << std::endl;
+            }
+        }
+    }
+    int e = 7, f = 8, g = 9, h = 10;
+    bool result3 = (e != f) || (g != h);
+    std::cout << "Result of logical OR operation with new variables: " << result3 << std::endl;
+    int m = 2, n = 2, o = 3, p = 3;
+    bool result4 = (m == n) && (o == p);
+    std::cout << "Result of logical AND operation with new variables: " << result4 << std::endl;
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            if ((i * j) % 3 == 0) {
+                std::cout << "Nested loop iteration - i: " << i << ", j: " << j << " - Divisible by 3" << std::endl;
+            } else {
+                std::cout << "Nested loop iteration - i: " << i << ", j: " << j << " - Not divisible by 3" << std::endl;
+            }
+        }
+    }
+    return 0;
+}
+}

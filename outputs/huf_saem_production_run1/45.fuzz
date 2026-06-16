@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    std::cout << std::boolalpha << "Result of logical OR operation: " << result << std::endl;
+
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << std::boolalpha << "Result of logical AND operation: " << result2 << std::endl;
+
+    int m = 10, n = 5;
+    int* ptr_m = &m, *ptr_n = &n;
+    if (ptr_m != ptr_n) {
+        std::cout << "Raw pointers are not equal: " << (ptr_m != ptr_n) << std::endl;
+    }
+
+    int arr1[] = {1, 2, 3};
+    int* ptr_arr1 = arr1;
+    if (*(ptr_arr1 + 0) == 1 && *(ptr_arr1 + 1) == 2 && *(ptr_arr1 + 2) == 3) {
+        std::cout << "Array elements are correctly accessed." << std::endl;
+    }
+}

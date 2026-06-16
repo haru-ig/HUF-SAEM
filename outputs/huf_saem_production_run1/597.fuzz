@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1000000000;
+
+    auto result1 = a + b;  
+    auto result2 = a * c;  
+    auto result3 = b - a;  
+    auto result4 = c / a;  
+
+    std::cout << "result1 (a + b): " << result1 << "\n";
+    std::cout << "result2 (a * c): " << result2 << "\n";
+    std::cout << "result3 (b - a): " << result3 << "\n";
+    std::cout << "result4 (c / a): " << result4 << "\n";
+
+     
+    if (result1 == static_cast<double>(a) + b) {
+        std::cout << "result1 is equal to double(a) + b\n";
+    } else {
+        std::cout << "result1 is not equal to double(a) + b\n";
+    }
+
+    if (result2 != static_cast<int>(c) / a) {
+        std::cout << "result2 is not equal to int(c) / a\n";
+    } else {
+        std::cout << "result2 is equal to int(c) / a\n";
+    }
+
+     
+    std::array<int, 3> arr = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (const auto& val : arr) {
+        std::cout << "Array value: " << val << "\n";
+    }
+}

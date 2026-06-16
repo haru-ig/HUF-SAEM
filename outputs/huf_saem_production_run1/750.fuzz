@@ -1,0 +1,20 @@
+#include <iostream>
+int main() {
+     
+    unsigned int a = 5, b = 3, c = 4, d = 2;
+    
+     
+    bool result1 = (a != b) || (c != d);
+    
+     
+    std::cout << "Result of (a != b) || (c != d): " << std::boolalpha << result1 << std::endl;
+    
+     
+    int x = 1, y = 1, z = 2, w = 2;
+    
+     
+    bool result2 = (x == y) && (z == w);
+    
+     
+    std::cout << "Result of (x == y) && (z == w): " << std::boolalpha << result2 << std::endl;
+}

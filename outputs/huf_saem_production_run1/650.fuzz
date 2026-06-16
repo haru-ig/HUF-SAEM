@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template<unsigned N>
+    struct FibonacciArray {
+        static constexpr unsigned long long value = fib(N - 1);
+    };
+
+     
+    static_assert(FibonacciArray<5>::value == 3, "Compile-time Fibonacci computation failed");
+
+     
+    std::cout << "The fifth Fibonacci number is: " << FibonacciArray<5>::value << std::endl;
+}

@@ -1,0 +1,17 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fibIndex = 10;  
+    static_assert(fibonacci(fibIndex) == 55, "Compile-time Fibonacci calculation is incorrect");
+
+     
+    int fibArray[fibonacci(fibIndex)];
+
+     
+    std::cout << "Fibonacci sequence up to index " << fibIndex << " is valid." << std::endl;
+}

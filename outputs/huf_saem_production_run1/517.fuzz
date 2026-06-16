@@ -1,0 +1,15 @@
+#include <iostream>
+int main() {
+    int e = 7, f = 8, g = 9, h = 10;
+    bool result3 = (e != f) || (g != h);
+    std::cout << "Result of logical OR operation with new variables: " << result3 << std::endl;
+    int m = 2, n = 2, o = 3, p = 3;
+    bool result4 = (m == n) && (o == p);
+    std::cout << "Result of logical AND operation with new variables: " << result4 << std::endl;
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            std::cout << "Nested loop iteration - i: " << i << ", j: " << j << std::endl;
+        }
+    }
+    return 0;
+}

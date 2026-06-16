@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+     
+    struct RAIIGuard {
+        int* ptr;
+        RAIIGuard(int value = 0) : ptr(new int(value)) {}
+        ~RAIIGuard() { delete ptr; }
+         
+        RAIIGuard(RAIIGuard&& other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
+        RAIIGuard& operator=(RAIIGuard&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+
+     
+    RAIIGuard raii1(42);
+
+     
+    auto lambda = [raii1]() {
+        std::cout << "Inside lambda: " << *raii1.ptr << std::endl;
+    };
+    lambda();
+
+     
+    RAIIGuard raii2 = std::move(raii1);
+}

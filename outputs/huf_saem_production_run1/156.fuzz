@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fibonacci(unsigned n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr unsigned long long fib_value = fibonacci(40);  
+    static_assert(fib_value == 102334155, "Fibonacci value is incorrect");  
+
+     
+    template<unsigned long long N>
+    struct FibTemplate {
+        static constexpr unsigned long long value = fibonacci(N);
+    };
+
+     
+    std::cout << "Fibonacci number at compile time: " << FibTemplate<40>::value << std::endl;
+
+    return 0;
+}

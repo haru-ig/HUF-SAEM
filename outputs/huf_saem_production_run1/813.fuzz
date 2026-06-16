@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto sum = a + static_cast<double>(b) + static_cast<double>(c);
+
+     
+    std::array<int, 3> arr = {a, b, c};
+    for (auto &val : arr) {
+        val *= 2;  
+    }
+
+     
+    if (sum == static_cast<double>(a + b + c)) {
+        std::cout << "The sum is equal to the expected value." << std::endl;
+    } else {
+        std::cout << "The sum is not equal to the expected value." << std::endl;
+    }
+
+    if (arr[0] != static_cast<int>(b) || arr[1] != static_cast<double>(c) || arr[2] != 2 * c) {
+        std::cout << "The array values are not as expected." << std::endl;
+    } else {
+        std::cout << "The array values are equal to the expected values." << std::endl;
+    }
+}

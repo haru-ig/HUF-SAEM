@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* ptr;
+        Resource() : ptr(new int(0)) { std::cout << "Resource allocated at " << ptr << "\n"; }
+        ~Resource() { 
+            delete ptr;
+            std::cout << "Resource deallocated\n"; 
+        }
+         
+        Resource(const Resource& other) : ptr(new int(*other.ptr)) { 
+            std::cout << "Resource copied from " << other.ptr << "\n"; 
+        }
+         
+        Resource(Resource&& other) noexcept : ptr(other.ptr) { 
+            other.ptr = nullptr;
+            std::cout << "Resource moved\n"; 
+        }
+         
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                *ptr = *other.ptr;
+                std::cout << "Resource copy assigned from " << other.ptr << "\n"; 
+            }
+            return *this;
+        }
+         
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+                std::cout << "Resource move assigned\n"; 
+            }
+            return *this;
+        }
+    };
+
+     
+    {
+        Resource res1;
+        {
+            Resource res2 = res1;  
+            std::cout << "Inside nested block, resource 2 exists\n";
+        }  
+        std::cout << "Back to outer block, resource 2 is destroyed\n";
+    }
+
+     
+    Resource res3;
+    auto lambda = [res3]() {
+        std::cout << "Lambda captures and uses the moved-from resource: ";
+        if (res3.ptr != nullptr) {
+            std::cout << *res3.ptr << "\n";
+        } else {
+            std::cout << "null\n";
+        }
+    };
+    lambda();  
+
+    return 0;
+}

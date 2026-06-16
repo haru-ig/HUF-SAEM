@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fibIndex = 10;  
+    static_assert(fibonacci(fibIndex) == 55, "Fibonacci number at index " + std::to_string(fibIndex) + " is not correct.");
+
+     
+    std::cout << "The Fibonacci number at index " << fibIndex << " is: " << fibonacci(fibIndex) << std::endl;
+}

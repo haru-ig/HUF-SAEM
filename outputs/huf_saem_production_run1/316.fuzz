@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000;
+    
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+    
+     
+    for (auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            std::cout << "Int: " << val << ", Plus 1: " << val + 1 << std::endl;
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            std::cout << "Double: " << val << ", Plus 0.5: " << val + 0.5 << std::endl;
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            std::cout << "Unsigned Long: " << val << ", Plus 1000000: " << val + 1000000 << std::endl;
+        }
+    }
+    
+     
+    int resultInt = a + static_cast<int>(b) - c;
+    double resultDouble = a * b / 2.0f;
+    unsigned long resultUnsignedLong = (a + b) * c;
+    
+    std::cout << "Result of arithmetic operations:" << std::endl;
+    std::cout << "Int: " << resultInt << ", Double: " << resultDouble << ", Unsigned Long: " << resultUnsignedLong << std::endl;
+    if (resultInt == static_cast<int>(resultDouble) && resultInt != resultUnsignedLong) {
+        std::cout << "Comparison results are consistent." << std::endl;
+    } else {
+        std::cout << "Comparison results are inconsistent!" << std::endl;
+    }
+}

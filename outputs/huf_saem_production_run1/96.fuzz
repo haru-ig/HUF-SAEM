@@ -1,0 +1,65 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000;
+
+     
+    std::initializer_list<std::variant<int, double, unsigned long>> values = {a, b, c};
+
+     
+    for (const auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            std::cout << "Int: " << val << ", ";
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            std::cout << "Double: " << val << ", ";
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            std::cout << "Unsigned Long: " << val << ", ";
+        }
+    }
+    std::cout << std::endl;
+
+     
+    auto sum = [](auto x, auto y) { return x + y; };
+    auto product = [](auto x, auto y) { return x * y; };
+    auto difference = [](auto x, auto y) { return x - y; };
+    auto quotient = [](auto x, auto y) { return x / y; };
+
+    std::cout << "Sum: " << sum(a, b) << ", ";
+    std::cout << "Product: " << product(b, c) << ", ";
+    std::cout << "Difference: " << difference(c, a) << ", ";
+    std::cout << "Quotient: " << quotient(b, static_cast<double>(a)) << std::endl;
+
+     
+    int result1 = sum(a, b);
+    double result2 = product(b, c);
+    unsigned long result3 = difference(c, a);
+    double result4 = quotient(b, static_cast<double>(a));
+
+    if (result1 == static_cast<int>(sum(a, b))) {
+        std::cout << "Sum comparison passed" << std::endl;
+    } else {
+        std::cout << "Sum comparison failed" << std::endl;
+    }
+
+    if (result2 != product(b, c)) {
+        std::cout << "Product comparison failed" << std::endl;
+    } else {
+        std::cout << "Product comparison passed" << std::endl;
+    }
+
+    if (result3 == difference(c, a)) {
+        std::cout << "Difference comparison passed" << std::endl;
+    } else {
+        std::cout << "Difference comparison failed" << std::endl;
+    }
+
+    if (result4 != quotient(b, static_cast<double>(a))) {
+        std::cout << "Quotient comparison failed" << std::endl;
+    } else {
+        std::cout << "Quotient comparison passed" << std::endl;
+    }
+}

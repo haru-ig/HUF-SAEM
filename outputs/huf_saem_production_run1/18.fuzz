@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);  
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);  
+    std::cout << "result: " << result << std::endl;  
+    std::cout << "result2: " << result2 << std::endl;
+    int i = 0, j = 0;
+    while (i < 5) {  
+        std::cout << "i: " << i << ", j: " << j << std::endl;
+        ++i;
+        ++j;
+    }
+    int k = 0, l = 0;
+    do {  
+        std::cout << "k: " << k << ", l: " << l << std::endl;
+        ++k;
+        ++l;
+    } while (k < 5);
+    for (int m = 0, n = 0; m < 5 && n < 5; ++m, ++n) {  
+        std::cout << "m: " << m << ", n: " << n << std::endl;
+    }
+}

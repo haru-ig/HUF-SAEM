@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* ptr;
+        Resource() : ptr(new int(0)) { std::cout << "Resource allocated\n"; }
+        ~Resource() { 
+            delete ptr;
+            std::cout << "Resource deallocated\n"; 
+        }
+         
+        Resource(Resource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+            std::cout << "Resource moved\n";
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+                std::cout << "Resource move assigned\n";
+            }
+            return *this;
+        }
+    };
+
+     
+    {
+        Resource res1;
+        std::cout << "res1 ptr: " << res1.ptr << "\n";
+    }
+    std::cout << "Scope ended for res1\n";
+
+     
+    {
+        Resource res2;
+        auto lambda = [res2]() { 
+            std::cout << "Lambda captured resource with ptr: " << res2.ptr << "\n";
+        };
+        lambda();  
+    }
+    std::cout << "Scope ended for res2\n";
+}

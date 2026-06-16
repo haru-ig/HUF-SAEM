@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto values = {a, b, c};
+
+     
+    for (auto val : values) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+     
+    double sum_ab = a + b;
+    unsigned long sum_ac = a + c;
+    int sum_bc = static_cast<int>(b) + c;
+
+     
+    if (sum_ab == 5.0 + 3.2 && sum_ac == 5 + 10 && sum_bc == 3 + 10) {
+        std::cout << "Arithmetic operations are correct." << std::endl;
+    } else {
+        std::cout << "Arithmetic operations are incorrect." << std::endl;
+    }
+
+     
+    if (sum_ab != 8.0 && sum_ac != 15 && sum_bc != 13) {
+        std::cout << "Comparisons with != are correct." << std::endl;
+    } else {
+        std::cout << "Comparisons with != are incorrect." << std::endl;
+    }
+}

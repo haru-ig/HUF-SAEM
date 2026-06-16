@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+    std::vector<double> vec = {3.1, 2.5, 4.0, 1.2, 2.8};
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Element at index " << i << ": " << vec[i] << std::endl;
+    }
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Element: " << *it << std::endl;
+    }
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    double target = 2.8;
+    auto lb = std::lower_bound(vec.begin(), vec.end(), target);
+    if (lb != vec.end() && *lb == target) {
+        std::cout << "Found " << target << " at index: " << std::distance(vec.begin(), lb) << std::endl;
+    } else {
+        std::cout << target << " not found in the vector." << std::endl;
+    }
+    
+     
+    vec.insert(vec.begin() + 2, 3.5);
+    
+     
+    vec.resize(7, 0.0);
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Element: " << *it << std::endl;
+    }
+    
+     
+    vec.erase(vec.begin() + 3);
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Element at index " << i << ": " << vec[i] << std::endl;
+    }
+    
+    return 0;
+}

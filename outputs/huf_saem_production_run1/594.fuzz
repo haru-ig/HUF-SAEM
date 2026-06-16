@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+    
+    auto result_add = [a, b, c]() -> void {
+        std::cout << "Addition results:" << std::endl;
+        std::cout << "int + double: " << a + b << std::endl;
+        std::cout << "double + unsigned long: " << b + c << std::endl;
+        std::cout << "int + unsigned long: " << a + c << std::endl;
+    };
+    
+    auto result_mul = [a, b, c]() -> void {
+        std::cout << "Multiplication results:" << std::endl;
+        std::cout << "int * double: " << a * b << std::endl;
+        std::cout << "double * unsigned long: " << b * c << std::endl;
+        std::cout << "int * unsigned long: " << a * c << std::endl;
+    };
+    
+    auto result_comp = [a, b, c]() -> void {
+        std::cout << "Comparison results:" << std::endl;
+        std::cout << "int == double: " << (a == static_cast<int>(b) ? 1 : 0) << std::endl;
+        std::cout << "double == unsigned long: " << (b == static_cast<double>(c) ? 1 : 0) << std::endl;
+        std::cout << "int == unsigned long: " << (a == c ? 1 : 0) << std::endl;
+    };
+    
+    result_add();
+    result_mul();
+    result_comp();
+    return 0;
+}

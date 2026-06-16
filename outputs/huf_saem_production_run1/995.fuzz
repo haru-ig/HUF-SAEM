@@ -1,0 +1,76 @@
+#include <iostream>
+int main() {
+     
+    std::vector<int> vec = {5, 2, 9, 1, 7};
+
+     
+    std::cout << "Vector elements (index-based): ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::cout << "Vector elements (iterator-based): ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    std::cout << "Sorted vector: ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    int target = 7;
+    auto lb = std::lower_bound(vec.begin(), vec.end(), target);
+    if (lb != vec.end() && *lb == target) {
+        std::cout << "Element " << target << " found at position: " << std::distance(vec.begin(), lb) << std::endl;
+    } else {
+        std::cout << "Element " << target << " not found in the vector." << std::endl;
+    }
+
+     
+    int new_element = 4;
+    vec.insert(std::upper_bound(vec.begin(), vec.end(), new_element), new_element);
+
+     
+    std::cout << "Vector after inserting " << new_element << ": ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    int erase_target = 2;
+    auto it = std::find(vec.begin(), vec.end(), erase_target);
+    if (it != vec.end()) {
+        vec.erase(it);
+    }
+
+     
+    std::cout << "Vector after erasing " << erase_target << ": ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    size_t new_size = 3;
+    vec.resize(new_size);
+
+     
+    std::cout << "Vector resized to " << new_size << ": ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

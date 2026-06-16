@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of logical OR operation: " << result << std::endl;
+    std::cout << "Result of logical AND operation: " << result2 << std::endl;
+    int num = 10;
+    const char* message = (num > 5) ? "Number is greater than 5" : "Number is not greater than 5";
+    std::cout << message << std::endl;
+}
+}

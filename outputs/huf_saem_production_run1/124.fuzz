@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <algorithm>  
+
+int main() {
+    struct Resource {
+        int *data;
+        Resource() : data(new int[10]) { std::cout << "Resource acquired\n"; }
+        ~Resource() { 
+            delete[] data; 
+            std::cout << "Resource released\n"; 
+        }
+        Resource(const Resource& other) : data(new int[10]) {
+            std::copy(other.data, other.data + 10, data);
+            std::cout << "Resource copied\n";
+        }
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+            std::cout << "Resource moved\n";
+        }
+    };
+
+    for (int i = 0; i < 3; ++i) {
+        Resource res;
+        auto lambda = [res]() {
+            std::cout << "Inside lambda, accessing resource...\n";
+        };
+        lambda();
+    }
+
+    auto lambda = [](Resource r) { 
+        std::cout << "Lambda received resource, value: " << *r.data << "\n"; 
+    };
+    {
+        Resource res;
+        lambda(res);   
+    }
+
+    return 0;
+}
+}

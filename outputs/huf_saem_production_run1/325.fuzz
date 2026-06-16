@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30L;
+
+    std::array<double, 3> values = {a, b, c};
+
+    for (const auto& val : values) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+    double sum = a + b + c;
+    int promoted_sum = static_cast<int>(sum);
+
+    if (promoted_sum == 60) {
+        std::cout << "Sum is equal to 60" << std::endl;
+    } else {
+        std::cout << "Sum is not equal to 60" << std::endl;
+    }
+
+    if (static_cast<int>(sum) != 61) {
+        std::cout << "Sum is not equal to 61" << std::endl;
+    } else {
+        std::cout << "Sum is equal to 61" << std::endl;
+    }
+}

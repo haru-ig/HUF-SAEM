@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+     
+    constexpr int bitCount(unsigned long long n) {
+        return (n == 0) ? 1 : 1 + bitCount(n >> 1);
+    }
+
+     
+    template<int N>
+    struct isPowerOfTwo {
+        static_assert(N > 0 && (N & (N - 1)) == 0, "Value must be a positive power of two");
+    };
+
+     
+    constexpr unsigned long long testValue = 64;  
+    static_assert(bitCount(testValue) == 7, "bitCount computation failed or incorrect value used");
+
+     
+    isPowerOfTwo<testValue> verify;
+
+     
+    std::cout << "The number of bits needed to represent " << testValue << " is " << bitCount(testValue) << std::endl;
+}

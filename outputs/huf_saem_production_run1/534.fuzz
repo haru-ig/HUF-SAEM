@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+int a = 5, b = 3, c = 4, d = 2;
+bool result = (a != b) || (c != d);
+int x = 1, y = 1, z = 2, w = 2;
+bool result2 = (x == y) && (z == w);
+std::cout << "Result of logical OR comparison: " << result << std::endl;
+std::cout << "Result of logical AND comparison: " << result2 << std::endl;
+int num = 10;  
+int shifted_num = num << 1;  
+int divided_num = num >> 1;  
+std::cout << "Shifted number: " << shifted_num << std::endl;
+std::cout << "Divided number: " << divided_num << std::endl;
+}

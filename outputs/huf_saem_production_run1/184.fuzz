@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+     
+    constexpr int numBits(unsigned long long n) {
+        if (n == 0) return 1;
+        int count = 0;
+        while (n > 0) {
+            ++count;
+            n >>= 1;
+        }
+        return count;
+    }
+
+     
+    constexpr unsigned long long value = 256;  
+    static_assert(numBits(value) <= 8, "Value exceeds 8 bits");  
+
+     
+    int arr[numBits(value)]{};
+
+     
+    std::cout << "Array size: " << sizeof(arr) / sizeof(arr[0]) << std::endl;
+}

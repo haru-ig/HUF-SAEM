@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int *data;
+        
+         
+        Resource() : data(new int[10]) {}
+        
+         
+        ~Resource() { delete[] data; }
+        
+         
+        Resource(const Resource& other) : data(new int[10]) {
+            std::copy(other.data, other.data + 10, data);
+        }
+        
+         
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+        }
+    };
+    
+     
+    for (int i = 0; i < 3; ++i) {
+        Resource res;
+        
+         
+        auto lambda = [res]() {
+            std::cout << "Inside lambda, accessing resource...\n";
+             
+        };
+        
+        lambda();
+    }
+    
+    return 0;
+}

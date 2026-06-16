@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        std::string data;
+        Resource(std::string str = "") : data(str) {}
+        ~Resource() { std::cout << "Destroying Resource: " << data << "\n"; }
+         
+        Resource(Resource&& other) noexcept : data(std::move(other.data)) {}
+    };
+
+     
+    Resource res("Hello, RAII!");
+    auto print_resource = [res]() { std::cout << "Lambda received: " << res.data << "\n"; };
+    print_resource();
+
+     
+}

@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+int a = 5, b = 3, c = 4, d = 2;
+bool result = (a != b) || (c != d);
+int x = 1, y = 1, z = 2, w = 2;
+bool result2 = (x == y) && (z == w);
+std::cout << "result: " << result << std::endl;
+std::cout << "result2: " << result2 << std::endl;
+for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+        if (i == j) {
+            std::cout << "i and j are equal: i: " << i << ", j: " << j << std::endl;
+        } else {
+            std::cout << "i and j are not equal: i: " << i << ", j: " << j << std::endl;
+        }
+    }
+}
+for (int k = 0; k < 2; ++k) {
+    int sum = 0;
+    for (int l = 0; l <= k; ++l) {
+        sum += l;
+    }
+    std::cout << "Sum of first " << k+1 << " numbers: " << sum << std::endl;
+}
+}

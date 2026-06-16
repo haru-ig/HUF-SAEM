@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibonacciArray {
+        static constexpr int value = fibonacci(N);
+    };
+
+     
+    static_assert(FibonacciArray<10>::value == 55, "Compile-time computation of Fibonacci number failed");
+
+     
+    std::cout << "The 10th Fibonacci number is: " << FibonacciArray<10>::value << '\n';
+}

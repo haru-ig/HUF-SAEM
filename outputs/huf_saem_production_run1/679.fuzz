@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fibonacci(unsigned int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <std::size_t N>
+    struct FibArray {
+        static constexpr unsigned long long value = fibonacci(N);
+    };
+
+     
+    constexpr auto fibArraySize = 10;  
+    std::array<unsigned long long, FibArray<fibArraySize>::value> fibArray;
+
+     
+    static_assert(FibArray<fibArraySize>::value == fibonacci(fibArraySize), "Compile-time computation mismatch");
+
+     
+    for (std::size_t i = 0; i < fibArray.size(); ++i) {
+        std::cout << "Fibonacci number at index " << i << ": " << fibArray[i] << "\n";
+    }
+}

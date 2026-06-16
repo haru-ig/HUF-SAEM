@@ -1,0 +1,12 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);  
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);  
+    double e = 7.5, f = 3.2, g = 4.8, h = 2.1;
+    bool complexResult = ((e != f) || (g != h)) && ((x == y) && (z == w));  
+    std::cout << "result: " << result << std::endl;
+    std::cout << "result2: " << result2 << std::endl;
+    std::cout << "complexResult: " << complexResult << std::endl;
+}

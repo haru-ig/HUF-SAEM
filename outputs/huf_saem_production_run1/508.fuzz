@@ -1,0 +1,12 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    std::cout << std::boolalpha << result << std::endl;  
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << std::boolalpha << result2 << std::endl;  
+    double e = 3.14, f = 2.78, g = 3.14, h = 2.79;
+    bool is_close = (std::abs(e - f) < 0.01) || (std::abs(g - h) > 0.01);
+    std::cout << std::boolalpha << is_close << std::endl;
+}

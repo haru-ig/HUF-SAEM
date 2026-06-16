@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+ int a = 5, b = 3, c = 4, d = 2;
+bool result = (a != b) || (c != d);
+std::cout << std::boolalpha << "Result of (a != b) || (c != d): " << result << std::endl;
+int x = 1, y = 1, z = 2, w = 2;
+bool result2 = (x == y) && (z == w);
+std::cout << std::boolalpha << "Result of (x == y) && (z == w): " << result2 << std::endl;
+std::string str1 = "hello";
+std::string str2 = "world";
+if (str1.length() != str2.length()) {
+    std::cout << "Lengths of strings are not equal." << std::endl;
+} else {
+    bool lengthsEqual = true;
+    for (size_t i = 0; i < str1.length(); ++i) {
+        if (str1[i] != str2[i]) {
+            lengthsEqual = false;
+            break;
+        }
+    }
+    std::cout << std::boolalpha << "Strings are equal in length and content: " << (lengthsEqual && str1.length() == str2.length()) << std::endl;
+}
+ 
+int e = 7, f = 8;
+bool result3 = (e != f) || (a != b);
+std::cout << std::boolalpha << "Result of (e != f) || (a != b): " << result3 << std::endl;
+}

@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fib10 = fibonacci(10);
+    static_assert(fib10 == 55, "Fibonacci computation failed");
+
+     
+    std::array<int, fib10> arr;
+
+     
+    for (int i = 0; i < fib10; ++i) {
+        arr[i] = i * 2;  
+    }
+
+     
+    std::cout << "Array elements: ";
+    for (const auto& elem : arr) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+}

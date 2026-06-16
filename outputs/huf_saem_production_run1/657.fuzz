@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+    constexpr double golden_ratio = 1.618033988749895;  
+
+     
+    template <unsigned long long n>
+    struct Fibonacci {
+        static constexpr unsigned long long value = Fibonacci<n - 1>::value + Fibonacci<n - 2>::value;
+    };
+
+    template <>
+    struct Fibonacci<0> {
+        static constexpr unsigned long long value = 0;
+    };
+
+    template <>
+    struct Fibonacci<1> {
+        static constexpr unsigned long long value = 1;
+    };
+
+     
+    constexpr unsigned long long fib_n = 10;  
+    static_assert(Fibonacci<fib_n>::value == 55, "Fibonacci computation is incorrect");
+
+     
+    constexpr unsigned long long fib_array_size = Fibonacci<fib_n>::value;
+    double fib_array[fib_array_size];
+
+     
+    for (unsigned long long i = 0; i < fib_array_size; ++i) {
+        fib_array[i] = golden_ratio * i;
+    }
+
+     
+    std::cout << "First few Fibonacci numbers initialized with Golden Ratio:" << std::endl;
+    for (unsigned long long i = 0; i < 5 && i < fib_array_size; ++i) {
+        std::cout << fib_array[i] << " ";
+    }
+    std::cout << std::endl;
+}

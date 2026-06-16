@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibArray {
+        static constexpr int value = fib(N);
+    };
+
+     
+    std::array<int, FibArray<5>::value> arr;
+
+     
+    static_assert(FibArray<5>::value == 5, "The computed Fibonacci number does not match the expected value.");
+
+     
+    std::cout << "The size of the array is: " << FibArray<5>::value << std::endl;
+}

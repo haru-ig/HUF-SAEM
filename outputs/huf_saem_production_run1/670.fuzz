@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    static_assert(fibonacci(10) == 55, "Fibonacci number at index 10 should be 55");
+    int fibArray[fibonacci(10)];
+
+     
+    std::cout << "The first 10 numbers in the Fibonacci sequence are: ";
+    for (int i = 0; i <= 9; ++i) {
+        std::cout << fibonacci(i) << " ";
+    }
+    std::cout << std::endl;
+}

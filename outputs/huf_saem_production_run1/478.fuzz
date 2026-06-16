@@ -1,0 +1,67 @@
+#include <iostream>
+int main() {
+     
+    int arr[] = {5, 2, 8, 1, 4};
+    std::array<int, 5> myArray = {5, 2, 8, 1, 4};
+    
+     
+    std::sort(myArray.begin(), myArray.end());
+    
+     
+    for (const auto& elem : myArray) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    int target = 8;
+    bool found = std::binary_search(myArray.begin(), myArray.end(), target);
+    auto lb = std::lower_bound(myArray.begin(), myArray.end(), target);
+    
+    if (found) {
+        std::cout << "Element " << target << " found in the array." << std::endl;
+    } else {
+        std::cout << "Element " << target << " not found in the array." << std::endl;
+    }
+    
+     
+    for (size_t i = 0; i < myArray.size(); ++i) {
+        std::cout << myArray[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    for (auto it = myArray.begin(); it != myArray.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    myArray.insert(myArray.begin() + 2, 3);
+    
+     
+    for (const auto& elem : myArray) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    myArray.erase(myArray.begin() + 1);
+    
+     
+    for (const auto& elem : myArray) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    myArray.resize(4);
+    
+     
+    for (const auto& elem : myArray) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+    struct ResourceGuard {
+        int* resource;
+        explicit ResourceGuard(int* res) : resource(res) {}
+        ~ResourceGuard() { delete resource; }
+         
+    };
+
+    int* resource = new int(42);
+    ResourceGuard guard(resource);
+
+    auto lambda = [guard]() {
+        std::cout << "Resource value: " << *guard.resource << std::endl;
+    };
+
+    lambda();
+}

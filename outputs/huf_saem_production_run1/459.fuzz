@@ -1,0 +1,66 @@
+#include <iostream>
+int main() {
+    std::vector<double> vec = {3.1, 2.7, 4.5, 1.9, 2.0};
+
+     
+    std::cout << "Vector before modifications: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    std::cout << "Sorted vector: ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    double searchValue = 2.7;
+    auto it = std::lower_bound(vec.begin(), vec.end(), searchValue);
+    if (it != vec.end() && *it == searchValue) {
+        std::cout << "Found " << searchValue << " in the vector." << std::endl;
+    } else {
+        std::cout << "Did not find " << searchValue << " in the vector." << std::endl;
+    }
+
+     
+    double newValue = 3.2;
+    vec.insert(std::lower_bound(vec.begin(), vec.end(), newValue), newValue);
+
+     
+    std::cout << "Vector after insertion: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    double eraseValue = 2.7;
+    auto eraseIt = std::find(vec.begin(), vec.end(), eraseValue);
+    if (eraseIt != vec.end()) {
+        vec.erase(eraseIt);
+    }
+
+     
+    std::cout << "Vector after erasing: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    size_t newSize = 8;
+    vec.resize(newSize, 0.0);  
+
+     
+    std::cout << "Vector after resizing: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}

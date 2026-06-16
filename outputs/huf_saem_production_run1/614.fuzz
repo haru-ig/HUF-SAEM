@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+    struct Resource {
+        std::string data;
+        Resource(const std::string& str) : data(str) {
+            std::cout << "Resource acquired: " << data << std::endl;
+        }
+        ~Resource() {
+            std::cout << "Resource destroyed: " << data << std::endl;
+        }
+        Resource(Resource&& other) noexcept : data(std::move(other.data)) {
+            std::cout << "Resource moved: " << data << std::endl;
+        }
+        Resource(const Resource& other) : data(other.data) {
+            std::cout << "Resource copied: " << data << std::endl;
+        }
+    };
+    Resource res("local resource");
+    auto lambda = [res_copy = res]() {
+        std::cout << "Inside lambda, accessing copied resource: " << res_copy.data << std::endl;
+    };
+    lambda();
+}

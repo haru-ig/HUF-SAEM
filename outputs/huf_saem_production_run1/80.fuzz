@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30;
+
+     
+    auto result_add = a + b + c;
+    auto result_sub = b - a;
+    auto result_mul = a * static_cast<int>(b);
+    auto result_div = static_cast<double>(a) / c;
+
+     
+    std::array<auto, 3> arr = {a, b, c};
+    for (const auto& val : arr) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (result_add == static_cast<int>(result_add)) {
+        std::cout << "Addition result matches integer part: " << result_add << std::endl;
+    } else {
+        std::cout << "Addition result does not match integer part: " << result_add << std::endl;
+    }
+
+    if (result_div != static_cast<double>(result_div)) {
+        std::cout << "Division result does not match exact double representation: " << result_div << std::endl;
+    } else {
+        std::cout << "Division result matches exact double representation: " << result_div << std::endl;
+    }
+
+     
+    int x = 0b1010;  
+    unsigned long y = 0x1E;  
+    auto bitwise_and = x & static_cast<int>(y);
+    auto bitwise_or = x | static_cast<int>(y);
+    auto bitwise_xor = x ^ static_cast<int>(y);
+    auto left_shift = y << 1;
+    auto right_shift = y >> 1;
+
+    std::cout << "Bitwise AND: " << bitwise_and << std::endl;
+    std::cout << "Bitwise OR: " << bitwise_or << std::endl;
+    std::cout << "Bitwise XOR: " << bitwise_xor << std::endl;
+    std::cout << "Left shift: " << left_shift << std::endl;
+    std::cout << "Right shift: " << right_shift << std::endl;
+}

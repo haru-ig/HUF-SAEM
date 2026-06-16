@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+
+     
+    std::array<double, 3> arr = {a, b, static_cast<double>(c)};
+
+     
+    for (auto& val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+    double sum = 0.0;
+    for (auto& val : arr) {
+        sum += val;
+    }
+    std::cout << "Sum of array elements: " << sum << std::endl;
+
+     
+    double expected_sum = static_cast<double>(a) + b + c;
+    if (std::abs(sum - expected_sum) < 1e-9) {
+        std::cout << "Sums are equal." << std::endl;
+    } else {
+        std::cout << "Sums are not equal." << std::endl;
+    }
+}

@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+     
+    std::vector<int> vec = {5, 2, 9, 1, 7};
+
+     
+    auto sortLambda = [](std::vector<int>& v) {
+        std::sort(v.begin(), v.end());
+    };
+    sortLambda(vec);
+
+     
+    std::cout << "Sorted vector: ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    int target = 7;
+    auto it = std::lower_bound(vec.begin(), vec.end(), target);
+    if (it != vec.end() && *it == target) {
+        std::cout << "Found " << target << " at index: " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << target << " not found in the vector." << std::endl;
+    }
+
+     
+    std::cout << "Vector elements by index: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    int newValue = 4;
+    auto insertPos = std::lower_bound(vec.begin(), vec.end(), newValue);
+    vec.insert(insertPos, newValue);
+
+     
+    std::cout << "Vector after inserting " << newValue << ": ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.erase(vec.begin() + 2, vec.begin() + 4);
+
+     
+    std::cout << "Vector after erasing elements: ";
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

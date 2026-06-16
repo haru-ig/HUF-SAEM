@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <int N>
+    struct Fibonacci {
+        static constexpr int value = fib(N);
+    };
+
+     
+    static_assert(Fibonacci<10>::value == 55, "Fibonacci number at index 10 is incorrect");
+
+     
+    constexpr int fibArraySize = 10;
+    std::array<int, Fibonacci<fibArraySize>::value> fibArray;
+
+     
+    std::cout << "Fibonacci number at index 10 (compile-time) is: " << Fibonacci<10>::value << "\n";
+    std::cout << "Array size initialized with Fibonacci number at index 10: " << fibArray.size() << "\n";
+}

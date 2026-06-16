@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    
+     
+    struct Comparison {
+        int value1, value2;
+        bool evaluate() {
+            return value1 != value2;
+        }
+    };
+    
+    Comparison comp1 = {a, b};
+    Comparison comp2 = {c, d};
+    Comparison comp3 = {x, y};
+    Comparison comp4 = {z, w};
+    
+    bool finalResult1 = comp1.evaluate() || comp2.evaluate();
+    bool finalResult2 = comp3.evaluate() && comp4.evaluate();
+    
+    std::cout << "finalResult1: " << finalResult1 << std::endl;
+    std::cout << "finalResult2: " << finalResult2 << std::endl;
+}

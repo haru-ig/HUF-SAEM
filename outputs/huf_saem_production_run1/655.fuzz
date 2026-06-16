@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+     
+    constexpr double goldenRatio(int n) {
+        if (n == 0) return 1.0;
+        if (n == 1) return 2.0 / (1.0 + 1.0);
+        return 2.0 / (goldenRatio(n - 1) + 1.0);
+    }
+
+     
+    constexpr double phi = goldenRatio(10);
+
+     
+    static_assert(phi == (1.0 + std::sqrt(5)) / 2.0, "Golden ratio does not match expected value");
+
+     
+    std::cout << "The golden ratio is approximately: " << phi << std::endl;
+}

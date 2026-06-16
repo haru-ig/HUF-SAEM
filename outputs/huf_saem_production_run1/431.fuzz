@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned int bit_count(unsigned int n) {
+        return (n == 0) ? 1 : 1 + bit_count(n >> 1);
+    }
+
+     
+    template <unsigned int N>
+    struct BitArray {
+        static constexpr unsigned int bits = N;
+        std::bitset<N> data;
+    };
+
+     
+    constexpr unsigned int test_value = 255;
+
+     
+    static_assert(bit_count(test_value) == 8, "Number of bits must be 8");
+
+     
+    BitArray<bit_count(test_value)> bitArrayInstance;
+
+     
+    std::cout << "Number of bits required to represent " << test_value << " is " << bit_count(test_value) << "\n";
+}

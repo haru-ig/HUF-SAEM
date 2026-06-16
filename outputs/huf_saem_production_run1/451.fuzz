@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 2, 8, 1, 4};
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    for (unsigned int i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    int target = 4;
+    auto lower = std::lower_bound(vec.begin(), vec.end(), target);
+    if (lower != vec.end() && *lower == target) {
+        std::cout << "Found " << target << " at position: " << std::distance(vec.begin(), lower) << std::endl;
+    } else {
+        std::cout << target << " not found." << std::endl;
+    }
+    
+     
+    vec.insert(std::upper_bound(vec.begin(), vec.end(), 3), 3);
+    
+     
+    vec.erase(std::remove(vec.begin(), vec.end(), 2), vec.end());
+    
+     
+    vec.resize(4, 0);
+    
+     
+    for (unsigned int i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

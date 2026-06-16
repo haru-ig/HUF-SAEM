@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <int N>
+    struct Fibonacci {
+        static constexpr int value = fib(N);
+    };
+
+     
+    static_assert(Fibonacci<10>::value == 55, "Fibonacci number at index 10 is incorrect");
+
+     
+    std::cout << "The Fibonacci number at index 10 is: " << Fibonacci<10>::value << std::endl;
+}

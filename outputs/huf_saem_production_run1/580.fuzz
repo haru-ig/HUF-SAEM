@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30;
+
+     
+    auto result1 = a + static_cast<int>(b) * c;
+    auto result2 = (a + b) / static_cast<double>(c);
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+     
+    if (result1 == static_cast<int>(result2)) {
+        std::cout << "Equal!" << std::endl;
+    } else {
+        std::cout << "Not equal!" << std::endl;
+    }
+
+     
+    unsigned long x = 0b1010;
+    unsigned long y = 0b1100;
+    auto bitwise_result = x | y;
+    std::cout << "Bitwise OR result: " << bitwise_result << std::endl;
+
+    return 0;
+}

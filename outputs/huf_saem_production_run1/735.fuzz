@@ -1,0 +1,59 @@
+#include <iostream>
+int main() {
+     
+    std::vector<int> vec = {5, 2, 9, 1, 7};
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    std::cout << "Sorted vector: ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::cout << "Sorted vector by index: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    int target = 7;
+    bool found = std::binary_search(vec.begin(), vec.end(), target);
+    auto lb = std::lower_bound(vec.begin(), vec.end(), target);
+
+     
+    std::cout << "Binary search for " << target << ": ";
+    if (found) {
+        std::cout << "Found" << std::endl;
+    } else {
+        std::cout << "Not found, lower_bound at index: " << std::distance(vec.begin(), lb) << std::endl;
+    }
+
+     
+    vec.insert(vec.begin() + 2, 3);
+    std::cout << "Vector after insert: ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.erase(vec.begin() + 3);
+    std::cout << "Vector after erase: ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.resize(4);
+    std::cout << "Vector after resize: ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+}

@@ -1,0 +1,58 @@
+#include <iostream>
+int main() {
+    constexpr unsigned long long factorial(unsigned int n) {
+        return n <= 1 ? 1 : n * factorial(n - 1);
+    }
+
+    static_assert(factorial(5) == 120, "Factorial of 5 should be 120");
+
+    constexpr unsigned long long fibonacci(unsigned int n) {
+        return n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+
+    constexpr unsigned long long power(unsigned int base, unsigned int exp) {
+        return exp == 0 ? 1 : base * power(base, exp - 1);
+    }
+
+    static_assert(power(2, 3) == 8, "2 to the power of 3 should be 8");
+
+    constexpr unsigned long long sum_of_series(unsigned int n) {
+        return n == 0 ? 0 : n + sum_of_series(n - 1);
+    }
+
+    static_assert(sum_of_series(10) == 55, "Sum of series up to 10 should be 55");
+
+    constexpr unsigned long long gcd(unsigned int a, unsigned int b) {
+        return b == 0 ? a : gcd(b, a % b);
+    }
+
+    static_assert(gcd(48, 18) == 6, "GCD of 48 and 18 should be 6");
+
+    constexpr unsigned long long lcm(unsigned int a, unsigned int b) {
+        return (a / gcd(a, b)) * b;
+    }
+
+    static_assert(lcm(15, 20) == 60, "LCM of 15 and 20 should be 60");
+
+    constexpr unsigned long long binomial_coefficient(unsigned int n, unsigned int k) {
+        if (k > n) return 0;
+        if (k == 0 || k == n) return 1;
+        return binomial_coefficient(n - 1, k - 1) + binomial_coefficient(n - 1, k);
+    }
+
+    static_assert(binomial_coefficient(5, 2) == 10, "Binomial coefficient of 5 choose 2 should be 10");
+
+    constexpr bool is_prime(unsigned int n) {
+        if (n <= 1) return false;
+        for (unsigned int i = 2; i * i <= n; ++i) {
+            if (n % i == 0) return false;
+        }
+        return true;
+    }
+
+    static_assert(is_prime(13), "13 should be a prime number");
+
+    std::cout << "Compile-time computations and assertions completed successfully." << std::endl;
+}

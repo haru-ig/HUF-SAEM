@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+     
+    constexpr double pi = 3.141592653589793;
+    constexpr auto calculate_pi = [](double epsilon) {
+        double sum = 0.0;
+        for (int k = 0; ; ++k) {
+            double term = 1.0 / (2 * k + 1);
+            if (term < epsilon) break;
+            sum += ((k % 2 == 0) ? 1 : -1) * term;
+        }
+        return sum * 4;
+    };
+
+     
+    constexpr double pi_epsilon = 1e-9;
+    constexpr auto computed_pi = calculate_pi(pi_epsilon);
+
+     
+    static_assert(std::abs(computed_pi - pi) < pi_epsilon, "Calculated Pi does not match expected value");
+
+     
+    std::cout << "Computed PI: " << computed_pi << std::endl;
+}

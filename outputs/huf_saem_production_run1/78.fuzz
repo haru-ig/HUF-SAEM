@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+    
+     
+    std::array<double, 4> values = {static_cast<double>(a), b, static_cast<double>(c), 15.0};
+    
+     
+    for (auto &val : values) {
+        val += 2;  
+    }
+    
+     
+    std::cout << "Values after increment: ";
+    for (const auto &val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    if (values[0] == 12 && values[1] == 5.5 && values[2] == 22.0 && values[3] == 17.0) {
+        std::cout << "All comparisons are correct." << std::endl;
+    } else {
+        std::cout << "Comparisons failed." << std::endl;
+    }
+    
+     
+    if (values[0] != 11 && values[1] != 5.4 && values[2] != 21.0 && values[3] != 16.9) {
+        std::cout << "All inequalities are correct." << std::endl;
+    } else {
+        std::cout << "Inequalities failed." << std::endl;
+    }
+    
+    return 0;
+}

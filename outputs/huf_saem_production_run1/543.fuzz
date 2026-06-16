@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "result: " << result << std::endl;
+    std::cout << "result2: " << result2 << std::endl;
+
+     
+    int num1 = 7, num2 = 8;
+    bool isEvenOrOdd = (num1 % 2 == 0) || (num2 % 2 != 0);
+    std::cout << "isEvenOrOdd: " << isEvenOrOdd << std::endl;
+
+    int number1 = 4, number2 = 5;
+    bool bothLessThanTen = (number1 < 10) && (number2 < 10);
+    std::cout << "bothLessThanTen: " << bothLessThanTen << std::endl;
+
+     
+    auto addAndPrint = [](int a, int b) {
+        std::cout << "Sum of " << a << " and " << b << " is " << (a + b) << std::endl;
+    };
+    addAndPrint(3, 5);
+}

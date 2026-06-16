@@ -1,0 +1,16 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    static_assert(fibonacci(8) == 21, "Fibonacci number at index 8 should be 21");
+
+     
+    int fibArray[fibonacci(8)];
+
+     
+    std::cout << "Size of fibArray: " << sizeof(fibArray) / sizeof(fibArray[0]) << std::endl;
+}

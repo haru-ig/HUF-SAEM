@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        if (n <= 1) return n;
+        return fib(n - 1) + fib(n - 2);
+    }
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number at index 10 is not 55");
+    int fibArray[fib(10)];
+
+     
+    std::cout << "Fibonacci sequence: ";
+    for (int i = 0; i <= 10; ++i) {
+        std::cout << fib(i) << " ";
+    }
+    std::cout << std::endl;
+}

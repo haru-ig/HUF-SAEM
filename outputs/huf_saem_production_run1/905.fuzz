@@ -1,0 +1,15 @@
+#include <iostream>
+int main() {
+    constexpr double pi = 3.141592653589793;
+    auto circumference = [](double r) -> double {
+        return 2 * pi * r;
+    };
+    
+    static_assert(circumference(1.0) == 6.283185307179586, "Circumference calculation error");
+    
+    std::cout << "Enter the radius of the circle: ";
+    double radius;
+    std::cin >> radius;
+    
+    std::cout << "The circumference of the circle is: " << circumference(radius) << '\n';
+}

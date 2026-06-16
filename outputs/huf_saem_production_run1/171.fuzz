@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template<int N>
+    struct Fibonacci {};
+
+    template<>
+    struct Fibonacci<0> { static constexpr int value = 0; };
+
+    template<>
+    struct Fibonacci<1> { static constexpr int value = 1; };
+
+    template<int N>
+    struct Fibonacci {
+        static constexpr int value = Fibonacci<N - 1>::value + Fibonacci<N - 2>::value;
+    };
+
+     
+    static_assert(Fibonacci<8>::value == fib(8), "Compile-time and runtime Fibonacci values do not match");
+
+     
+    std::cout << "The 8th Fibonacci number is: " << fib(8) << '\n';
+}

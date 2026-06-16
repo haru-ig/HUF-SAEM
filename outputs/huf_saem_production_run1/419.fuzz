@@ -1,0 +1,20 @@
+#include <iostream>
+int main() {
+     
+    constexpr int factorial(int n) {
+        return (n <= 1) ? 1 : n * factorial(n - 1);
+    }
+
+     
+    template <int N>
+    struct FactorialArray {
+        static constexpr int value = factorial(N);
+    };
+
+     
+    constexpr int size = 5;
+    static_assert(FactorialArray<size>::value == 120, "Factorial computation is incorrect");
+
+     
+    std::cout << "The factorial of " << size << " is: " << FactorialArray<size>::value << std::endl;
+}

@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+int main() {
+    struct RAIIExample {
+        int* ptr;
+        RAIIExample(int value = 0) : ptr(new int(value)) {}
+        ~RAIIExample() { delete ptr; }
+        RAIIExample(const RAIIExample& other) : ptr(new int(*other.ptr)) {}
+        RAIIExample(RAIIExample&& other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
+        RAIIExample& operator=(const RAIIExample& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+            }
+            return *this;
+        }
+        RAIIExample& operator=(RAIIExample&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+    RAIIExample raii1(42);
+    auto lambda = [raii1]() {
+        std::cout << "Inside lambda, accessing copied RAIIExample instance: " << *raii1.ptr << std::endl;
+    };
+    lambda();
+    return 0;
+}
+}

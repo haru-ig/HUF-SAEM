@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+    auto result1 = a + b * c;
+    std::cout << "result1 (int + double * unsigned long) = " << result1 << std::endl;
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : arr) {
+        std::cout << "Array element: " << val << std::endl;
+    }
+    if (a + b * c == result1) {
+        std::cout << "Comparison (==) passed." << std::endl;
+    } else {
+        std::cout << "Comparison (==) failed." << std::endl;
+    }
+    auto result2 = (a + b) * c;
+    std::cout << "result2 ((int + double) * unsigned long) = " << result2 << std::endl;
+    if (result1 != result2) {
+        std::cout << "Comparison (!=) passed." << std::endl;
+    } else {
+        std::cout << "Comparison (!=) failed." << std::endl;
+    }
+}

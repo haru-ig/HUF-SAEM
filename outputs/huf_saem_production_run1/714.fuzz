@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+     
+    std::vector<std::string> words = {"apple", "banana", "cherry", "date", "elderberry"};
+
+     
+    std::cout << "Initial vector: ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(words.begin(), words.end());
+
+     
+    std::cout << "Sorted vector: ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::string target = "cherry";
+    auto it = std::lower_bound(words.begin(), words.end(), target);
+    if (it != words.end() && *it == target) {
+        std::cout << "Found " << target << " at position: " << std::distance(words.begin(), it) << std::endl;
+    } else {
+        std::cout << target << " not found." << std::endl;
+    }
+
+     
+    words.insert(std::lower_bound(words.begin(), words.end(), "fig"), "fig");
+
+     
+    std::cout << "Vector after insertion: ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+     
+    words.erase(std::remove(words.begin(), words.end(), "banana"), words.end());
+
+     
+    std::cout << "Vector after erasing 'banana': ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+     
+    words.resize(3);
+
+     
+    std::cout << "Vector after resizing: ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

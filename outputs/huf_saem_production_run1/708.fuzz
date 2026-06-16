@@ -1,0 +1,48 @@
+#include <iostream>
+int main() {
+    std::vector<double> numbers = {3.14, 2.718, 1.618, 0.577, 1.414};
+    
+     
+    for (size_t i = 0; i < numbers.size(); ++i) {
+        std::cout << numbers[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    for (auto it = numbers.begin(); it != numbers.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(numbers.begin(), numbers.end());
+
+     
+    for (const auto& num : numbers) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+     
+    double target = 1.618;
+    auto it = std::lower_bound(numbers.begin(), numbers.end(), target);
+    if (it != numbers.end() && *it == target) {
+        std::cout << "Found " << target << " at position: " << std::distance(numbers.begin(), it) << std::endl;
+    } else {
+        std::cout << target << " not found." << std::endl;
+    }
+
+     
+    numbers.insert(it, 1.732);
+
+     
+    numbers.resize(6);
+
+     
+    for (const auto& num : numbers) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

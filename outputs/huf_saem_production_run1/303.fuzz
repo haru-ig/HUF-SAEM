@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    int a = 10;
+    double b = 5.5;
+    unsigned long c = 20UL;
+
+     
+    std::array<double, 3> arr = {a, b, c};
+
+    for (const auto& val : arr) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (a + b == 15.5 && a + c != 30UL) {
+        std::cout << "Comparisons are correct." << std::endl;
+    } else {
+        std::cout << "Comparisons failed." << std::endl;
+    }
+}

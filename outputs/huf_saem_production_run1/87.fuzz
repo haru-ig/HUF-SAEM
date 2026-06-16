@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <typeinfo>
+
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+    auto result_add = [](auto x, auto y) { return x + y; };
+    auto result_sub = [](auto x, auto y) { return x - y; };
+    auto result_mul = [](auto x, auto y) { return x * y; };
+    auto result_div = [](auto x, auto y) { return x / y; };
+
+    std::cout << "Addition: " << result_add(a, b) << std::endl;  
+    std::cout << "Subtraction: " << result_sub(b, a) << std::endl;  
+    std::cout << "Multiplication: " << result_mul(c, a) << std::endl;  
+    std::cout << "Division: " << result_div(c, b) << std::endl;  
+
+    int array[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : array) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+    if (a == b) {
+        std::cout << a << " == " << static_cast<int>(b) << " is true" << std::endl;  
+    } else {
+        std::cout << a << " != " << static_cast<int>(b) << " is true" << std::endl;
+    }
+
+    if (c == b) {
+        std::cout << c << " == " << static_cast<unsigned long>(b) << " is true" << std::endl;  
+    } else {
+        std::cout << c << " != " << static_cast<unsigned long>(b) << " is true" << std::endl;
+    }
+
+    auto result1 = a + static_cast<double>(b) * c;
+    std::cout << "Result of arithmetic operation: " << result1 << std::endl;
+
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+    if (result1 == 615) {
+        std::cout << "Result is equal to 615" << std::endl;
+    } else {
+        std::cout << "Result is not equal to 615" << std::endl;
+    }
+
+    if (result1 != static_cast<int>(b * c)) {
+        std::cout << "Result is not equal to double(b) * unsigned long(c)" << std::endl;
+    } else {
+        std::cout << "Result is equal to double(b) * unsigned long(c)" << std::endl;
+    }
+
+    int x = 12345;
+    unsigned long y = 67890UL;
+    auto bitwise_result = static_cast<unsigned long>(x) & y | (x ^ y);
+    std::cout << "Bitwise result: " << bitwise_result << std::endl;
+}
+}

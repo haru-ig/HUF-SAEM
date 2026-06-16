@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+
+    auto result1 = a + static_cast<double>(b) + static_cast<double>(c);
+    auto result2 = a * static_cast<unsigned long>(b) - static_cast<int>(c);
+
+    std::cout << "result1: " << result1 << ", result2: " << result2 << std::endl;
+
+    if (result1 == static_cast<double>(a + b + c)) {
+        std::cout << "result1 equals the sum of a, b, and c." << std::endl;
+    } else {
+        std::cout << "result1 does not equal the sum of a, b, and c." << std::endl;
+    }
+
+    if (result2 != static_cast<int>(a * b - c)) {
+        std::cout << "result2 does not equal the expression involving a, b, and c." << std::endl;
+    } else {
+        std::cout << "result2 equals the expression involving a, b, and c." << std::endl;
+    }
+
+     
+    auto arr = {a, static_cast<double>(b), static_cast<unsigned long>(c)};
+
+     
+    for (const auto& val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+     
+    std::vector<std::string> words = {"apple", "banana", "cherry", "date"};
+
+     
+    words.insert(words.begin() + 2, "grape");
+
+     
+    std::cout << "Before sorting: ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(words.begin(), words.end());
+
+     
+    std::cout << "After sorting: ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::string target = "banana";
+    auto it = std::lower_bound(words.begin(), words.end(), target);
+
+    if (it != words.end() && *it == target) {
+        std::cout << "\"" << target << "\" found at position: " << std::distance(words.begin(), it) << std::endl;
+    } else {
+        std::cout << "\"" << target << "\" not found in the vector." << std::endl;
+    }
+
+     
+    words.erase(std::remove(words.begin(), words.end(), "date"), words.end());
+
+     
+    std::cout << "After erasing \"date\": ";
+    for (const auto& word : words) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

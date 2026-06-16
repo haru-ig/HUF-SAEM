@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+    auto results = [a, b, c]() -> std::tuple<double, double, double, double> {
+        double sum = a + b + c;
+        double product = a * b * c;
+        double quotient = (c != 0) ? static_cast<double>(a) / c : 0.0;
+        double mixedArithmetic = a + b - c;
+        return {sum, product, quotient, mixedArithmetic};
+    }();
+
+    std::cout << "Sum: " << std::get<0>(results) << "\n";
+    std::cout << "Product: " << std::get<1>(results) << "\n";
+    std::cout << "Quotient: " << std::get<2>(results) << "\n";
+    std::cout << "Mixed Arithmetic: " << std::get<3>(results) << "\n";
+
+     
+    if (std::get<0>(results) == 6.5 && std::get<1>(results) == 7.5 && std::get<2>(results) == 0.33333333333333337 && std::get<3>(results) == -0.5) {
+        std::cout << "Results match expected values.\n";
+    } else {
+        std::cout << "Results do not match expected values.\n";
+    }
+
+    if (std::get<0>(results) != 6.4 && std::get<1>(results) != 7.5 && std::get<2>(results) != 0.33333333333333337 && std::get<3>(results) != -0.5) {
+        std::cout << "Results do not match expected values.\n";
+    } else {
+        std::cout << "Results match expected values.\n";
+    }
+}

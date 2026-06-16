@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+int main() {
+    struct ResourceGuard {
+        std::string resource;
+        explicit ResourceGuard(const std::string& res) : resource(res) {
+            std::cout << "Resource acquired: " << resource << std::endl;
+        }
+        ~ResourceGuard() {
+            std::cout << "Resource released: " << resource << std::endl;
+        }
+        ResourceGuard(ResourceGuard&& other) noexcept : resource(std::move(other.resource)) {
+            std::cout << "Resource moved: " << resource << std::endl;
+        }
+    };
+    ResourceGuard res1("Local File");
+    {
+        auto useResource = [res = std::move(res1)]() mutable {
+            std::cout << "Using resource: " << res.resource << std::endl;
+        };
+        useResource();
+    }  
+    std::cout << "Main function ends." << std::endl;
+}
+}

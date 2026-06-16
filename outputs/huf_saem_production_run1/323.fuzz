@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+    auto result1 = a + b * c;  
+    std::cout << "Result of arithmetic operations: " << result1 << std::endl;
+
+    int d = static_cast<int>(b) + a / c;  
+    std::cout << "Result of explicit conversions and arithmetic: " << d << std::endl;
+
+    struct Arithmetic {
+        int i;
+        double j;
+        unsigned long k;
+    };
+
+    Arithmetic values = {5, 3.2, 10};
+
+    for (const auto& val : values) {
+        if (val == static_cast<int>(val)) std::cout << "Equal to int cast: " << val << std::endl;
+        if (val != static_cast<double>(val)) std::cout << "Not equal to double cast: " << val << std::endl;
+    }
+
+    return 0;
+}

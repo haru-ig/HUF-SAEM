@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+     
+    constexpr int bitCount(unsigned long long n) {
+        return (n == 0) ? 1 : 1 + bitCount(n >> 1);
+    }
+
+     
+    template<int N>
+    struct ArrayHolder {
+        static constexpr int arraySize = N;
+        int data[arraySize];
+    };
+
+     
+    unsigned long long testValue = 256ULL;
+
+     
+    static_assert(bitCount(testValue) == 9, "Bit count of 256 should be 9");
+
+     
+    ArrayHolder<bitCount(testValue)> holder;
+
+     
+    std::cout << "Array size: " << holder.arraySize << std::endl;
+}

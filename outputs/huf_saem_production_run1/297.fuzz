@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    std::cout << "Result of logical OR comparison: " << result << std::endl;
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of logical AND comparison: " << result2 << std::endl;
+    auto checkEven = [](int n) {
+        return (n % 2 == 0);
+    };
+    int num1 = 4, num2 = 7;
+    bool isNum1Even = checkEven(num1);
+    bool isNum2Even = checkEven(num2);
+    std::cout << "Is num1 even? " << isNum1Even << ", Is num2 even? " << isNum2Even << std::endl;
+    int p = 10, q = 5;
+    bool isLessThanTenOrFive = (p < 10) || (q < 5);
+    std::cout << "Is p less than 10 or q less than 5? " << isLessThanTenOrFive << std::endl;
+    int m = 7, n = 7;
+    bool isEqualOrNotZero = (m == n) || (n != 0);
+    std::cout << "Is m equal to n or n not zero? " << isEqualOrNotZero << std::endl;
+    int arr[] = {1, 2, 3, 4};
+    int *ptr = arr;
+    bool ptrComparison = (*(ptr + 0) != *(ptr + 1)) || (*(ptr + 2) != *(ptr + 3));
+    std::cout << "Is the first element not equal to the second or the third element not equal to the fourth? " << ptrComparison << std::endl;
+    int num = 8;
+    bool isMultipleOfFour = (num % 4 == 0);
+    std::cout << "Is num a multiple of 4? " << isMultipleOfFour << std::endl;
+}

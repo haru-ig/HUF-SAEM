@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+
+     
+    auto result1 = a + static_cast<int>(b);
+    auto result2 = b * static_cast<double>(c);
+    auto result3 = c - static_cast<unsigned long>(a);
+
+    std::cout << "Result of int + double: " << result1 << std::endl;
+    std::cout << "Result of double * unsigned long: " << result2 << std::endl;
+    std::cout << "Result of unsigned long - int: " << result3 << std::endl;
+
+     
+    auto values = {a, b, c};
+    for (const auto& val : values) {
+        if (val == static_cast<int>(val)) {
+            std::cout << "Value matches int: " << val << std::endl;
+        } else if (val != static_cast<double>(val)) {
+            std::cout << "Value does not match double: " << val << std::endl;
+        } else {
+            std::cout << "Value does not match unsigned long: " << val << std::endl;
+        }
+    }
+}

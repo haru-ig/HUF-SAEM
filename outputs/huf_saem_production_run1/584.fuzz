@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+    auto result1 = a + b * c;  
+    auto result2 = static_cast<double>(a) + b * c;  
+    std::cout << "result1 (implicit promotion): " << result1 << "\n";
+    std::cout << "result2 (explicit conversion): " << result2 << "\n";
+    if (result1 == static_cast<double>(a) + b * c) {
+        std::cout << "result1 is equal to result2\n";
+    } else {
+        std::cout << "result1 is not equal to result2\n";
+    }
+    if (result1 != result2) {
+        std::cout << "result1 is not equal to result2\n";
+    } else {
+        std::cout << "result1 is equal to result2\n";
+    }
+    int a_new = 10;
+    double b_new = 20.5;
+    unsigned long c_new = 30L;
+    auto result1_new = a_new + static_cast<double>(c_new);
+    auto result2_new = static_cast<int>(b_new) * c_new;
+    auto result3_new = (a_new + b_new) - static_cast<unsigned long>(c_new);
+    std::cout << "result1: " << result1_new << std::endl;
+    std::cout << "result2: " << result2_new << std::endl;
+    std::cout << "result3: " << result3_new << std::endl;
+    int arr[] = {a_new, static_cast<int>(b_new), static_cast<int>(c_new)};
+    for (auto val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+    if (result1_new == a_new + b_new && result2_new != c_new * static_cast<unsigned long>(a_new)) {
+        std::cout << "Comparisons are correct." << std::endl;
+    } else {
+        std::cout << "Comparisons failed." << std::endl;
+    }
+    int x = 5;
+    int y = 3;
+    int andResult = x & y;
+    int orResult = x | y;
+    int xorResult = x ^ y;
+    int leftShift = x << 1;
+    int rightShift = x >> 1;
+    std::cout << "andResult: " << andResult << std::endl;
+    std::cout << "orResult: " << orResult << std::endl;
+    std::cout << "xorResult: " << xorResult << std::endl;
+    std::cout << "leftShift: " << leftShift << std::endl;
+    std::cout << "rightShift: " << rightShift << std::endl;
+}

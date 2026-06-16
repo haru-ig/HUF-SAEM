@@ -1,0 +1,61 @@
+#include <iostream>
+int main() {
+int main() {
+    struct Resource {
+        int* ptr;
+        std::string data;
+        Resource(const std::string& str) : data(str), ptr(new int(0)) { 
+            std::cout << "Resource allocated with data: " << data << " at " << ptr << "\n"; 
+        }
+        ~Resource() { 
+            delete ptr;
+            std::cout << "Resource deallocated for data: " << data << "\n"; 
+        }
+        Resource(const Resource& other) : data(other.data), ptr(new int(*other.ptr)) { 
+            std::cout << "Resource copied from " << other.data << " at " << ptr << "\n"; 
+        }
+        Resource(Resource&& other) noexcept : ptr(other.ptr), data(std::move(other.data)) { 
+            other.ptr = nullptr;
+            std::cout << "Resource moved: " << data << "\n"; 
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+                data = other.data;
+                std::cout << "Resource copy assigned from " << other.data << " at " << ptr << "\n"; 
+            }
+            return *this;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                data = std::move(other.data);
+                other.ptr = nullptr;
+                std::cout << "Resource move assigned: " << data << "\n"; 
+            }
+            return *this;
+        }
+    };
+    {
+        Resource res1("initial resource");
+        {
+            Resource res2 = res1;  
+            std::cout << "Inside nested block, resource 2 exists with data: " << res2.data << "\n";
+        }  
+        std::cout << "Back to outer block, resource 2 is destroyed\n";
+    }
+    Resource res3("moved resource");
+    auto lambda = [res3]() {
+        std::cout << "Lambda captures and uses the moved-from resource: ";
+        if (res3.ptr != nullptr) {
+            std::cout << *res3.ptr << "\n";
+        } else {
+            std::cout << "null\n";
+        }
+    };
+    lambda();  
+    return 0;
+}
+}

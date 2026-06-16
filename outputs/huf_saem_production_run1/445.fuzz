@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+     
+    constexpr int factorial(int n) {
+        return (n <= 1) ? 1 : n * factorial(n - 1);
+    }
+
+     
+    static_assert(factorial(5) == 120, "Factorial of 5 should be 120");
+
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fib_size = 10;
+    int fibonacci_sequence[fib_size];
+    for (int i = 0; i < fib_size; ++i) {
+        fibonacci_sequence[i] = fibonacci(i);
+    }
+
+     
+    for (int value : fibonacci_sequence) {
+        std::cout << value << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

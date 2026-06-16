@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        return fib(n - 1) + fib(n - 2);
+    }
+
+     
+    constexpr unsigned int n = 10;  
+    static_assert(fib(n) < (1ULL << (sizeof(unsigned long long) * CHAR_BIT - 1)), "Fibonacci number out of range for signed type");
+
+     
+    std::array<unsigned long long, fib(n)> fibArray;
+
+     
+
+     
+    std::cout << "The " << n << "th Fibonacci number is: " << fib(n) << std::endl;
+}

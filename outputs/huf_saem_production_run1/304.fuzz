@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+    
+    auto result = [](auto x, auto y) { return x + y; }(a, b);
+    std::cout << "int + double: " << result << std::endl;
+    
+    auto promoted_result = [](auto x, auto y) { return static_cast<double>(x) + y; }(a, c);
+    std::cout << "int + unsigned long: " << promoted_result << std::endl;
+    
+    auto array[] = { a, b, c };
+    for (auto value : array) {
+        std::cout << "Array element: " << value << std::endl;
+    }
+    
+    if (a == static_cast<int>(b)) {
+        std::cout << "int and double are equal using == operator" << std::endl;
+    } else {
+        std::cout << "int and double are not equal using == operator" << std::endl;
+    }
+    
+    if (a != static_cast<int>(b)) {
+        std::cout << "int and double are not equal using != operator" << std::endl;
+    } else {
+        std::cout << "int and double are equal using != operator" << std::endl;
+    }
+}

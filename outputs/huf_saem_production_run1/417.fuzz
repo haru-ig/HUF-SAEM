@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number at position 10 is incorrect");
+    int fibArray[fib(10)];
+
+     
+    for (int i = 0; i < 10; ++i) {
+        std::cout << "Fib(" << i << ") = " << fib(i) << "\n";
+    }
+
+     
+    for (int i = 1; i <= 5; ++i) {
+        for (int j = 1; j <= 5; ++j) {
+            std::cout << i << " * " << j << " = " << i * j << "\t";
+        }
+        std::cout << "\n";
+    }
+}

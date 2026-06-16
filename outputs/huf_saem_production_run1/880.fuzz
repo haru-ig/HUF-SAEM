@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    struct RAII {
+        int value;
+        RAII(int v = 0) : value(v) {}
+        ~RAII() { std::cout << "Destructor called, value: " << value << "\n"; }
+        RAII(const RAII& other) : value(other.value) { std::cout << "Copy constructor called, value: " << value << "\n"; }
+        RAII(RAII&& other) noexcept : value(std::move(other.value)) { std::cout << "Move constructor called, value: " << value << "\n"; }
+    };
+
+     
+    RAII raiiInstance(42);
+    auto lambda = [raiiInstance]() mutable {
+        std::cout << "Lambda received value: " << raiiInstance.value << "\n";
+    };
+    lambda();  
+
+     
+    struct AnotherRAII {
+        int data;
+        AnotherRAII(int d = 0) : data(d) {}
+        ~AnotherRAII() { std::cout << "AnotherRAII Destructor called, data: " << data << "\n"; }
+        AnotherRAII(const AnotherRAII& other) noexcept : data(other.data) { std::cout << "AnotherRAII Copy constructor called, data: " << data << "\n"; }
+        AnotherRAII(AnotherRAII&& other) noexcept : data(std::move(other.data)) { std::cout << "AnotherRAII Move constructor called, data: " << data << "\n"; }
+    };
+
+     
+    AnotherRAII anotherRAIIInstance(99);
+}

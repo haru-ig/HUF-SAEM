@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30UL;
+
+     
+    std::tuple<int, double, unsigned long> values[] = {std::make_tuple(a, b, c)};
+
+     
+    for (const auto& val : values) {
+        int ia;
+        double db;
+        unsigned long ul;
+        std::tie(ia, db, ul) = val;
+
+         
+        double sumDouble = db + static_cast<double>(ia);
+        double productDouble = db * static_cast<double>(ia);
+        int sumInt = ia + static_cast<int>(ul);
+        int differenceInt = ia - static_cast<int>(ul);
+
+         
+        if (sumDouble == productDouble) {
+            std::cout << "Sum of double and casted int is equal to product of double and casted int: " << sumDouble << std::endl;
+        } else {
+            std::cout << "Sum of double and casted int is not equal to product of double and casted int: " << sumDouble << ", " << productDouble << std::endl;
+        }
+
+        if (sumInt != differenceInt) {
+            std::cout << "Sum of int and casted unsigned long is not equal to difference of int and casted unsigned long: " << sumInt << ", " << differenceInt << std::endl;
+        } else {
+            std::cout << "Sum of int and casted unsigned long is equal to difference of int and casted unsigned long: " << sumInt << std::endl;
+        }
+    }
+
+    return 0;
+}

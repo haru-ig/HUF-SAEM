@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        return fib(n - 1) + fib(n - 2);
+    }
+
+     
+    constexpr unsigned int n = 10;  
+    static_assert(fib(n) <= std::numeric_limits<unsigned long long>::max(), "Fibonacci number is too large for the type");
+
+     
+    unsigned long long fibArray[fib(n)];
+
+     
+    for (unsigned int i = 0; i < fib(n); ++i) {
+        fibArray[i] = fib(i);
+    }
+
+     
+    std::cout << "First " << n << " Fibonacci numbers: ";
+    for (unsigned int i = 0; i < 10 && i < fib(n); ++i) {
+        std::cout << fibArray[i] << " ";
+    }
+    std::cout << std::endl;
+}

@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto result1 = a + b * static_cast<double>(c);
+    auto result2 = (a + b) * static_cast<double>(c);
+
+     
+    std::pair<int, double> values[] = { {a, b}, {static_cast<int>(c), c / 2.0} };
+    for (const auto& val : values) {
+        std::cout << "Value: " << val.first << ", " << val.second << std::endl;
+    }
+
+     
+    if (result1 == result2) {
+        std::cout << "Equal" << std::endl;
+    } else {
+        std::cout << "Not Equal" << std::endl;
+    }
+
+    return 0;
+}

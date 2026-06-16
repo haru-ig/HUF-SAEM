@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+     
+    for (const auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            std::cout << "Int: " << val << ", ";
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            std::cout << "Double: " << val << ", ";
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            std::cout << "Unsigned Long: " << val << ", ";
+        }
+    }
+    std::cout << std::endl;
+
+     
+    int sum_int = a + static_cast<int>(b) + static_cast<int>(c);
+    double sum_double = a + b + c;
+    unsigned long sum_unsigned_long = static_cast<unsigned long>(a) + static_cast<unsigned long>(b) + c;
+
+    std::cout << "Sum of int, double, and unsigned long: " 
+              << (sum_int == static_cast<int>(sum_double) && sum_int == static_cast<int>(sum_unsigned_long) ? "Equal" : "Not Equal") << std::endl;
+    std::cout << "Sum of int, double, and unsigned long: " 
+              << (sum_int != static_cast<int>(sum_double) || sum_int != static_cast<int>(sum_unsigned_long) ? "Not Equal" : "Equal") << std::endl;
+}

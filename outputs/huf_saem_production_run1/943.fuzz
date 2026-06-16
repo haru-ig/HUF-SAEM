@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+     
+    constexpr uint64_t fibonacci(uint64_t n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template<uint64_t N>
+    struct FibTemplate {};
+
+     
+    template<>
+    struct FibTemplate<8> {
+        static constexpr uint64_t value = fibonacci(8);
+    };
+
+     
+    static_assert(FibTemplate<8>::value == 21, "Compile-time Fibonacci number is incorrect");
+
+     
+    std::cout << "The 8th Fibonacci number (compile-time computed) is: " << FibTemplate<8>::value << std::endl;
+}

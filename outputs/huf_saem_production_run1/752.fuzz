@@ -1,0 +1,6 @@
+#include <iostream>
+int main() {
+    int e = 7, f = 9, g = 8, h = 6;
+    bool result3 = (e != f) || (g != h);
+    std::cout << "Result of (e != f) || (g != h): " << std::boolalpha << result3 << std::endl;
+}

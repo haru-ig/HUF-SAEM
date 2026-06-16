@@ -1,0 +1,17 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+    auto result1 = a + static_cast<double>(b) * static_cast<unsigned long>(c);
+    std::cout << "Result of arithmetic operations: " << result1 << std::endl;
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (const auto& val : arr) {
+        std::cout << "Array value: " << val << std::endl;
+    }
+    if (a + b != c) {
+        std::cout << "Comparison result of arithmetic operations: true" << std::endl;
+    } else {
+        std::cout << "Comparison result of arithmetic operations: false" << std::endl;
+    }
+}

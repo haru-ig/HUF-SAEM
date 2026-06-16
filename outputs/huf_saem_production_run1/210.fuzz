@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+     
+    std::vector<std::string> words = {"apple", "banana", "cherry", "date"};
+    
+     
+    for (size_t i = 0; i < words.size(); ++i) {
+        std::cout << "Index-based: " << words[i] << std::endl;
+    }
+    
+     
+    for (auto it = words.begin(); it != words.end(); ++it) {
+        std::cout << "Iterator-based: " << *it << std::endl;
+    }
+    
+     
+    words.insert(words.begin() + 2, "grape");
+    
+     
+    for (const auto& word : words) {
+        std::cout << "After insert: " << word << std::endl;
+    }
+    
+     
+    std::sort(words.begin(), words.end());
+    
+     
+    auto it = std::lower_bound(words.begin(), words.end(), "cherry");
+    if (it != words.end() && *it == "cherry") {
+        std::cout << "Found: cherry" << std::endl;
+    } else {
+        std::cout << "Not found: cherry" << std::endl;
+    }
+    
+     
+    words.erase(words.begin() + 2);
+    
+     
+    for (const auto& word : words) {
+        std::cout << "After erase: " << word << std::endl;
+    }
+    
+    return 0;
+}

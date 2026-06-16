@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibArray {
+        static constexpr int value = fibonacci(N);
+        static_assert(value >= 0, "Fibonacci number must be non-negative");
+    };
+
+     
+    using Fib10 = FibArray<10>;
+
+     
+    static_assert(Fib10::value == 55, "Fibonacci number for 10 is incorrect");
+
+     
+    std::cout << "The Fibonacci number for 10 is: " << Fib10::value << '\n';
+}

@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+     
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+
+     
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+
+     
+    std::cout << "Result of (a != b) || (c != d): " << result << std::endl;
+    std::cout << "Result of (x == y) && (z == w): " << result2 << std::endl;
+
+     
+    auto add = [](int x, int y) { return x + y; };
+    int sum = add(3, 4);
+    std::cout << "Sum of 3 and 4 using lambda: " << sum << std::endl;
+
+     
+    struct MathOp {
+        int multiply(int x, int y) { return x * y; }
+    };
+    MathOp math;
+    int product = math.multiply(3, 4);
+    std::cout << "Product of 3 and 4 using class: " << product << std::endl;
+}

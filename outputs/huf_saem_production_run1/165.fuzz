@@ -1,0 +1,16 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    static_assert(fibonacci(8) == 21, "Fibonacci number at index 8 should be 21");
+
+     
+    constexpr int fib8 = fibonacci(8);
+
+     
+    std::cout << "The 9th Fibonacci number (at index 8) is: " << fib8 << std::endl;
+}

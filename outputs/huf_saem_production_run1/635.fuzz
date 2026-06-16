@@ -1,0 +1,17 @@
+#include <iostream>
+int main() {
+    struct RAII {
+        int value;
+        RAII(int val = 0) : value(val) { std::cout << "RAII constructed with value " << value << '\n'; }
+        ~RAII() { std::cout << "RAII destructed with value " << value << '\n'; }
+        RAII(const RAII& other) : value(other.value) { std::cout << "RAII copy-constructed from value " << other.value << '\n'; }
+        RAII(RAII&& other) noexcept : value(other.value) { std::cout << "RAII move-constructed from value " << other.value << '\n'; }
+    };
+
+    auto lambda = [](RAII raii) {
+        std::cout << "Lambda received RAII instance with value " << raii.value << '\n';
+    };
+
+    RAII raiiInstance(42);
+    lambda(raiiInstance);
+}

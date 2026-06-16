@@ -1,0 +1,16 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    static_assert(fib(8) == 34, "Fibonacci number at position 8 is incorrect");
+
+     
+    constexpr unsigned long long fib8 = fib(8);
+    int arr[fib8];
+
+    std::cout << "The Fibonacci number at position 8 is: " << fib8 << std::endl;
+}

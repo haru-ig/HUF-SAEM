@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+
+    auto result1 = a + b * c;  
+    auto result2 = static_cast<double>(a) + b * c;  
+
+    std::cout << "result1 (implicit promotion): " << result1 << "\n";
+    std::cout << "result2 (explicit promotion): " << result2 << "\n";
+
+    if (result1 == static_cast<double>(a) + b * c) {
+        std::cout << "Implicit promotion results in equality.\n";
+    } else {
+        std::cout << "Implicit promotion does not result in equality.\n";
+    }
+
+    if (result2 == result1) {
+        std::cout << "Explicit and implicit promotions are equal.\n";
+    } else {
+        std::cout << "Explicit and implicit promotions are not equal.\n";
+    }
+
+     
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : arr) {
+        std::cout << "Array value: " << val << "\n";
+    }
+}

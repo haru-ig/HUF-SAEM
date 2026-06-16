@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 2, 8, 1, 4};
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    auto it = std::find(vec.begin(), vec.end(), 4);
+    if (it != vec.end()) {
+        std::cout << "Found 4 at index: " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << "4 not found" << std::endl;
+    }
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Index " << i << ": " << vec[i] << std::endl;
+    }
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "*it: " << *it << std::endl;
+    }
+    
+     
+    vec.push_back(3);
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    vec.resize(4);
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << "Resized Vec: " << elem << std::endl;
+    }
+}

@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibArray {
+        static constexpr int value = fibonacci(N);
+        static_assert(value >= 0, "Fibonacci number must be non-negative");
+    };
+
+     
+    constexpr int size = 10;  
+    std::array<int, FibArray<size>::value> fibArray;
+
+     
+    for (int i = 0; i < size; ++i) {
+        fibArray[i] = fibonacci(i);
+    }
+
+     
+    static_assert(FibArray<size>::value == fibonacci(size), "Compile-time Fibonacci computation failed");
+
+     
+    for (int i = 0; i < size; ++i) {
+        std::cout << fibArray[i] << " ";
+    }
+    std::cout << std::endl;
+}

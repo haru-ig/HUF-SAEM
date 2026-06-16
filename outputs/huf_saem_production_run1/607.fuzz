@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+
+    struct ResourceGuard {
+        int* resource;
+        explicit ResourceGuard(int* res) : resource(res) {}
+        ~ResourceGuard() { delete resource; }
+         
+        ResourceGuard(ResourceGuard&& other) noexcept : resource(other.resource) {
+            other.resource = nullptr;
+        }
+    };
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1000000000;
+    auto sum = [](auto x, auto y) { return x + y; };
+    auto product = [](auto x, auto y) { return x * y; };
+    auto difference = [](auto x, auto y) { return x - y; };
+    auto quotient = [](auto x, auto y) { return x / y; };
+    std::cout << "Sum: " << sum(a, b) << "\n";
+    std::cout << "Product: " << product(b, c) << "\n";
+    std::cout << "Difference: " << difference(c, a) << "\n";
+    std::cout << "Quotient: " << quotient(a, b) << "\n";
+    int array[] = {10, 20, 30};
+    for (auto &val : array) {
+        std::cout << "Value: " << val << "\n";
+    }
+    if (sum(a, b) == sum(b, a)) {
+        std::cout << "Sum comparison passed.\n";
+    } else {
+        std::cout << "Sum comparison failed.\n";
+    }
+    if (product(b, c) != quotient(c, b)) {
+        std::cout << "Product and Quotient comparison passed.\n";
+    } else {
+        std::cout << "Product and Quotient comparison failed.\n";
+    }
+    int* resource = new int(42);
+    ResourceGuard guard(resource);
+    auto lambda = [guard]() {
+        std::cout << "Resource value: " << *guard.resource << std::endl;
+    };
+    lambda();
+}

@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30L;
+
+    std::cout << "Initial values: " << a << ", " << b << ", " << c << std::endl;
+
+     
+    auto sum = a + static_cast<int>(b) + static_cast<unsigned long>(c);
+    double product = b * static_cast<double>(a) / c;
+
+    std::cout << "Sum: " << sum << ", Product: " << product << std::endl;
+
+     
+    int arr[] = {1, 2, 3};
+    for (auto val : arr) {
+        std::cout << "Array value: " << val << std::endl;
+    }
+
+     
+    if (sum == static_cast<int>(product)) {
+        std::cout << "Sum equals casted product" << std::endl;
+    } else {
+        std::cout << "Sum does not equal casted product" << std::endl;
+    }
+
+     
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            int result = arr[i] * static_cast<double>(b);
+            std::cout << "Nested loop result: " << result << std::endl;
+        }
+    }
+
+    return 0;
+}

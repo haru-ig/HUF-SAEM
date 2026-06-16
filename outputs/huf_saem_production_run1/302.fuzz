@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+     
+    unsigned int a = 10;
+    double b = 20.5;
+    unsigned long c = 30L;
+
+     
+    auto sum = a + static_cast<int>(b) + c;
+    auto product = a * static_cast<unsigned int>(b) * c;
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (sum == static_cast<unsigned long>(static_cast<int>(b))) {
+        std::cout << "Sum is equal to the casted double value: " << sum << std::endl;
+    } else {
+        std::cout << "Sum is not equal to the casted double value: " << sum << std::endl;
+    }
+
+    if (product != static_cast<unsigned long>(a)) {
+        std::cout << "Product is not equal to the int value: " << product << std::endl;
+    } else {
+        std::cout << "Product is equal to the int value: " << product << std::endl;
+    }
+}

@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+int main() {
+    struct Resource {
+        int* ptr;
+        Resource() : ptr(new int(0)) { std::cout << "Resource allocated at " << ptr << "\n"; }
+        ~Resource() { 
+            delete ptr; 
+            std::cout << "Resource deallocated\n"; 
+        }
+        Resource(Resource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+            std::cout << "Resource moved\n";
+        }
+        Resource(const Resource& other) : ptr(new int(*other.ptr)) {
+            std::cout << "Resource copied\n";
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+                std::cout << "Resource move assigned\n";
+            }
+            return *this;
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+                std::cout << "Resource copy assigned\n";
+            }
+            return *this;
+        }
+    };
+    Resource res1;
+    auto lambda = [res = std::move(res1)]() {
+        std::cout << "Inside lambda, resource address: " << res.ptr << "\n";
+    };
+    lambda();
+}
+}

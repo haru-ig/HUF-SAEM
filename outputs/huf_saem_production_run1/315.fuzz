@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 5.5;
+    unsigned long c = 20UL;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+     
+    for (auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            std::cout << "Int: " << val << ", ";
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            std::cout << "Double: " << val << ", ";
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            std::cout << "Unsigned Long: " << val << ", ";
+        }
+    }
+    std::cout << std::endl;
+
+     
+    for (auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            double result1 = val + b;
+            unsigned long result2 = val + c;
+            std::cout << "Int: " << val << ", Double Result: " << result1 << ", Unsigned Long Result: " << result2 << std::endl;
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            int result1 = static_cast<int>(val + a);
+            unsigned long result2 = static_cast<unsigned long>(val + c);
+            std::cout << "Double: " << val << ", Int Result: " << result1 << ", Unsigned Long Result: " << result2 << std::endl;
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            int result1 = static_cast<int>(val + a);
+            double result2 = val + b;
+            std::cout << "Unsigned Long: " << val << ", Int Result: " << result1 << ", Double Result: " << result2 << std::endl;
+        }
+    }
+
+     
+    for (int i = 0; i < values.size(); ++i) {
+        for (int j = i + 1; j < values.size(); ++j) {
+            if (std::holds_alternative<int>(values[i]) && std::holds_alternative<double>(values[j])) {
+                int val1 = std::get<int>(values[i]);
+                double val2 = std::get<double>(values[j]);
+                std::cout << "Comparing: Int(" << val1 << ") with Double(" << val2 << ")" << std::endl;
+                if (val1 == static_cast<int>(val2)) {
+                    std::cout << "Int and Double are equal." << std::endl;
+                } else {
+                    std::cout << "Int and Double are not equal." << std::endl;
+                }
+            }
+        }
+    }
+}

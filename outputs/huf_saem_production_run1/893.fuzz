@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+
+    struct Resource {
+        int* data;
+        Resource(int value = 0) : data(new int(value)) {
+            std::cout << "Resource constructed with value " << *data << std::endl;
+        }
+        ~Resource() {
+            delete data;
+            std::cout << "Resource destroyed" << std::endl;
+        }
+        Resource(const Resource& other) : data(new int(*other.data)) {
+            std::cout << "Resource copied" << std::endl;
+        }
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+            std::cout << "Resource moved" << std::endl;
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                *data = *other.data;
+            }
+            std::cout << "Resource copy assigned" << std::endl;
+            return *this;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete data;
+                data = other.data;
+                other.data = nullptr;
+            }
+            std::cout << "Resource move assigned" << std::endl;
+            return *this;
+        }
+    };
+    {
+        Resource res(42);
+        auto lambda = [res]() mutable {
+            std::cout << "Lambda captured resource with value " << *res.data << std::endl;
+        };
+        lambda();  
+    }  
+}

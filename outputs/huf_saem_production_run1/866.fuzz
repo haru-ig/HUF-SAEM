@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* ptr;
+        Resource(int value = 0) : ptr(new int(value)) {}
+        ~Resource() { delete ptr; }
+        Resource(const Resource& other) : ptr(new int(*other.ptr)) {}
+        Resource(Resource&& other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
+    };
+
+     
+    for (int i = 0; i < 3; ++i) {
+        Resource res(i * 10);
+        std::cout << "Resource value: " << *(res.ptr) << std::endl;
+    }
+
+     
+    Resource res_lambda(42);
+    auto lambda = [](Resource r) {
+        std::cout << "Lambda received: " << *(r.ptr) << std::endl;
+    };
+    lambda(res_lambda);  
+}

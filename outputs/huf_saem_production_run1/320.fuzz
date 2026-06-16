@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    auto values = {a, static_cast<double>(b), static_cast<unsigned long>(c)};
+
+     
+    int sumInt = a + static_cast<int>(b);
+    double sumDouble = b + c;
+    unsigned long sumULong = c + static_cast<unsigned long>(a);
+
+     
+    for (const auto& val : values) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+     
+    if (sumInt == static_cast<int>(sumDouble)) {
+        std::cout << "Sum of int and double casted double is equal to int sum: " << sumInt << std::endl;
+    } else {
+        std::cout << "Sum of int and double casted double is not equal to int sum." << std::endl;
+    }
+
+    if (sumULong != static_cast<unsigned long>(sumDouble)) {
+        std::cout << "Sum of unsigned long and double casted double is not equal to unsigned long sum: " << sumULong << std::endl;
+    } else {
+        std::cout << "Sum of unsigned long and double casted double is equal to unsigned long sum." << std::endl;
+    }
+
+    return 0;
+}

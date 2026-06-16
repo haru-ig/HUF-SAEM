@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto values = {a, static_cast<double>(b), static_cast<unsigned long>(c)};
+
+     
+    for (const auto& val : values) {
+        std::cout << "Value: " << val;
+        if (&val == &values[0]) {
+            std::cout << ", Next Value: " << values[1];
+            double sum = val + static_cast<double>(values[1]);
+            std::cout << ", Sum (int + double): " << sum;
+        } else if (&val == &values[1]) {
+            std::cout << ", Previous Value: " << values[0];
+            unsigned long product = val * static_cast<unsigned long>(values[0]);
+            std::cout << ", Product (double * int): " << product;
+        } else if (&val == &values[2]) {
+            std::cout << ", Previous Value: " << values[1];
+            double division = val / static_cast<double>(values[1]);
+            std::cout << ", Division (unsigned long / double): " << division;
+        }
+        std::cout << std::endl;
+    }
+
+     
+    for (size_t i = 0; i < values.size(); ++i) {
+        for (size_t j = 0; j < values.size(); ++j) {
+            if (i != j) {
+                std::cout << "Comparing " << values[i] << " and " << values[j] << ": ";
+                if (values[i] == static_cast<decltype(values[i])>(values[j])) {
+                    std::cout << "Equal";
+                } else {
+                    std::cout << "Not Equal";
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+
+    return 0;
+}

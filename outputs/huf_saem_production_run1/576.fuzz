@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1000000000;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+     
+    for (const auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            std::cout << "int: " << val << "\n";
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            std::cout << "double: " << val << "\n";
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            std::cout << "unsigned long: " << val << "\n";
+        }
+    }
+
+     
+    auto sum1 = a + b;
+    auto sum2 = c + b;
+    auto product = a * static_cast<int>(b);
+    auto quotient = static_cast<double>(c) / a;
+
+    std::cout << "Arithmetic operations:\n";
+    std::cout << "sum1 (int + double): " << sum1 << "\n";
+    std::cout << "sum2 (unsigned long + double): " << sum2 << "\n";
+    std::cout << "product (int * double): " << product << "\n";
+    std::cout << "quotient (unsigned long / int): " << quotient << "\n";
+
+     
+    if (sum1 == static_cast<double>(a) + b && sum2 == c + b && product == a * b && quotient == static_cast<double>(c) / a) {
+        std::cout << "Comparisons are correct.\n";
+    } else {
+        std::cout << "Comparisons failed.\n";
+    }
+
+    return 0;
+}

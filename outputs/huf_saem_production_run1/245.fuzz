@@ -1,0 +1,63 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 3, 8, 4, 2};
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Index-based: " << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Iterator-based: " << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    int target = 4;
+    auto lb = std::lower_bound(vec.begin(), vec.end(), target);
+    if (lb != vec.end() && *lb == target) {
+        std::cout << "Found " << target << " at position: " << std::distance(vec.begin(), lb) << std::endl;
+    } else {
+        std::cout << target << " not found" << std::endl;
+    }
+    
+     
+    vec.insert(vec.begin() + 2, 6);
+    
+     
+    vec.resize(7, 0);
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Modified Index-based: " << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Modified Iterator-based: " << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    vec.erase(vec.begin() + 3);
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "After Erase Index-based: " << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "After Erase Iterator-based: " << *it << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

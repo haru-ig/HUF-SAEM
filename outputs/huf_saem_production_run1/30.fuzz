@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+
+    std::cout << "Result of logical OR operation: " << result << std::endl;
+    std::cout << "Result of logical AND operation: " << result2 << std::endl;
+
+     
+    int num1 = 8, num2 = 4;
+    int bitwiseAnd = num1 & num2;
+    int bitwiseOr = num1 | num2;
+    int bitwiseXor = num1 ^ num2;
+    int leftShift = num1 << 1;
+    int rightShift = num2 >> 1;
+
+    std::cout << "Bitwise AND of " << num1 << " and " << num2 << ": " << bitwiseAnd << std::endl;
+    std::cout << "Bitwise OR of " << num1 << " and " << num2 << ": " << bitwiseOr << std::endl;
+    std::cout << "Bitwise XOR of " << num1 << " and " << num2 << ": " << bitwiseXor << std::endl;
+    std::cout << "Left shift of " << num1 << " by 1: " << leftShift << std::endl;
+    std::cout << "Right shift of " << num2 << " by 1: " << rightShift << std::endl;
+}

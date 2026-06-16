@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+    struct Resource {
+        std::string name;
+        Resource(const std::string& n) : name(n) {
+            std::cout << "Resource allocated for " << name << "\n";
+        }
+        ~Resource() {
+            std::cout << "Resource deallocated for " << name << "\n";
+        }
+        Resource(const Resource& other) : name(other.name) {
+            std::cout << "Resource copied from " << other.name << "\n";
+        }
+        Resource(Resource&& other) noexcept : name(std::move(other.name)) {
+            std::cout << "Resource moved from " << other.name << "\n";
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                name = other.name;
+                std::cout << "Resource copy assigned from " << other.name << "\n";
+            }
+            return *this;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                name = std::move(other.name);
+                std::cout << "Resource move assigned from " << other.name << "\n";
+            }
+            return *this;
+        }
+    };
+    Resource res1("res1");
+    auto lambda = [res1]() {
+        std::cout << "Inside lambda, accessing passed resource: " << res1.name << "\n";
+    };
+    lambda();
+}

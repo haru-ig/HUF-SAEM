@@ -1,0 +1,16 @@
+#include <iostream>
+int main() {
+  struct ResourceGuard {
+    double value;
+    ResourceGuard(double v = 0.0) : value(v) { std::cout << "Resource acquired with value: " << value << '\n'; }
+    ~ResourceGuard() { std::cout << "Resource released, final value: " << value << '\n'; }
+    ResourceGuard(const ResourceGuard& other) : value(other.value) { std::cout << "Resource copied from: " << other.value << '\n'; }
+    ResourceGuard(ResourceGuard&& other) noexcept : value(other.value) { other.value = 0.0; std::cout << "Resource moved, old value: " << value << '\n'; }
+    ResourceGuard& operator=(const ResourceGuard& other) { if (this != &other) { value = other.value; std::cout << "Resource assigned from: " << other.value << '\n'; } return *this; }
+    ResourceGuard& operator=(ResourceGuard&& other) noexcept { if (this != &other) { value = other.value; other.value = 0.0; std::cout << "Resource moved to, old value: " << value << '\n'; } return *this; }
+  };
+
+  ResourceGuard rg1(3.14);
+  auto lambda = [](ResourceGuard r) { std::cout << "Lambda received resource with value: " << r.value << '\n'; };
+  lambda(rg1);
+}

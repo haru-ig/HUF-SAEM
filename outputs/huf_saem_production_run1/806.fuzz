@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    std::cout << "Initial values:\na = " << a << ", b = " << b << ", c = " << c << "\n\n";
+
+    auto result1 = a + b;
+    auto result2 = b * c;
+    auto result3 = static_cast<double>(a) / c;
+
+    std::cout << "Arithmetic operations:\n";
+    std::cout << "a + b = " << result1 << "\n";
+    std::cout << "b * c = " << result2 << "\n";
+    std::cout << "(double)a / c = " << result3 << "\n\n";
+
+     
+    bool isEqual1 = (result1 == static_cast<int>(result1));
+    bool isNotEqual1 = (result1 != static_cast<double>(result1));
+    std::cout << "Comparison (a + b) == int(a + b): " << isEqual1 << "\n";
+    std::cout << "Comparison (a + b) != double(a + b): " << isNotEqual1 << "\n\n";
+
+    bool isEqual2 = (result2 == static_cast<double>(result2));
+    bool isNotEqual2 = (result2 != static_cast<unsigned long>(result2));
+    std::cout << "Comparison (b * c) == double(b * c): " << isEqual2 << "\n";
+    std::cout << "Comparison (b * c) != unsigned long(b * c): " << isNotEqual2 << "\n\n";
+
+    bool isEqual3 = (result3 == static_cast<double>(result3));
+    bool isNotEqual3 = (result3 != static_cast<unsigned long>(result3));
+    std::cout << "Comparison ((double)a / c) == double((double)a / c): " << isEqual3 << "\n";
+    std::cout << "Comparison ((double)a / c) != unsigned long((double)a / c): " << isNotEqual3 << "\n\n";
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    std::cout << "Iterating over the stack-allocated array:\n";
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << "\n\n";
+}

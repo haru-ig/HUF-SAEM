@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    
+    double e = 2.0, f = 2.5, g = 3.0, h = 3.5;
+    bool complex_result = ((e + f) != (g + h)) || ((e * f) == (g * h));
+    
+    std::cout << std::boolalpha;
+    std::cout << "Result of (a != b) || (c != d): " << result << std::endl;
+    std::cout << "Result of (x == y) && (z == w): " << result2 << std::endl;
+    std::cout << "Complex result: " << complex_result << std::endl;
+    
+    return 0;
+}

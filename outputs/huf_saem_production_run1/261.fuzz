@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::string str1 = "hello", str2 = "world";
+    if (str1 != str2) {
+        std::cout << "Strings are not equal." << std::endl;
+    } else {
+        std::cout << "Strings are equal." << std::endl;
+    }
+    int num1 = 10, num2 = 5;
+    if (num1 == num2) {
+        std::cout << "Numbers are equal." << std::endl;
+    } else {
+        std::cout << "Numbers are not equal." << std::endl;
+    }
+}
+}

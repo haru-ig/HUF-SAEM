@@ -1,0 +1,39 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000;
+
+    auto sum = [](auto x, auto y) { return x + y; };
+    std::cout << "Sum of int and double: " << sum(a, b) << std::endl;
+    std::cout << "Sum of int and unsigned long: " << sum(a, c) << std::endl;
+    std::cout << "Sum of double and unsigned long: " << sum(b, c) << std::endl;
+
+    auto product = [](auto x, auto y) { return x * y; };
+    std::cout << "Product of int and double: " << product(a, b) << std::endl;
+    std::cout << "Product of int and unsigned long: " << product(a, c) << std::endl;
+    std::cout << "Product of double and unsigned long: " << product(b, c) << std::endl;
+
+    auto difference = [](auto x, auto y) { return x - y; };
+    std::cout << "Difference between int and double: " << difference(a, b) << std::endl;
+    std::cout << "Difference between int and unsigned long: " << difference(a, c) << std::endl;
+    std::cout << "Difference between double and unsigned long: " << difference(b, c) << std::endl;
+
+    auto quotient = [](auto x, auto y) { return x / y; };
+    std::cout << "Quotient of int divided by double: " << quotient(a, b) << std::endl;
+    std::cout << "Quotient of int divided by unsigned long: " << quotient(a, c) << std::endl;
+    std::cout << "Quotient of double divided by unsigned long: " << quotient(b, c) << std::endl;
+
+     
+    auto arr = { a, b, static_cast<int>(c), static_cast<double>(a) };
+    for (const auto& val : arr) {
+        std::cout << "Value: " << val;
+        if (val == 5) std::cout << " == int";
+        else if (val != 5) std::cout << " != int";
+        if (val == 3.14) std::cout << " == double";
+        else if (val != 3.14) std::cout << " != double";
+        if (val == 2000000000) std::cout << " == unsigned long";
+        else if (val != 2000000000) std::cout << " != unsigned long";
+        std::cout << std::endl;
+    }
+}

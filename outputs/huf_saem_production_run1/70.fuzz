@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+     
+    for (auto& val : values) {
+        if (std::holds_alternative<int>(val)) {
+            int result1 = std::get<int>(val) + 5;  
+            std::cout << "Int addition: " << result1 << std::endl;
+        } else if (std::holds_alternative<double>(val)) {
+            double result2 = std::get<double>(val) * 2.0;  
+            std::cout << "Double multiplication: " << result2 << std::endl;
+        } else if (std::holds_alternative<unsigned long>(val)) {
+            unsigned long result3 = std::get<unsigned long>(val) - 1;  
+            std::cout << "Unsigned long subtraction: " << result3 << std::endl;
+        }
+    }
+
+     
+    int comparison_int = 6;
+    double comparison_double = 8.0;
+    unsigned long comparison_ulong = 4;
+
+    if (comparison_int == static_cast<int>(comparison_double)) {  
+        std::cout << "Comparison: int and double are equal after promotion." << std::endl;
+    } else {
+        std::cout << "Comparison: int and double are not equal." << std::endl;
+    }
+
+    if (comparison_ulong != static_cast<double>(comparison_ulong)) {  
+        std::cout << "Comparison: unsigned long and double are not equal." << std::endl;
+    } else {
+        std::cout << "Comparison: unsigned long and double are equal." << std::endl;
+    }
+}

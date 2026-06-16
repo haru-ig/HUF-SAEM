@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+      
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    constexpr int fibIndex = 10;  
+    static_assert(fibIndex >= 0 && fibIndex <= 9, "Fibonacci index out of range");  
+
+     
+    int fibArray[fib(fibIndex)];
+
+     
+    static_assert(sizeof(fibArray) == fib(fibIndex), "Fibonacci array size mismatch");
+
+     
+    std::cout << "The Fibonacci number at index " << fibIndex << " is: " << fib(fibIndex) << "\n";
+    std::cout << "The size of the Fibonacci array is: " << sizeof(fibArray) << "\n";
+
+}  

@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto add_result = [a, b, c]() -> void {
+        std::cout << "Addition of int and double: " << a + b << "\n";
+        std::cout << "Addition of int and unsigned long: " << a + c << "\n";
+        std::cout << "Addition of double and unsigned long: " << b + c << "\n";
+    }();
+
+     
+    auto values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << "Value: " << val << "\n";
+    }
+
+     
+    bool equal_check = [a, b, c]() -> bool {
+        return (a == static_cast<int>(b)) && (a == static_cast<int>(c)) && (b != c);
+    }();
+
+    std::cout << "Comparison results:\n";
+    std::cout << "Is int equal to double casted to int? " << (a == static_cast<int>(b)) << "\n";
+    std::cout << "Is int equal to unsigned long? " << (a == c) << "\n";
+    std::cout << "Is double not equal to unsigned long? " << (b != c) << "\n";
+}

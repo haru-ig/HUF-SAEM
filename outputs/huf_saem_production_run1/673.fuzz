@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number at position 10 is not correct");
+    int fibArray[fib(10)];
+
+     
+    std::cout << "Fibonacci number at position 10: " << fib(10) << std::endl;
+}

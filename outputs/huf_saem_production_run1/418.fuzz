@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        if (n <= 1) return n;
+        else return fib(n - 1) + fib(n - 2);
+    }
+
+     
+    constexpr int fibNumber = fib(10);  
+    static_assert(fibNumber == 55, "Fibonacci number does not match expected value");
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number does not match expected value");
+
+     
+    std::cout << "The 10th Fibonacci number is: " << fibNumber << std::endl;
+}

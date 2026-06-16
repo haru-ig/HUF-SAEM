@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto sum = [a, b, c]() -> void {
+        std::cout << "Initial values: " << a << ", " << b << ", " << c << "\n";
+        double result1 = a + b * static_cast<double>(c);
+        int result2 = a + static_cast<int>(b) / c;
+        std::cout << "Sum (a + b * c): " << result1 << "\n";
+        std::cout << "Sum (a + b / c): " << result2 << "\n";
+    };
+
+    sum();
+
+     
+    auto printArray = [a, b, c]() -> void {
+        std::array<std::variant<int, double, unsigned long>, 3> arr = {a, b, c};
+        for (const auto& val : arr) {
+            if (std::holds_alternative<int>(val)) {
+                std::cout << "Int value: " << std::get<int>(val) << "\n";
+            } else if (std::holds_alternative<double>(val)) {
+                std::cout << "Double value: " << std::get<double>(val) << "\n";
+            } else if (std::holds_alternative<unsigned long>(val)) {
+                std::cout << "Unsigned long value: " << std::get<unsigned long>(val) << "\n";
+            }
+        }
+    };
+
+    printArray();
+
+     
+    auto compareValues = [a, b, c]() -> void {
+        int promotedInt = a + static_cast<int>(b);
+        std::cout << "Comparing: " << (promotedInt == static_cast<double>(c)) << "\n";
+        std::cout << "Comparing: " << (a != static_cast<unsigned long>(b)) << "\n";
+    };
+
+    compareValues();
+}

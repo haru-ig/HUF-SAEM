@@ -1,0 +1,62 @@
+#include <iostream>
+int main() {
+    struct Resource {
+        int* data;
+        Resource() : data(new int[10]) {}
+        ~Resource() { 
+            delete[] data; 
+            std::cout << "Resource destroyed\n";
+        }
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete[] data;
+                data = other.data;
+                other.data = nullptr;
+            }
+            return *this;
+        }
+    };
+    struct ResourceGuard {
+        int* ptr;
+        ResourceGuard(int value) : ptr(new int(value)) {}
+        ~ResourceGuard() { delete ptr; }
+        ResourceGuard(const ResourceGuard& other) : ptr(new int(*other.ptr)) {}
+        ResourceGuard(ResourceGuard&& other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
+        ResourceGuard& operator=(const ResourceGuard& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+            }
+            return *this;
+        }
+        ResourceGuard& operator=(ResourceGuard&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+    {
+        Resource res;
+        auto lambda = [res_copy = std::move(res)]() {
+            std::cout << "Lambda called\n";
+        };
+        lambda();
+    }
+    {
+        ResourceGuard rg1(42);
+        ResourceGuard rg2 = std::move(rg1);  
+    }
+    {
+        ResourceGuard rg3(100);
+        auto lambda = [](ResourceGuard rg) {
+            std::cout << "Inside lambda, resource value: " << *rg.ptr << std::endl;
+        };
+        lambda(std::move(rg3));  
+    }
+}

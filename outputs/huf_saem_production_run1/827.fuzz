@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30UL;
+
+     
+    std::array<double, 3> arr = {a, b, static_cast<double>(c)};
+
+     
+    for (const auto& val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+     
+    double result = a + b - static_cast<int>(c);
+    std::cout << "Arithmetic result (int promotion): " << result << std::endl;
+
+     
+    if (result == 20.5) {
+        std::cout << "Result is equal to 20.5" << std::endl;
+    } else {
+        std::cout << "Result is not equal to 20.5" << std::endl;
+    }
+
+    if (result != b) {
+        std::cout << "Result is not equal to b" << std::endl;
+    } else {
+        std::cout << "Result is equal to b" << std::endl;
+    }
+}

@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+int main() {
+    struct ResourceGuard {
+        int value;
+        ResourceGuard(int val = 0) : value(val) { std::cout << "Resource acquired with value: " << value << "\n"; }
+        ~ResourceGuard() { std::cout << "Resource released for value: " << value << "\n"; }
+        ResourceGuard(const ResourceGuard& other) : value(other.value) { std::cout << "Resource copied from value: " << other.value << "\n"; }
+        ResourceGuard(ResourceGuard&& other) noexcept : value(other.value) { other.value = 0; std::cout << "Resource moved with value: " << value << "\n"; }
+    };
+    ResourceGuard rg1(42);
+    auto lambda = [rg = std::move(rg1)]() mutable {
+        std::cout << "Inside lambda, resource value: " << rg.value << "\n";
+    };
+    lambda();
+    if (rg1.value != 0) {
+        std::cout << "Original resource still exists with value: " << rg1.value << "\n";
+    } else {
+        std::cout << "Original resource has been moved from and no longer exists.\n";
+    }
+}
+}

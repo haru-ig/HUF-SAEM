@@ -1,0 +1,105 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+int main() {
+    struct Resource {
+        int* data;
+        Resource(int value = 0) : data(new int(value)) {
+            std::cout << "Resource allocated with value " << *data << "\n";
+        }
+        ~Resource() {
+            delete data;
+            std::cout << "Resource deallocated\n";
+        }
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+            std::cout << "Resource moved\n";
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete data;
+                data = other.data;
+                other.data = nullptr;
+                std::cout << "Resource move assigned\n";
+            }
+            return *this;
+        }
+        Resource(const Resource& other) : data(new int(*other.data)) {
+            std::cout << "Resource copied\n";
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                delete data;
+                data = new int(*other.data);
+                std::cout << "Resource copy assigned\n";
+            }
+            return *this;
+        }
+    };
+    {
+        Resource res1(42);
+        auto lambda = [res1]() {
+            std::cout << "Inside lambda, accessing resource data: " << *res1.data << std::endl;
+        };
+        lambda();
+    }
+    {
+        Resource res_captured(20);
+        auto lambda = [res_captured = std::move(Resource(30))](int x) mutable {
+            std::cout << "Lambda captured value: " << *res_captured.data << "\n";
+        };
+        lambda(42);
+    }
+    int arr[] = {5, 2, 9, 1, 7};
+    int n = sizeof(arr) / sizeof(arr[0]);
+    std::cout << "Array elements: ";
+    for (int i = 0; i < n; ++i) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Array elements (iterator-based): ";
+    for (auto it = std::begin(arr); it != std::end(arr); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    std::sort(std::begin(arr), std::end(arr));
+    std::cout << "Sorted array elements: ";
+    for (int i = 0; i < n; ++i) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+    int target = 7;
+    if (std::binary_search(std::begin(arr), std::end(arr), target)) {
+        std::cout << "Element " << target << " found in the array." << std::endl;
+    } else {
+        std::cout << "Element " << target << " not found in the array." << std::endl;
+    }
+    int insertValue = 4;
+    auto it = std::begin(arr) + n / 2;  
+    arr[n] = 0;  
+    for (int i = n; i > static_cast<int>(it - arr); --i) {
+        arr[i] = arr[i - 1];
+    }
+    arr[static_cast<int>(it - arr)] = insertValue;
+    ++n;  
+    std::cout << "Array after insertion: ";
+    for (int i = 0; i < n; ++i) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+    int eraseIndex = 2;  
+    for (int i = eraseIndex; i < n - 1; ++i) {
+        arr[i] = arr[i + 1];
+    }
+    --n;  
+    std::cout << "Array after erasing: ";
+    for (int i = 0; i < n; ++i) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}
+}

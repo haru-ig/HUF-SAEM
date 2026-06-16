@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number at index 10 is incorrect");
+    std::string fibArray[fib(10)];
+
+     
+    std::cout << "The size of the Fibonacci array: " << sizeof(fibArray) / sizeof(fibArray[0]) << std::endl;
+}

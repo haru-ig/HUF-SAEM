@@ -1,0 +1,11 @@
+#include <iostream>
+int main() {
+
+    int e = 7, f = 9, g = 8, h = 6;
+    bool result3 = (e != f) || (g != h);
+    std::cout << "Result of (e != f) || (g != h): " << std::boolalpha << result3 << std::endl;
+
+    int i = 10, j = 10, k = 11, l = 12;
+    bool result4 = (i == j) && (k != l);
+    std::cout << "Result of (i == j) && (k != l): " << std::boolalpha << result4 << std::endl;
+}

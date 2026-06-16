@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fibonacci(unsigned int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr unsigned long long fib_value = fibonacci(10);  
+    static_assert(fib_value == 55, "Fibonacci number at position 10 is not correct");  
+
+     
+    unsigned long long fib_array[fib_value];
+
+     
+    std::cout << "The Fibonacci number at position 10 is: " << fib_value << '\n';
+}

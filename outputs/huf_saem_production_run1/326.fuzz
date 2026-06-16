@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30ul;
+
+     
+    auto sum = a + static_cast<double>(b) + static_cast<unsigned long>(c);
+    auto product = a * static_cast<int>(b) * static_cast<long>(c);
+    auto difference = b - static_cast<double>(a);
+    auto quotient = c / static_cast<unsigned long>(a);
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (sum == static_cast<double>(a + b + c)) {
+        std::cout << "Sum is correct." << std::endl;
+    } else {
+        std::cout << "Sum is incorrect." << std::endl;
+    }
+
+    if (product != static_cast<long long>(a) * static_cast<long long>(b) * static_cast<long long>(c)) {
+        std::cout << "Product is incorrect." << std::endl;
+    } else {
+        std::cout << "Product is correct." << std::endl;
+    }
+
+    if (difference != b - a) {
+        std::cout << "Difference is incorrect." << std::endl;
+    } else {
+        std::cout << "Difference is correct." << std::endl;
+    }
+
+    if (quotient == c / a) {
+        std::cout << "Quotient is correct." << std::endl;
+    } else {
+        std::cout << "Quotient is incorrect." << std::endl;
+    }
+}

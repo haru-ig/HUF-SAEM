@@ -1,0 +1,12 @@
+#include <iostream>
+int main() {
+    constexpr double euler_constant = 1.0;  
+    for (int i = 1; i <= 20; ++i) {  
+        double term = 1.0 / std::tgamma(static_cast<double>(i));  
+        euler_constant += term;
+    }
+
+    static_assert(euler_constant == std::exp(1.0), "Euler's constant approximation does not match the actual value");  
+
+    std::cout << "Approximate Euler's constant (e) using 20 terms: " << euler_constant << std::endl;  
+}

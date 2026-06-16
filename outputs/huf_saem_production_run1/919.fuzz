@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned n) noexcept {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    static_assert(fib(8) == 21, "Fibonacci number at index 8 should be 21");
+
+     
+    template <unsigned long long N>
+    struct FibTemplate {
+        static constexpr unsigned long long value = fib(N);
+    };
+
+     
+    std::cout << "Fibonacci number at index 8 is: " << FibTemplate<8>::value << '\n';
+}

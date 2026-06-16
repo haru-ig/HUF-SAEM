@@ -1,0 +1,9 @@
+#include <iostream>
+int main() {
+ int x = 1, y = 1, z = 2, w = 2; bool result2 = (x == y) && (z == w);
+if ((x != y) || (z != w)) {
+    std::cout << "At least one comparison is true." << std::endl;
+} else {
+    std::cout << "Both comparisons are false." << std::endl;
+}
+}

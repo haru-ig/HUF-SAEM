@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto sum = a + static_cast<int>(b) + static_cast<int>(c);
+    auto product = a * static_cast<double>(c);
+    auto difference = b - static_cast<double>(a);
+    auto quotient = c / static_cast<unsigned long>(a);
+
+     
+    std::string result;
+    for (auto value : {sum, product, difference, quotient}) {
+        if (value == static_cast<int>(value)) {
+            result += "equal to int\n";
+        } else {
+            result += "not equal to int\n";
+        }
+        if (value != static_cast<double>(value)) {
+            result += "not equal to double\n";
+        } else {
+            result += "equal to double\n";
+        }
+    }
+
+     
+    std::cout << result;
+}

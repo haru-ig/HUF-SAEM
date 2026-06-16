@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+
+    std::cout << "Result of logical OR operation: " << result << std::endl;
+    std::cout << "Result of logical AND operation: " << result2 << std::endl;
+
+     
+    int* ptr_a = &a, *ptr_b = &b, *ptr_c = &c, *ptr_d = &d;
+    bool is_not_equal1 = (*ptr_a != *ptr_b) || (*ptr_c != *ptr_d);
+
+    int* ptr_x = &x, *ptr_y = &y, *ptr_z = &z, *ptr_w = &w;
+    bool is_equal2 = (*ptr_x == *ptr_y) && (*ptr_z == *ptr_w);
+
+    std::cout << "Result of raw pointer logical OR operation: " << is_not_equal1 << std::endl;
+    std::cout << "Result of raw pointer logical AND operation: " << is_equal2 << std::endl;
+}

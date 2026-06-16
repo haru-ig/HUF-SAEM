@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+    constexpr unsigned long fibonacci(unsigned long n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    static_assert(fibonacci(0) == 0, "Fibonacci of 0 should be 0");
+    static_assert(fibonacci(1) == 1, "Fibonacci of 1 should be 1");
+    static_assert(fibonacci(2) == 1, "Fibonacci of 2 should be 1");
+    static_assert(fibonacci(3) == 2, "Fibonacci of 3 should be 2");
+    static_assert(fibonacci(4) == 3, "Fibonacci of 4 should be 3");
+    static_assert(fibonacci(5) == 5, "Fibonacci of 5 should be 5");
+    static_assert(fibonacci(6) == 8, "Fibonacci of 6 should be 8");
+    static_assert(fibonacci(7) == 13, "Fibonacci of 7 should be 13");
+    static_assert(fibonacci(8) == 21, "Fibonacci of 8 should be 21");
+    static_assert(fibonacci(9) == 34, "Fibonacci of 9 should be 34");
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+
+    constexpr unsigned long n = 10;  
+    std::cout << "The " << n << "th Fibonacci number is: " << fibonacci(n) << "\n";
+}

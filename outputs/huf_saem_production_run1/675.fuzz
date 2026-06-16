@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    const int fibNumber = 9;  
+    static_assert(fibNumber >= 0 && fibNumber < 20, "Fibonacci number index out of bounds");
+
+    int fibArray[fib(fibNumber)];
+
+     
+    static_assert(sizeof(fibArray) == fib(fibNumber), "Size mismatch between array and computed Fibonacci number");
+
+     
+    std::cout << "The size of the Fibonacci array is: " << sizeof(fibArray) / sizeof(fibArray[0]) << std::endl;
+
+    return 0;
+}

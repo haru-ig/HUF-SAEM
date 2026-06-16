@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30;
+
+     
+    auto result1 = a + static_cast<double>(b) * c;
+    auto result2 = (a / 2) + (b - 5) * (c % 7);
+
+     
+    int arr[] = {1, 2, 3, 4, 5};
+    for (auto val : arr) {
+        std::cout << "Value: " << val << ", Result1: " << result1 << ", Result2: " << result2 << std::endl;
+    }
+
+     
+    if (a == static_cast<int>(b)) {
+        std::cout << "a is equal to the integer part of b" << std::endl;
+    }
+
+    if (c != static_cast<unsigned long>(result1)) {
+        std::cout << "c is not equal to the result of arithmetic operations on a, b, and c" << std::endl;
+    }
+}

@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibTemplate {};
+
+     
+    constexpr int fibIndex = 10;
+    using Fib10 = FibTemplate<fibonacci(fibIndex)>;
+
+     
+    static_assert(fibonacci(fibIndex) == 55, "Fibonacci number at index 10 should be 55");
+
+     
+    std::cout << "Fibonacci number at index " << fibIndex << " is: " << fibonacci(fibIndex) << std::endl;
+
+    return 0;
+}

@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+    std::vector<double> vec = {3.14, 2.718, 1.618, 0.577};
+    
+     
+    auto it = vec.begin() + 2;  
+    vec.insert(it, 2.0);  
+    
+     
+    std::cout << "Vector elements: ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    std::cout << "Vector elements (iterator): ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    double searchValue = 1.618;
+    auto lb = std::lower_bound(vec.begin(), vec.end(), searchValue);
+    if (lb != vec.end() && *lb == searchValue) {
+        std::cout << "Found " << searchValue << " in the vector." << std::endl;
+    } else {
+        std::cout << "Did not find " << searchValue << " in the vector." << std::endl;
+    }
+    
+     
+    vec.erase(vec.begin() + 2);  
+    
+     
+    vec.resize(3);  
+    std::cout << "Vector after resize: ";
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

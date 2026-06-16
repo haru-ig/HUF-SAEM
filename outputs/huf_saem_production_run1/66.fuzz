@@ -1,0 +1,43 @@
+#include <iostream>
+int main() {
+
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+    auto sum = static_cast<double>(a) + b + static_cast<double>(c);
+    auto product = static_cast<unsigned long>(a) * c;
+    auto difference = b - static_cast<int>(c);
+    std::cout << "Sum: " << sum << "\n";
+    std::cout << "Product: " << product << "\n";
+    std::cout << "Difference: " << difference << "\n";
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : arr) {
+        std::cout << "Value: " << val << "\n";
+    }
+    if (sum == a + b + c) {
+        std::cout << "Sum comparison passed\n";
+    } else {
+        std::cout << "Sum comparison failed\n";
+    }
+    if (product != a * b) {
+        std::cout << "Product comparison passed\n";
+    } else {
+        std::cout << "Product comparison failed\n";
+    }
+    int arr2[] = {1, 2, 3};
+    for (auto val : arr2) {
+        std::cout << "Array value: " << val << "\n";
+    }
+    if (sum == static_cast<int>(product)) {
+        std::cout << "Sum equals casted product" << std::endl;
+    } else {
+        std::cout << "Sum does not equal casted product" << std::endl;
+    }
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            int result = arr2[i] * static_cast<double>(b);
+            std::cout << "Nested loop result: " << result << "\n";
+        }
+    }
+    return 0;
+}

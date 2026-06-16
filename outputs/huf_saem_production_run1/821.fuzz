@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto result1 = a + static_cast<double>(c) * b;
+    std::cout << "result1: " << result1 << std::endl;
+
+     
+    std::pair<int, double> arr[] = {{a, b}};
+    for (const auto& pair : arr) {
+        int val_int = pair.first;
+        double val_double = pair.second;
+
+         
+        if (val_int == static_cast<int>(val_double)) {
+            std::cout << "Comparison: int and double are equal." << std::endl;
+        } else {
+            std::cout << "Comparison: int and double are not equal." << std::endl;
+        }
+    }
+
+     
+    auto result2 = static_cast<unsigned long>(a) + b * c;
+    std::cout << "result2: " << result2 << std::endl;
+
+    return 0;
+}

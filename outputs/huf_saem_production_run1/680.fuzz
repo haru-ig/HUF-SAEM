@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <unsigned long long N>
+    struct FibStruct {};
+
+     
+    using FibInstance = FibStruct<fib(10)>;
+
+     
+    static_assert(FibInstance::value == fib(10), "Compile-time Fibonacci computation failed!");
+
+     
+    std::cout << "The 10th Fibonacci number is: " << FibInstance::value << '\n';
+
+    return 0;
+}

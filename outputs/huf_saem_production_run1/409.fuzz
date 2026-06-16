@@ -1,0 +1,9 @@
+#include <iostream>
+int main() {
+    constexpr double pi = 3.141592653589793;
+    auto area_circle = [](double r) -> double {
+        return pi * r * r;
+    };
+    static_assert(area_circle(5.0) == pi * 25.0, "Area calculation error");
+    std::cout << "The area of a circle with radius 5 is: " << area_circle(5.0) << "\n";
+}

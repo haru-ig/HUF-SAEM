@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+    std::vector<double> vec = {3.14, 2.718, 1.618, 0.577, 1.414};
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    double target = 1.618;
+    auto it = std::lower_bound(vec.begin(), vec.end(), target);
+    if (it != vec.end() && *it == target) {
+        std::cout << "Found " << target << " at index: " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << target << " not found." << std::endl;
+    }
+    
+     
+    vec.insert(it, 1.732);
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    vec.erase(std::remove(vec.begin(), vec.end(), 1.414), vec.end());
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

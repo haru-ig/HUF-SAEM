@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto sum = static_cast<double>(a) + b + static_cast<double>(c);
+    auto product = static_cast<unsigned long>(a * b) + c;
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (sum == static_cast<double>(a + b + c)) {
+        std::cout << "Sum comparison passed: " << sum << std::endl;
+    } else {
+        std::cout << "Sum comparison failed: " << sum << std::endl;
+    }
+
+    if (product != static_cast<unsigned long>(a * b + c)) {
+        std::cout << "Product comparison passed: " << product << std::endl;
+    } else {
+        std::cout << "Product comparison failed: " << product << std::endl;
+    }
+
+    return 0;
+}

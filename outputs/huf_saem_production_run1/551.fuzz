@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+     
+    unsigned int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto result1 = a + static_cast<int>(b);
+    auto result2 = b * static_cast<double>(c);
+    auto result3 = c - static_cast<unsigned long>(a);
+
+     
+    std::array<auto, 3> values = {result1, result2, result3};
+    for (const auto& value : values) {
+        std::cout << "Value: " << value << std::endl;
+    }
+
+     
+    if (result1 == static_cast<int>(b)) {
+        std::cout << "result1 is equal to b" << std::endl;
+    } else {
+        std::cout << "result1 is not equal to b" << std::endl;
+    }
+
+    if (result2 != c) {
+        std::cout << "result2 is not equal to c" << std::endl;
+    } else {
+        std::cout << "result2 is equal to c" << std::endl;
+    }
+}

@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30UL;
+
+     
+    auto values = {a, static_cast<double>(b), static_cast<unsigned long>(c)};
+
+     
+    double sum = 0.0;
+    for (const auto& val : values) {
+        sum += val;
+    }
+
+     
+    if (sum == a + static_cast<int>(b) + c) {
+        std::cout << "Sum: " << sum << " matches expected value." << std::endl;
+    } else {
+        std::cout << "Sum: " << sum << " does not match expected value." << std::endl;
+    }
+
+     
+    const auto* ptr_a = &a;
+    const auto* ptr_b = &b;
+    const auto* ptr_c = &c;
+
+    std::cout << "Value of a: " << *ptr_a << ", b: " << *ptr_b << ", c: " << *ptr_c << std::endl;
+}

@@ -1,0 +1,6 @@
+#include <iostream>
+int main() {
+    int i = 10, j = 10, k = 11, l = 12;
+    bool result4 = (i == j) && (k != l);
+    std::cout << "Result of (i == j) && (k != l): " << std::boolalpha << result4 << std::endl;
+}

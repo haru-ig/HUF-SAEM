@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000UL;
+    
+    auto resultAdd = [a, b]() -> void { std::cout << "Addition of int and double: " << (double)a + b << "\n"; };
+    auto resultMul = [a, c]() -> void { std::cout << "Multiplication of int and unsigned long: " << (unsigned long)a * c << "\n"; };
+    
+    resultAdd();
+    resultMul();
+    
+    int arr[] = {10, 20, 30};
+    for (auto &val : arr) {
+        std::cout << "Value in array: " << val << "\n";
+    }
+    
+    if (a + b == 8.14) {
+        std::cout << "Addition of int and double is equal to 8.14\n";
+    } else {
+        std::cout << "Addition of int and double is not equal to 8.14\n";
+    }
+    
+    if ((unsigned long)a * c != (unsigned long)(a + b)) {
+        std::cout << "(unsigned long)a * c is not equal to (unsigned long)(a + b)\n";
+    } else {
+        std::cout << "(unsigned long)a * c is equal to (unsigned long)(a + b)\n";
+    }
+}

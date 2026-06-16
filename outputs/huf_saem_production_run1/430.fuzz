@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+    int fibArray[fibonacci(10)];
+
+     
+    std::cout << "Compile-time Fibonacci number for 10: " << fibonacci(10) << std::endl;
+}

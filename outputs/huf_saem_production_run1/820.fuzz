@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    auto result1 = a + static_cast<double>(c) * b;
+    auto result2 = (a + static_cast<int>(b)) / c;
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (result1 == static_cast<double>(a + c * b)) {
+        std::cout << "result1 is equal to double(a + c * b)" << std::endl;
+    } else {
+        std::cout << "result1 is not equal to double(a + c * b)" << std::endl;
+    }
+
+    if (result2 != static_cast<int>((a + b) / c)) {
+        std::cout << "result2 is not equal to int((a + b) / c)" << std::endl;
+    } else {
+        std::cout << "result2 is equal to int((a + b) / c)" << std::endl;
+    }
+}

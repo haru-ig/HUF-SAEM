@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+     
+    for (const auto& val : values) {
+        if (std::holds_alternative<int>(val)) {
+            int result1 = std::get<int>(val) + a;
+            std::cout << "int + int: " << result1 << std::endl;
+        } else if (std::holds_alternative<double>(val)) {
+            double result2 = std::get<double>(val) + b;
+            std::cout << "double + double: " << result2 << std::endl;
+        } else if (std::holds_alternative<unsigned long>(val)) {
+            unsigned long result3 = std::get<unsigned long>(val) + c;
+            std::cout << "unsigned long + unsigned long: " << result3 << std::endl;
+        }
+    }
+
+     
+    int result1 = a + b;
+    bool isEqual1 = (result1 == 3);
+    bool isNotEqual1 = (result1 != 4.5);
+    std::cout << "int + double: " << result1 << ", isEqual1: " << isEqual1 << ", isNotEqual1: " << isNotEqual1 << std::endl;
+
+    unsigned long result2 = b + c;
+    bool isEqual2 = (result2 == 5);
+    bool isNotEqual2 = (result2 != 6.0);
+    std::cout << "double + unsigned long: " << result2 << ", isEqual2: " << isEqual2 << ", isNotEqual2: " << isNotEqual2 << std::endl;
+}

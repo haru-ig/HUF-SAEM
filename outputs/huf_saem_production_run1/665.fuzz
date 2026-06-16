@@ -1,0 +1,17 @@
+#include <iostream>
+int main() {
+    constexpr int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int n = 10;
+    static_assert(fibonacci(n) == 55, "Fibonacci computation failed");
+
+     
+    int fibArray[fibonacci(n)];
+
+     
+    std::cout << "The last element in the Fibonacci array is: " << fibArray[fibonacci(n) - 1] << std::endl;
+}

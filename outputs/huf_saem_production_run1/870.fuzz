@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+ int main() {
+     
+    struct ResourceGuard {
+        int* ptr;
+
+         
+        ResourceGuard() : ptr(new int(0)) {
+            std::cout << "Resource allocated." << std::endl;
+        }
+
+         
+        ~ResourceGuard() {
+            delete ptr;
+            std::cout << "Resource freed." << std::endl;
+        }
+
+         
+        ResourceGuard(const ResourceGuard& other) : ptr(new int(*other.ptr)) {
+            std::cout << "Resource copied." << std::endl;
+        }
+
+         
+        ResourceGuard(ResourceGuard&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+            std::cout << "Resource moved." << std::endl;
+        }
+    };
+
+     
+    ResourceGuard resource1;
+
+     
+    auto lambda = [resource = std::move(resource1)]() {
+        std::cout << "Inside lambda, accessing moved resource." << std::endl;
+    };
+
+     
+    lambda();
+
+    return 0;
+}
+}

@@ -1,0 +1,40 @@
+#include <iostream>
+int main() {
+     
+    constexpr int factorial(int n) {
+        return (n <= 1) ? 1 : n * factorial(n - 1);
+    }
+
+     
+    template <int N>
+    struct Factorial {
+        static constexpr int value = N * Factorial<N - 1>::value;
+    };
+
+    template <>
+    struct Factorial<0> {
+        static constexpr int value = 1;
+    };
+
+     
+    auto fibonacci = [](int n) -> int {
+        if (n <= 1) return n;
+        int a = 0, b = 1;
+        for (int i = 2; i <= n; ++i) {
+            int temp = a + b;
+            a = b;
+            b = temp;
+        }
+        return b;
+    };
+
+     
+    static_assert(factorial(5) == 120, "Factorial of 5 should be 120");
+    static_assert(Factorial<5>::value == 120, "Factorial of 5 should be 120");
+    static_assert(fibonacci(10) == 55, "Fibonacci number at position 10 should be 55");
+
+     
+    std::cout << "Factorial of 5: " << factorial(5) << std::endl;
+    std::cout << "Factorial<5>::value: " << Factorial<5>::value << std::endl;
+    std::cout << "Fibonacci number at position 10: " << fibonacci(10) << std::endl;
+}

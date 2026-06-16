@@ -1,0 +1,17 @@
+#include <iostream>
+int main() {
+    struct MyResource {
+        int* ptr;
+        MyResource() : ptr(new int(0)) { std::cout << "Resource acquired\n"; }
+        ~MyResource() { 
+            delete ptr;
+            std::cout << "Resource released\n"; 
+        }
+    };
+    MyResource res1;  
+    auto lambda = [res = std::move(res1)]() { 
+        std::cout << "Inside lambda, accessing resource: " << *res.ptr << "\n";
+    };
+    lambda();  
+    return 0;
+}

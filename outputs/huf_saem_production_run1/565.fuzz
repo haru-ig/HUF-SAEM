@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+     
+    for (auto& val : values) {
+        if (std::holds_alternative<int>(val)) {
+            int intVal = std::get<int>(val);
+            double result1 = intVal + static_cast<double>(intVal);
+            bool equal = result1 == intVal;
+            bool notEqual = result1 != intVal;
+            std::cout << "Int arithmetic: " << intVal << " + " << intVal << " = " << result1 << ", Equal: " << equal << ", Not Equal: " << notEqual << std::endl;
+        } else if (std::holds_alternative<double>(val)) {
+            double doubleVal = std::get<double>(val);
+            unsigned long result2 = static_cast<unsigned long>(doubleVal) + doubleVal;
+            bool equal = result2 == doubleVal;
+            bool notEqual = result2 != doubleVal;
+            std::cout << "Double arithmetic: " << doubleVal << " + " << doubleVal << " = " << result2 << ", Equal: " << equal << ", Not Equal: " << notEqual << std::endl;
+        } else if (std::holds_alternative<unsigned long>(val)) {
+            unsigned long ulVal = std::get<unsigned long>(val);
+            double result3 = ulVal + static_cast<double>(ulVal);
+            bool equal = result3 == ulVal;
+            bool notEqual = result3 != ulVal;
+            std::cout << "Unsigned long arithmetic: " << ulVal << " + " << ulVal << " = " << result3 << ", Equal: " << equal << ", Not Equal: " << notEqual << std::endl;
+        }
+    }
+}

@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* ptr;
+        Resource() : ptr(new int(0)) { std::cout << "Resource allocated." << std::endl; }
+        ~Resource() { 
+            delete ptr; 
+            std::cout << "Resource deallocated." << std::endl; 
+        }
+         
+        Resource(const Resource& other) : ptr(new int(*other.ptr)) {
+            std::cout << "Resource copied." << std::endl;
+        }
+         
+        Resource(Resource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+            std::cout << "Resource moved." << std::endl;
+        }
+         
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                *ptr = *other.ptr;
+                std::cout << "Resource assigned." << std::endl;
+            }
+            return *this;
+        }
+         
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+                std::cout << "Resource moved assigned." << std::endl;
+            }
+            return *this;
+        }
+    };
+
+     
+    {
+        Resource res1;
+        std::cout << "Using resource in scope." << std::endl;
+    }
+
+     
+    Resource res2;
+    auto useResource = [res2]() {
+        std::cout << "Inside lambda, accessing resource: " << *res2.ptr << std::endl;
+    };
+    useResource();
+}

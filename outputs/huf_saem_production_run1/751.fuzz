@@ -1,0 +1,47 @@
+#include <iostream>
+int main() {
+
+    constexpr double pi = 3.141592653589793;
+    auto circumference = [](double radius) -> double {
+        return 2 * pi * radius;
+    };
+    static_assert(circumference(1.0) == 6.283185307179586, "Circumference calculation is incorrect");
+    struct Resource {
+        int* data;
+        Resource(int value = 0) : data(new int(value)) {}
+        ~Resource() { delete data; }
+        Resource(const Resource& other) : data(new int(*other.data)) {}
+        Resource(Resource&& other) noexcept : data(other.data) { other.data = nullptr; }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                *data = *other.data;
+            }
+            return *this;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete data;
+                data = other.data;
+                other.data = nullptr;
+            }
+            return *this;
+        }
+    };
+    Resource res(42);
+    auto lambda = [res]() {
+        std::cout << "Inside lambda, accessing resource data: " << *(res.data) << std::endl;
+    };
+    lambda();
+    double radius;
+    std::cout << "Enter the radius of the circle: ";
+    std::cin >> radius;
+    double circ = circumference(radius);
+    std::cout << "The circumference of the circle with radius " << radius << " is " << circ << std::endl;
+
+    unsigned int a = 5, b = 3, c = 4, d = 2;
+    bool result1 = (a != b) || (c != d);
+    std::cout << "Result of (a != b) || (c != d): " << std::boolalpha << result1 << std::endl;
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of (x == y) && (z == w): " << std::boolalpha << result2 << std::endl;
+}

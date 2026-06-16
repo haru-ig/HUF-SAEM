@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long fibonacci(unsigned long n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr unsigned long fib_value = fibonacci(10);  
+    static_assert(fib_value == 55, "Fibonacci number at index 10 should be 55");  
+
+     
+    unsigned long fib_array[fib_value];
+
+     
+    std::cout << "Fibonacci sequence up to index " << fib_value - 1 << ": ";
+    for (unsigned long i = 0; i < fib_value; ++i) {
+        fib_array[i] = fibonacci(i);
+        std::cout << fib_array[i] << " ";
+    }
+    std::cout << std::endl;
+}

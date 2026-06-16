@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 5.5;
+    unsigned long c = 20UL;
+
+    auto result1 = a + b * c;  
+    auto result2 = (a + b) * c;  
+    auto result3 = a & b | c;  
+    auto result4 = b << static_cast<int>(c);  
+
+    std::cout << "result1: " << result1 << "\n";
+    std::cout << "result2: " << result2 << "\n";
+    std::cout << "result3: " << result3 << "\n";
+    std::cout << "result4: " << result4 << "\n";
+
+     
+    int arr[] = {10, 20, 30};
+    for (auto val : arr) {
+        if (val == static_cast<int>(result1)) std::cout << "Match found for result1: " << val << "\n";
+        if (val != static_cast<int>(result2)) std::cout << "No match found for result2: " << val << "\n";
+    }
+}

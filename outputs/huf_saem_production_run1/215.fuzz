@@ -1,0 +1,52 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 2, 9, 1, 7};
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Index " << i << ": " << vec[i] << std::endl;
+    }
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Sorted: " << *it << std::endl;
+    }
+    
+     
+    int target = 7;
+    auto lb = std::lower_bound(vec.begin(), vec.end(), target);
+    if (lb != vec.end() && *lb == target) {
+        std::cout << "Found " << target << " at index: " << std::distance(vec.begin(), lb) << std::endl;
+    } else {
+        std::cout << target << " not found." << std::endl;
+    }
+    
+     
+    vec.insert(vec.begin() + 2, 3);
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "After insert: Index " << i << ": " << vec[i] << std::endl;
+    }
+    
+     
+    vec.erase(vec.begin() + 1);
+    
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "After erase: " << *it << std::endl;
+    }
+    
+     
+    vec.resize(4);
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "After resize: Index " << i << ": " << vec[i] << std::endl;
+    }
+    
+    return 0;
+}

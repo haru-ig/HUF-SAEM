@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* ptr;
+        Resource() : ptr(new int(0)) { std::cout << "Resource acquired\n"; }
+        ~Resource() { 
+            delete ptr; 
+            std::cout << "Resource released\n"; 
+        }
+         
+        Resource(Resource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+            std::cout << "Resource moved\n";
+        }
+         
+        Resource(const Resource& other) : ptr(new int(*other.ptr)) {
+            std::cout << "Resource copied\n";
+        }
+    };
+
+     
+    {
+        Resource res;
+    }
+
+     
+    auto lambda = [](Resource r) { std::cout << "Lambda received resource, value: " << *r.ptr << "\n"; };
+    {
+        Resource res;
+        lambda(res);   
+    }
+}

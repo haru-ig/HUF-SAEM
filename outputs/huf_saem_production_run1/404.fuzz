@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <unsigned long long N>
+    struct Fibonacci {
+        static constexpr unsigned long long value = N;
+    };
+
+     
+    static_assert(Fibonacci<fib(10)>::value == 55, "Fibonacci number at position 10 is incorrect");
+
+     
+    std::cout << "The Fibonacci number at position 10 is: " << Fibonacci<fib(10)>::value << std::endl;
+}

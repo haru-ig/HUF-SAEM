@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+     
+    constexpr int factorial(int n) {
+        return (n <= 1) ? 1 : n * factorial(n - 1);
+    }
+
+     
+    static_assert(factorial(5) == 120, "Factorial of 5 should be 120");
+    int arr[factorial(5)];
+
+     
+    std::cout << "Size of the array: " << sizeof(arr) / sizeof(arr[0]) << std::endl;
+}

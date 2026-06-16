@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    std::array<double, 3> values = {a, b, c};
+
+     
+    for (const auto& val : values) {
+        double result1 = val + a;
+        double result2 = val * b;
+        std::cout << "Result of adding " << val << " and " << a << " is: " << result1 << std::endl;
+        std::cout << "Result of multiplying " << val << " and " << b << " is: " << result2 << std::endl;
+    }
+
+     
+    for (const auto& val : values) {
+        if (val + a == static_cast<int>(val) + 1) {
+            std::cout << "Comparison: " << val << " + " << a << " == " << static_cast<int>(val) + 1 << " is true" << std::endl;
+        } else {
+            std::cout << "Comparison: " << val << " + " << a << " != " << static_cast<int>(val) + 1 << " is false" << std::endl;
+        }
+    }
+
+    return 0;
+}

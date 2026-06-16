@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    struct RAIIExample {
+        int value;
+        RAIIExample(int val = 0) : value(val) { std::cout << "RAIIExample constructed with value: " << value << std::endl; }
+        ~RAIIExample() { std::cout << "RAIIExample destructed with value: " << value << std::endl; }
+        RAIIExample(const RAIIExample& other) : value(other.value) { std::cout << "RAIIExample copied from value: " << other.value << std::endl; }
+        RAIIExample(RAIIExample&& other) noexcept : value(std::move(other.value)) { std::cout << "RAIIExample moved from value: " << value << std::endl; }
+    };
+
+     
+    RAIIExample raiiInstance(42);
+
+     
+    auto lambda = [raiiInstance]() {
+        std::cout << "Inside lambda, captured value: " << raiiInstance.value << std::endl;
+    };
+
+     
+    lambda();
+}

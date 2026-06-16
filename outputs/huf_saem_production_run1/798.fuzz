@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+    int e = 7, f = 8, g = 9, h = 10;
+    bool result3 = (e != f) || (g != h);
+    std::cout << "Result of (e != f) || (g != h): " << result3 << std::endl;
+    int arr2[] = {6, 7, 8, 9, 10};
+    int* ptr2 = arr2;
+    for (int i = 0; i < 5; ++i) {
+        std::cout << *(ptr2 + i) << " ";
+    }
+    std::cout << std::endl;
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of (x == y) && (z == w): " << result2 << std::endl;
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    std::cout << "Result of (a != b) || (c != d): " << result << std::endl;
+    int arr[] = {1, 2, 3, 4, 5};
+    int* ptr = arr;
+    for (int i = 0; i < 5; ++i) {
+        std::cout << *(ptr + i) << " ";
+    }
+    std::cout << std::endl;
+}

@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000;
+
+     
+    auto result1 = a + b;        
+    auto result2 = a * c;        
+    auto result3 = b / (double)a;  
+
+     
+    std::pair<int, double> values[] = { {10, 2.5}, {20, 3.75} };
+    for (const auto& val : values) {
+        std::cout << "Int: " << val.first << ", Double: " << val.second << std::endl;
+    }
+
+     
+    if (result1 == static_cast<double>(a + b)) {
+        std::cout << "Equal: result1 (" << result1 << ") is equal to double(a + b) (" << a + b << ")" << std::endl;
+    } else {
+        std::cout << "Not Equal: result1 (" << result1 << ") is not equal to double(a + b) (" << a + b << ")" << std::endl;
+    }
+
+    if (result2 != static_cast<unsigned long>(a * c)) {
+        std::cout << "Not Equal: result2 (" << result2 << ") is not equal to unsigned long(a * c) (" << a * c << ")" << std::endl;
+    } else {
+        std::cout << "Equal: result2 (" << result2 << ") is equal to unsigned long(a * c) (" << a * c << ")" << std::endl;
+    }
+}

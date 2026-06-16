@@ -1,0 +1,56 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* ptr;
+        
+         
+        Resource() : ptr(new int[10]) {}
+        
+         
+        ~Resource() { delete[] ptr; }
+        
+         
+        Resource(const Resource& other) : ptr(new int[10]) {
+            std::copy(other.ptr, other.ptr + 10, ptr);
+        }
+        
+         
+        Resource(Resource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+        }
+        
+         
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                delete[] ptr;
+                ptr = new int[10];
+                std::copy(other.ptr, other.ptr + 10, ptr);
+            }
+            return *this;
+        }
+        
+         
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete[] ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+    
+     
+    {
+        Resource res1;
+    }
+    
+     
+    auto lambda = [](Resource res) {
+        std::cout << "Inside lambda, resource allocated: " << (res.ptr ? "true" : "false") << std::endl;
+    };
+    
+    Resource res2;
+    lambda(res2);  
+}

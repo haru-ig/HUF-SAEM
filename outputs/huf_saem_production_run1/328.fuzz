@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3;
+
+     
+    auto sum = a + static_cast<int>(b) + static_cast<int>(c);
+    auto product = a * static_cast<double>(c) * b;
+
+     
+    std::array<auto, 3> arr = {a, b, c};
+    for (const auto& val : arr) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (sum == static_cast<int>(b + static_cast<double>(c))) {
+        std::cout << "Equal" << std::endl;
+    } else {
+        std::cout << "Not equal" << std::endl;
+    }
+
+     
+    if (static_cast<int>(b) == static_cast<double>(a)) {
+        std::cout << "Equal after promotion" << std::endl;
+    } else {
+        std::cout << "Not equal after promotion" << std::endl;
+    }
+}

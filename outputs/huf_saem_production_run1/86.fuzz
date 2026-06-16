@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto result1 = a + static_cast<double>(b);
+    std::cout << "a + b (promoted to double) = " << result1 << std::endl;
+
+    auto result2 = c * static_cast<int>(result1);
+    std::cout << "c * (int)result1 = " << result2 << std::endl;
+
+     
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : arr) {
+        auto res = val + b;
+        std::cout << "val (" << typeid(val).name() << ") + b (double) = " << res << std::endl;
+    }
+
+     
+    if (a + static_cast<int>(b) == result1) {
+        std::cout << "(a + static_cast<int>(b)) == result1 is true" << std::endl;
+    } else {
+        std::cout << "(a + static_cast<int>(b)) == result1 is false" << std::endl;
+    }
+
+    if (c * static_cast<int>(result1) != result2) {
+        std::cout << "c * static_cast<int>(result1) != result2 is true" << std::endl;
+    } else {
+        std::cout << "c * static_cast<int>(result1) != result2 is false" << std::endl;
+    }
+}

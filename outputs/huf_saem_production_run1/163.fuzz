@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fibIndex = 10;  
+    constexpr int fibValue = fibonacci(fibIndex);
+
+     
+    static_assert(fibonacci(fibIndex) == fibValue, "Compile-time Fibonacci computation failed");
+
+     
+    std::cout << "The Fibonacci number at index " << fibIndex << " is: " << fibValue << std::endl;
+
+    return 0;
+}

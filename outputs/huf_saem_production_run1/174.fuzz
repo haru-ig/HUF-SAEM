@@ -1,0 +1,20 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fibIndex = 10;  
+    static_assert(fibIndex >= 0 && fibIndex <= 9, "Fibonacci index out of bounds");  
+
+     
+    int fibArray[fibonacci(fibIndex)];
+
+     
+    static_assert(sizeof(fibArray) == fibonacci(fibIndex), "Array size does not match Fibonacci computation");
+
+     
+    std::cout << "The computed size of the Fibonacci array is: " << sizeof(fibArray) << std::endl;
+}

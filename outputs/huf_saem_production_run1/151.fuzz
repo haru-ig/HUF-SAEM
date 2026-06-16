@@ -1,0 +1,11 @@
+#include <iostream>
+int main() {
+    constexpr unsigned long fibonacci(unsigned long n) {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+
+    unsigned long n = 10;  
+    std::cout << "The Fibonacci number for " << n << " is: " << fibonacci(n) << std::endl;
+}

@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+    constexpr unsigned long fibonacci(unsigned long n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr unsigned long fib_value = fibonacci(10);
+
+     
+    static_assert(fib_value < 100, "Fibonacci number is too large");
+
+    int mainArray[fib_value];
+
+    std::cout << "The Fibonacci number at position 10 is: " << fib_value << std::endl;
+}

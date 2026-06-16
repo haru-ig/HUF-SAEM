@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+    constexpr double golden_ratio = 1.618033988749895;  
+
+     
+    template <int n>
+    struct Fibonacci {
+        static constexpr int value = Fibonacci<n - 1>::value + Fibonacci<n - 2>::value;
+    };
+
+    template <>
+    struct Fibonacci<0> {
+        static constexpr int value = 0;
+    };
+
+    template <>
+    struct Fibonacci<1> {
+        static constexpr int value = 1;
+    };
+
+     
+    constexpr int fib_index = 10;  
+    static_assert(Fibonacci<fib_index>::value >= 0, "Fibonacci number must be non-negative");
+
+     
+    constexpr int array_size = Fibonacci<fib_index>::value;
+
+     
+    double arr[array_size];
+
+     
+    std::cout << "Array size: " << array_size << std::endl;
+
+    return 0;
+}

@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000UL;
+
+    auto result1 = a + b;  
+    auto result2 = a + c;  
+    auto result3 = b + c;  
+
+    std::cout << "result1 (int + double): " << result1 << "\n";
+    std::cout << "result2 (int + unsigned long): " << result2 << "\n";
+    std::cout << "result3 (double + unsigned long): " << result3 << "\n";
+
+    int array[] = {static_cast<int>(result1), static_cast<int>(result2), static_cast<int>(result3)};
+
+    for (const auto& val : array) {
+        std::cout << "Array element: " << val << "\n";
+    }
+
+     
+    if (a + b == result1) {
+        std::cout << "a + b equals result1\n";
+    } else {
+        std::cout << "a + b does not equal result1\n";
+    }
+
+    if (result2 != result3) {
+        std::cout << "result2 is not equal to result3\n";
+    } else {
+        std::cout << "result2 is equal to result3\n";
+    }
+}

@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+     
+    constexpr double pi = 3.141592653589793;
+    
+     
+    constexpr int array_size = 50;
+    double circle_area[array_size];
+    
+     
+    for (int i = 0; i < array_size; ++i) {
+        circle_area[i] = pi * static_cast<double>(i + 1) * static_cast<double>(i + 1);
+    }
+    
+     
+    static_assert(circle_area[0] == pi, "Circle area calculation is incorrect");
+    
+     
+    std::cout << "The first circle's area: " << circle_area[0] << std::endl;
+    std::cout << "The fifth circle's area: " << circle_area[4] << std::endl;
+}

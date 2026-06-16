@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+     
+    unsigned int a = 10;
+    double b = 5.5;
+    unsigned long c = 20UL;
+
+     
+    auto result1 = a + static_cast<int>(b);  
+    auto result2 = c - static_cast<unsigned long>(a);  
+    auto result3 = b * static_cast<double>(c);  
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (result1 == static_cast<double>(a)) {
+        std::cout << "Comparison result1 == a is true" << std::endl;
+    } else {
+        std::cout << "Comparison result1 == a is false" << std::endl;
+    }
+
+    if (result2 != static_cast<unsigned long>(b)) {
+        std::cout << "Comparison result2 != b is true" << std::endl;
+    } else {
+        std::cout << "Comparison result2 != b is false" << std::endl;
+    }
+}

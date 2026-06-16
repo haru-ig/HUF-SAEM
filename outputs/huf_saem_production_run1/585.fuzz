@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+    auto results = [a, b, c]() -> std::tuple<int, double, unsigned long> {
+        return {a + static_cast<int>(b) * c, a / (int)b, a - c};
+    }();
+
+    for (const auto& val : results) {
+        std::cout << val << " ";
+    }
+
+    std::cout << "\n";
+
+    if (std::get<0>(results) == static_cast<int>(b) * c + a &&
+        std::get<1>(results) == a / b &&
+        std::get<2>(results) != a - c) {
+        std::cout << "All results match expected values.\n";
+    } else {
+        std::cout << "Results do not match expected values.\n";
+    }
+}

@@ -1,0 +1,38 @@
+#include <iostream>
+int main() {
+
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);  
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);  
+    std::cout << "result: " << result << std::endl;  
+    std::cout << "result2: " << result2 << std::endl;
+    
+    struct Counter {
+        int i, j;
+    } counter1 = {0, 0};
+    
+    while (counter1.i < 5) {  
+        std::cout << "i: " << counter1.i << ", j: " << counter1.j << std::endl;
+        ++counter1.i;
+        ++counter1.j;
+    }
+    
+    struct Counter2 {
+        int k, l;
+    } counter2 = {0, 0};
+    
+    do {  
+        std::cout << "k: " << counter2.k << ", l: " << counter2.l << std::endl;
+        ++counter2.k;
+        ++counter2.l;
+    } while (counter2.k < 5);
+    
+    struct Counter3 {
+        int m, n;
+    } counter3 = {0, 0};
+    
+    for (; counter3.m < 5 && counter3.n < 5; ++counter3.m, ++counter3.n) {  
+        std::cout << "m: " << counter3.m << ", n: " << counter3.n << std::endl;
+    }
+}

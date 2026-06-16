@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+    
+    std::string result;
+    auto add = [](auto x, auto y) { return x + y; };
+    
+    for (const auto& val : {a, b, c}) {
+        if (add(val, a) == add(val, static_cast<double>(b))) {
+            result += "Equal\n";
+        } else {
+            result += "Not Equal\n";
+        }
+    }
+    
+    std::cout << result;
+}

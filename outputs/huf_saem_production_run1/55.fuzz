@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto result1 = a + static_cast<double>(b) * c;
+    std::cout << "Result of int + double * unsigned long: " << result1 << std::endl;
+
+     
+    std::pair<int, double> values[] = { {5, 2.0}, {3, 4.5} };
+    for (const auto& val : values) {
+        std::cout << "Value: (" << val.first << ", " << val.second << ")" << std::endl;
+    }
+
+     
+    if (a + b == result1) {
+        std::cout << "Comparison using == passed." << std::endl;
+    } else {
+        std::cout << "Comparison using == failed." << std::endl;
+    }
+
+    if (a + b != static_cast<double>(c)) {
+        std::cout << "Comparison using != passed." << std::endl;
+    } else {
+        std::cout << "Comparison using != failed." << std::endl;
+    }
+}

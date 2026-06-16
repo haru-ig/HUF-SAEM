@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+    auto result1 = a + b * c;  
+    auto result2 = (a + b) * c;  
+
+    std::cout << "result1: " << result1 << ", result2: " << result2 << std::endl;
+
+    if (result1 == static_cast<double>(a + b * c)) {
+        std::cout << "result1 equals a + b * c" << std::endl;
+    } else {
+        std::cout << "result1 does not equal a + b * c" << std::endl;
+    }
+
+    if (result2 != static_cast<double>((a + b) * c)) {
+        std::cout << "result2 does not equal (a + b) * c" << std::endl;
+    } else {
+        std::cout << "result2 equals (a + b) * c" << std::endl;
+    }
+}

@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fib(int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibArray {
+        int arr[N];
+    };
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number computation is incorrect");
+    FibArray<fib(10)> fibArrayInstance;
+
+     
+    static_assert(fib(10) == 55, "Fibonacci number computation is incorrect");
+
+     
+    std::cout << "The size of the Fibonacci-based array is: " << sizeof(fibArrayInstance.arr) / sizeof(fibArrayInstance.arr[0]) << std::endl;
+}

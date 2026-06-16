@@ -1,0 +1,45 @@
+#include <iostream>
+int main() {
+    int main() {
+     
+    std::vector<std::string> vec = {"apple", "banana", "cherry", "date"};
+
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "Index-based: " << vec[i] << std::endl;
+    }
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Iterator-based: " << *it << std::endl;
+    }
+
+     
+    vec.push_back("elderberry");
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    std::string search = "banana";
+    auto it = std::lower_bound(vec.begin(), vec.end(), search);
+    if (it != vec.end() && *it == search) {
+        std::cout << "Found: " << search << std::endl;
+    } else {
+        std::cout << "Not found: " << search << std::endl;
+    }
+
+     
+    vec.erase(vec.begin() + 2);
+
+     
+    vec.resize(3);
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << "Resized and iterated: " << *it << std::endl;
+    }
+
+    return 0;
+}
+}

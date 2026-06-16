@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        if (n == 0) return 0;
+        if (n == 1) return 1;
+        unsigned long long a = 0, b = 1;
+        for (unsigned int i = 2; i <= n; ++i) {
+            unsigned long long next = a + b;
+            a = b;
+            b = next;
+        }
+        return b;
+    }
+
+     
+    constexpr unsigned int fibIndex = 10;  
+    static_assert(fibIndex < 94, "Fibonacci number exceeds maximum representable integer size");
+
+     
+    constexpr unsigned long long fibValue = fib(fibIndex);
+    unsigned long long fibArray[fibValue];
+
+     
+    std::cout << "Fibonacci number at index " << fibIndex << " is: " << fibValue << std::endl;
+}

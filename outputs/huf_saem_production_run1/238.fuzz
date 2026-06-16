@@ -1,0 +1,60 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 3, 8, 4, 2};
+    
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    for (const auto& item : vec) {
+        std::cout << item << " ";
+    }
+    std::cout << std::endl;
+
+     
+    int target = 4;
+    auto it = std::lower_bound(vec.begin(), vec.end(), target);
+    if (it != vec.end() && *it == target) {
+        std::cout << "Found " << target << " at index " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << target << " not found" << std::endl;
+    }
+
+     
+    int x = 10;
+    const char* result = (x % 2 == 0) ? "Even" : "Odd";
+    std::cout << x << " is " << result << std::endl;
+
+     
+    vec.insert(vec.begin() + 2, 6);
+
+     
+    vec.resize(4);
+
+     
+    for (const auto& item : vec) {
+        std::cout << item << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.erase(vec.begin() + 1);
+
+     
+    for (const auto& item : vec) {
+        std::cout << item << " ";
+    }
+    std::cout << std::endl;
+}

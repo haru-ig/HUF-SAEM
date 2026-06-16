@@ -1,0 +1,30 @@
+#include <iostream>
+int main() {
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of logical OR operation: " << result << std::endl;
+    std::cout << "Result of logical AND operation: " << result2 << std::endl;
+    auto print_result = [](bool r) {
+        std::cout << "Lambda captured result: " << r << std::endl;
+    };
+    print_result(result);
+    print_result(result2);
+     
+    int arr1[] = {1, 2, 3};
+    int arr2[] = {4, 5, 6};
+    bool has_common = false;
+    for (int i : arr1) {
+        for (int j : arr2) {
+            if (i == j) {
+                has_common = true;
+                break;
+            }
+        }
+        if (has_common) break;
+    }
+    std::cout << "Array check result: " << has_common << std::endl;
+}
+}

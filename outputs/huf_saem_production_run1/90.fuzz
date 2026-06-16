@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 1234567890;
+
+    auto add_and_multiply = [a, b, c]() -> void {
+         
+        auto sum = a + static_cast<int>(b) + static_cast<int>(c);
+        auto product = a * static_cast<double>(c);
+
+        std::cout << "Sum: " << sum << "\n";
+        std::cout << "Product: " << product << "\n";
+    };
+
+    add_and_multiply();
+
+     
+    auto arr = {a, b, c};
+
+     
+    std::cout << "Array elements:\n";
+    for (const auto& elem : arr) {
+        std::cout << elem << "\n";
+    }
+
+     
+    if (a + static_cast<int>(b) == sum && a * static_cast<double>(c) != product) {
+        std::cout << "Comparison passed.\n";
+    } else {
+        std::cout << "Comparison failed.\n";
+    }
+}

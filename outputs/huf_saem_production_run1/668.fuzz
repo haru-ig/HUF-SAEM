@@ -1,0 +1,22 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        if (n <= 1) return n;
+        else return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr int fibIndex = 10;  
+    static_assert(fibonacci(fibIndex) <= 55, "Fibonacci number exceeds maximum allowed value");
+
+     
+    int fibArray[fibonacci(fibIndex)];
+
+     
+    std::cout << "Fibonacci sequence up to index " << fibIndex << ": ";
+    for (int i = 0; i <= fibIndex; ++i) {
+        std::cout << fibonacci(i) << " ";
+    }
+    std::cout << std::endl;
+}

@@ -1,0 +1,21 @@
+#include <iostream>
+int main() {
+     
+    constexpr uint64_t fibonacci(uint64_t n) noexcept {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <uint64_t N>
+    struct FibTemplate {};
+
+     
+    constexpr uint64_t fibNum = 10;  
+    static_assert(fibonacci(fibNum) == 55, "Fibonacci computation is incorrect");
+
+     
+    using FibTemplateInstance = FibTemplate<fibonacci(fibNum)>;
+
+     
+    std::cout << "The " << fibNum << "th Fibonacci number is: " << fibonacci(fibNum) << '\n';
+}

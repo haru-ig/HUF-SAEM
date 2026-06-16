@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    std::array<double, 3> arr = {a, b, static_cast<double>(c)};
+
+     
+    for (auto &val : arr) {
+        val += a;  
+    }
+
+     
+    if (arr[0] + arr[1] + arr[2] == 5.0 * static_cast<double>(a) + b + c) {
+        std::cout << "Equal" << std::endl;
+    } else {
+        std::cout << "Not Equal" << std::endl;
+    }
+
+     
+    if (arr[0] + arr[1] + arr[2] != 5.0 * static_cast<double>(a) + b - c) {
+        std::cout << "Not Equal" << std::endl;
+    } else {
+        std::cout << "Equal" << std::endl;
+    }
+}

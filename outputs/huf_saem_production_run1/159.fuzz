@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned int n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    constexpr unsigned long long fibValue = fib(10);  
+    static_assert(fibValue == 55, "Fibonacci number does not match expected value");  
+
+     
+    double* arr = new double[fibValue];  
+
+     
+    for (size_t i = 0; i < fibValue; ++i) {
+        arr[i] = static_cast<double>(i);
+    }
+
+     
+    std::cout << "Array size: " << fibValue << "\n";
+    for (size_t i = 0; i < fibValue && i < 10; ++i) {  
+        std::cout << "arr[" << i << "] = " << arr[i] << "\n";
+    }
+
+     
+    delete[] arr;
+}

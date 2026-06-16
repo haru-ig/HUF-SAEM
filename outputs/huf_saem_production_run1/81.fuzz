@@ -1,0 +1,35 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 20.5;
+    unsigned long c = 30UL;
+
+     
+    auto result1 = a + static_cast<double>(b) * c;
+    std::cout << "Result of arithmetic operation: " << result1 << std::endl;
+
+     
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+     
+    if (result1 == 615) {
+        std::cout << "Result is equal to 615" << std::endl;
+    } else {
+        std::cout << "Result is not equal to 615" << std::endl;
+    }
+
+    if (result1 != static_cast<int>(b * c)) {
+        std::cout << "Result is not equal to double(b) * unsigned long(c)" << std::endl;
+    } else {
+        std::cout << "Result is equal to double(b) * unsigned long(c)" << std::endl;
+    }
+
+     
+    int x = 12345;
+    unsigned long y = 67890UL;
+    auto bitwise_result = static_cast<unsigned long>(x) & y | (x ^ y);
+    std::cout << "Bitwise result: " << bitwise_result << std::endl;
+}

@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 5.5;
+    unsigned long c = 20UL;
+
+     
+    auto values = {a, b, c};
+
+     
+    for (const auto& val : values) {
+        std::cout << "Value: " << val << "\n";
+    }
+
+     
+    double sum = a + b + c;
+    int int_sum = static_cast<int>(b) + static_cast<int>(c);
+
+     
+    std::cout << "Sum of all values (implicitly promoted): " << sum << "\n";
+    std::cout << "Integer sum of casted values: " << int_sum << "\n";
+
+    if (sum == static_cast<double>(int_sum)) {
+        std::cout << "The double and integer sums are equal.\n";
+    } else {
+        std::cout << "The double and integer sums are not equal.\n";
+    }
+}

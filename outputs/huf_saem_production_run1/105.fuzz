@@ -1,0 +1,33 @@
+#include <iostream>
+int main() {
+    struct Resource {
+        int* ptr;
+        Resource(int val = 0) : ptr(new int(val)) {}
+        ~Resource() { delete ptr; }
+         
+        Resource(Resource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+
+     
+    Resource res(42);
+
+     
+    auto lambda = [res]() {
+        std::cout << "Inside lambda, resource value: " << *(res.ptr) << std::endl;
+    };
+
+     
+    lambda();
+
+     
+}

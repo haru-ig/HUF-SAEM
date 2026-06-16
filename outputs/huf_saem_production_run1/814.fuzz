@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 1;
+    double b = 2.5;
+    unsigned long c = 3UL;
+
+     
+    std::array<double, 3> values = {a, b, c};
+
+     
+    for (auto& val : values) {
+        val += a;  
+        val *= b;  
+        std::cout << "Value after operation: " << val << std::endl;
+    }
+
+     
+    if (values[0] == a) {
+        std::cout << "First value matches int." << std::endl;
+    } else {
+        std::cout << "First value does not match int." << std::endl;
+    }
+
+    if (static_cast<int>(values[1]) != b) {
+        std::cout << "Second value does not match double due to integer promotion." << std::endl;
+    } else {
+        std::cout << "Second value matches double." << std::endl;
+    }
+}

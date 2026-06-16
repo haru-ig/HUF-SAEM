@@ -1,0 +1,26 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+    auto result = [](auto x, auto y) -> decltype(x + y) { return x + y; }(a, b);
+
+    std::cout << "Result of arithmetic between int and double: " << result << std::endl;
+
+    for (auto val : {a, b, c}) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+    if (result == static_cast<decltype(result)>(a + b)) {
+        std::cout << "Result matches the arithmetic between int and double." << std::endl;
+    } else {
+        std::cout << "Result does not match the arithmetic between int and double." << std::endl;
+    }
+
+    if (result != static_cast<decltype(result)>(a + b)) {
+        std::cout << "Result differs from the arithmetic between int and double." << std::endl;
+    } else {
+        std::cout << "Result is equal to the arithmetic between int and double." << std::endl;
+    }
+}

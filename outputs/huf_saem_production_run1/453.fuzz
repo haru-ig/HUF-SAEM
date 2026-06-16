@@ -1,0 +1,64 @@
+#include <iostream>
+int main() {
+     
+    std::vector<unsigned int> vec = {5, 2, 9, 1, 7};
+
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    unsigned int target = 7;
+    auto lowerBoundIt = std::lower_bound(vec.begin(), vec.end(), target);
+    if (lowerBoundIt != vec.end() && *lowerBoundIt == target) {
+        std::cout << "Found " << target << " at index: " << std::distance(vec.begin(), lowerBoundIt) << std::endl;
+    } else {
+        std::cout << target << " not found." << std::endl;
+    }
+
+     
+    vec.insert(vec.begin() + 2, 3);
+
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.erase(vec.begin() + 3);
+
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.resize(3);
+
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

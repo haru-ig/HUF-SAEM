@@ -1,0 +1,51 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        std::string name;
+        explicit Resource(const std::string& n) : name(n) {
+            std::cout << "Resource '" << name << "' constructed.\n";
+        }
+        ~Resource() {
+            std::cout << "Resource '" << name << "' destructed.\n";
+        }
+         
+        Resource(Resource&& other) noexcept : name(std::move(other.name)) {
+            std::cout << "Resource '" << name << "' moved.\n";
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                name = std::move(other.name);
+                std::cout << "Resource '" << name << "' move assigned.\n";
+            }
+            return *this;
+        }
+         
+        Resource(const Resource& other) : name(other.name) {
+            std::cout << "Resource '" << name << "' copied.\n";
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                name = other.name;
+                std::cout << "Resource '" << name << "' copy assigned.\n";
+            }
+            return *this;
+        }
+    };
+
+     
+    Resource res1("first");
+    {
+        Resource res2 = res1;   
+        std::cout << "Inside inner block, res2 is a copy of res1.\n";
+    }
+    Resource res3 = std::move(res1);   
+    std::cout << "After moving res1 to res3, res1 has been moved out.\n";
+
+     
+    auto lambda = [](Resource r) {
+        std::cout << "Lambda received a resource with name: '" << r.name << "'.\n";
+    };
+    lambda(res3);   
+
+}  

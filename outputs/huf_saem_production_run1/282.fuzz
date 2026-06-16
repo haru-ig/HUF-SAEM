@@ -1,0 +1,15 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);  
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);  
+    std::cout << "Result of logical OR: " << result << std::endl;
+    std::cout << "Result of logical AND: " << result2 << std::endl;
+    int num = 10;
+    bool isEven = (num & 1) == 0;  
+    std::cout << "Is the number even? " << isEven << std::endl;
+    int shiftAmount = 2;
+    int shiftedValue = num << shiftAmount;  
+    std::cout << "Shifted value: " << shiftedValue << std::endl;
+}

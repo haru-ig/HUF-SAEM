@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000;
+    std::cout << "Initial values: " << a << ", " << b << ", " << c << "\n";
+
+     
+    auto result_add = [](auto x, auto y) { return x + y; };
+    auto result_sub = [](auto x, auto y) { return x - y; };
+    auto result_mul = [](auto x, auto y) { return x * y; };
+    auto result_div = [](auto x, auto y) { return x / y; };
+
+    std::cout << "Addition: " << result_add(a, b) << "\n";
+    std::cout << "Subtraction: " << result_sub(b, a) << "\n";
+    std::cout << "Multiplication: " << result_mul(a, c) << "\n";
+    std::cout << "Division: " << result_div(c, b) << "\n";
+
+     
+    auto values = {a, b, c};
+    for (const auto& val : values) {
+        if (val == static_cast<int>(val)) std::cout << "Equal to int: " << val << "\n";
+        else std::cout << "Not equal to int: " << val << "\n";
+        if (val != static_cast<double>(val)) std::cout << "Not equal to double: " << val << "\n";
+        else std::cout << "Equal to double: " << val << "\n";
+    }
+}

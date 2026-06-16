@@ -1,0 +1,95 @@
+#include <iostream>
+int main() {
+#include <iostream>
+#include <string>
+#include <algorithm>
+
+int main() {
+    struct Resource {
+        int* ptr;
+        std::string name;
+        Resource(int value = 0, const std::string& n = "") : ptr(new int(value)), name(n) {
+            std::cout << "Resource allocated for " << name << "\n";
+        }
+        ~Resource() {
+            delete ptr;
+            std::cout << "Resource deallocated for " << name << "\n";
+        }
+        Resource(const Resource& other) : ptr(new int(*other.ptr)), name(other.name) {
+            std::cout << "Resource copied from " << other.name << "\n";
+        }
+        Resource(Resource&& other) noexcept : ptr(other.ptr), name(std::move(other.name)) {
+            other.ptr = nullptr;
+            std::cout << "Resource moved from " << name << "\n";
+        }
+        Resource& operator=(const Resource& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+                name = other.name;
+                std::cout << "Resource copy assigned from " << other.name << "\n";
+            }
+            return *this;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                name = std::move(other.name);
+                other.ptr = nullptr;
+                std::cout << "Resource move assigned from " << name << "\n";
+            }
+            return *this;
+        }
+    };
+
+    for (int i = 0; i < 3; ++i) {
+        Resource res(i * 10, "res" + std::to_string(i));
+        std::cout << "Resource value: " << *(res.ptr) << std::endl;
+    }
+
+    Resource res_lambda(42);
+    auto lambda = [](Resource r) {
+        std::cout << "Lambda received: " << *(r.ptr) << std::endl;
+    };
+    lambda(std::move(res_lambda));  
+
+    struct BigResource {
+        int* ptr;
+        BigResource() : ptr(new int[10]) {}
+        ~BigResource() { delete[] ptr; }
+        BigResource(const BigResource& other) : ptr(new int[10]) {
+            std::copy(other.ptr, other.ptr + 10, ptr);
+        }
+        BigResource(BigResource&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+        }
+        BigResource& operator=(const BigResource& other) {
+            if (this != &other) {
+                delete[] ptr;
+                ptr = new int[10];
+                std::copy(other.ptr, other.ptr + 10, ptr);
+            }
+            return *this;
+        }
+        BigResource& operator=(BigResource&& other) noexcept {
+            if (this != &other) {
+                delete[] ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+
+    {
+        BigResource res1;
+    }
+
+    auto lambda_big = [](BigResource res) {
+        std::cout << "Inside lambda, resource allocated: " << (res.ptr ? "true" : "false") << std::endl;
+    };
+    BigResource res2;
+    lambda_big(res2);  
+}
+}

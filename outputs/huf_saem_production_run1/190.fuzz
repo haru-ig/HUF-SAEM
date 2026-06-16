@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fib(unsigned n) {
+        return (n <= 1) ? n : fib(n - 1) + fib(n - 2);
+    }
+
+     
+    template <unsigned N>
+    struct FibArray {
+        static constexpr unsigned long long value = fib(N);
+    };
+
+     
+    static_assert(FibArray<10>::value == 55, "Compile-time Fibonacci number verification failed");
+
+     
+    std::cout << "The 10th Fibonacci number is: " << FibArray<10>::value << '\n';
+}

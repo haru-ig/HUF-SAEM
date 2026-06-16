@@ -1,0 +1,27 @@
+#include <iostream>
+int main() {
+    struct Resource {
+        int* data;
+        Resource() : data(new int[10]) {}
+        ~Resource() { delete[] data; }
+        Resource(const Resource& other) : data(new int[10]) {
+            std::copy(other.data, other.data + 10, data);
+        }
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+        }
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete[] data;
+                data = other.data;
+                other.data = nullptr;
+            }
+            return *this;
+        }
+    };
+    Resource res1;
+    auto useResource = [res = std::move(res1)](int x) mutable {
+        std::cout << "Inside lambda: " << *res.data << "\n";
+    };
+    useResource(42);
+}

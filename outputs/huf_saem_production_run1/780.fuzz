@@ -1,0 +1,18 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    std::cout << std::boolalpha << "Result of (a != b) || (c != d): " << result << std::endl;
+
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << std::boolalpha << "Result of (x == y) && (z == w): " << result2 << std::endl;
+
+    int num1 = 7, num2 = 9;
+    bool bitwise_result = ((num1 & 0x1) == 0) || ((num2 | 0x1) != 0);
+    std::cout << std::boolalpha << "Result of ((num1 & 0x1) == 0) || ((num2 | 0x1) != 0): " << bitwise_result << std::endl;
+
+    int num3 = 8, num4 = 12;
+    bool shift_result = ((num3 >> 1) == 4) && ((num4 << 1) != 24);
+    std::cout << std::boolalpha << "Result of ((num3 >> 1) == 4) && ((num4 << 1) != 24): " << shift_result << std::endl;
+}

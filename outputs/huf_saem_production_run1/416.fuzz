@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+     
+    constexpr int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    template <int N>
+    struct FibArray {
+        static constexpr int value = fibonacci(N);
+        void print() const {
+            std::cout << "Fibonacci number at index " << N << " is: " << value << std::endl;
+        }
+    };
+
+     
+    static_assert(fibonacci(10) == 55, "Fibonacci calculation error");
+
+     
+    FibArray<10> fib10;
+    fib10.print();
+}

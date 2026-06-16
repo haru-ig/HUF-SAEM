@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+
+    struct ResourceGuard {
+        int* ptr;
+        ResourceGuard(int value = 0) : ptr(new int(value)) {}
+        ~ResourceGuard() { delete ptr; }
+        ResourceGuard(const ResourceGuard& other) : ptr(new int(*other.ptr)) {}
+        ResourceGuard(ResourceGuard&& other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
+        ResourceGuard& operator=(const ResourceGuard& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+            }
+            return *this;
+        }
+        ResourceGuard& operator=(ResourceGuard&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+    for (int i = 0; i < 3; ++i) {
+        ResourceGuard rg(i + 1);
+        std::cout << "ResourceGuard instance created with value: " << *rg.ptr << std::endl;
+    }
+    ResourceGuard mainGuard(42);
+    auto lambda = [](ResourceGuard rg) {
+        std::cout << "Inside lambda, resource value: " << *rg.ptr << std::endl;
+    };
+    lambda(mainGuard);  
+    return 0;
+}

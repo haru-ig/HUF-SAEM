@@ -1,0 +1,41 @@
+#include <iostream>
+int main() {
+     
+    struct Resource {
+        int* data;
+        
+         
+        Resource() : data(new int[10]) {}
+        
+         
+        ~Resource() { 
+            delete[] data; 
+            std::cout << "Resource destroyed\n";
+        }
+        
+         
+        Resource(Resource&& other) noexcept : data(other.data) {
+            other.data = nullptr;
+        }
+        
+         
+        Resource& operator=(Resource&& other) noexcept {
+            if (this != &other) {
+                delete[] data;
+                data = other.data;
+                other.data = nullptr;
+            }
+            return *this;
+        }
+    };
+    
+     
+    Resource res;
+    auto lambda = [res_copy = std::move(res)]() {
+         
+        std::cout << "Lambda called\n";
+    };
+    
+     
+    lambda();
+}

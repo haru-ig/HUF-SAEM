@@ -1,0 +1,42 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 2, 8, 1, 4};
+    
+     
+    std::sort(vec.begin(), vec.end());
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    int target = 4;
+    auto it = std::lower_bound(vec.begin(), vec.end(), target);
+    if (it != vec.end() && *it == target) {
+        std::cout << "Found " << target << " at index " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << target << " not found" << std::endl;
+    }
+    
+     
+    vec.insert(std::upper_bound(vec.begin(), vec.end(), 3), 3);
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+     
+    vec.erase(std::remove(vec.begin(), vec.end(), 2), vec.end());
+    
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}

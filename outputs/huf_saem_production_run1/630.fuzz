@@ -1,0 +1,44 @@
+#include <iostream>
+int main() {
+     
+    struct RAIIResource {
+        int value;
+        RAIIResource(int val = 0) : value(val) {}
+        ~RAIIResource() { std::cout << "Destroying resource with value: " << value << "\n"; }
+        RAIIResource(const RAIIResource& other) : value(other.value) {
+            std::cout << "Copy constructing resource with value: " << value << "\n";
+        }
+        RAIIResource(RAIIResource&& other) noexcept : value(other.value) {
+            std::cout << "Move constructing resource with value: " << value << "\n";
+            other.value = 0;  
+        }
+        RAIIResource& operator=(const RAIIResource& other) {
+            if (this != &other) {
+                std::cout << "Copy assigning resource from value: " << other.value << "\n";
+                value = other.value;
+            }
+            return *this;
+        }
+        RAIIResource& operator=(RAIIResource&& other) noexcept {
+            if (this != &other) {
+                std::cout << "Move assigning resource to value: " << other.value << "\n";
+                value = other.value;
+                other.value = 0;  
+            }
+            return *this;
+        }
+    };
+
+     
+    RAIIResource resource1(42);
+
+     
+    auto lambda = [resource = std::move(resource1)]() {
+        std::cout << "Inside lambda, resource value: " << resource.value << "\n";
+    };
+
+     
+    lambda();
+
+     
+}

@@ -1,0 +1,31 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+    std::cout << "Result of (a != b) || (c != d): " << result << std::endl;
+
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+    std::cout << "Result of (x == y) && (z == w): " << result2 << std::endl;
+
+    auto checkEquality = [](auto &lhs, auto &rhs) {
+        return lhs == rhs;
+    };
+
+    int e = 7, f = 7, g = 8, h = 8;
+    bool result3 = checkEquality(e, f) && !checkEquality(g, h);
+    std::cout << "Result of custom equality check (e == f) && !(g == h): " << result3 << std::endl;
+
+    struct Comparison {
+        int lhs;
+        int rhs;
+        bool isEqual() const {
+            return lhs == rhs;
+        }
+    };
+
+    Comparison comp1{7, 7};
+    Comparison comp2{8, 8};
+    bool result4 = comp1.isEqual() && !comp2.isEqual();
+    std::cout << "Result of struct comparison (comp1.isEqual()) && !(comp2.isEqual()): " << result4 << std::endl;
+}

@@ -1,0 +1,20 @@
+#include <iostream>
+int main() {
+    constexpr unsigned long long factorial(unsigned int n) {
+        return n == 0 ? 1 : n * factorial(n - 1);
+    }
+
+    static_assert(factorial(5) == 120, "Factorial of 5 should be 120");
+
+    constexpr unsigned long long fibonacci(unsigned int n) {
+        return n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+
+    unsigned int size = 5;
+    std::array<int, factorial(size)> arr;
+    std::cout << "Size of array: " << arr.size() << "\n";
+
+    return 0;
+}

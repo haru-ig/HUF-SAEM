@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto result1 = a + b * c;
+    std::cout << "Result of arithmetic operations: " << result1 << std::endl;
+
+     
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto value : arr) {
+        std::cout << "Value: " << value << std::endl;
+    }
+
+     
+    if (result1 == a + b * c) {
+        std::cout << "Equal" << std::endl;
+    } else {
+        std::cout << "Not Equal" << std::endl;
+    }
+
+    return 0;
+}

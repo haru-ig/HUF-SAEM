@@ -1,0 +1,34 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 2000000000UL;
+    
+     
+    std::array<double, 3> arr = {a, b, static_cast<double>(c)};
+    
+     
+    for (auto& val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+    
+    double sum = 0.0;
+    for (auto& val : arr) {
+        sum += val;
+    }
+    
+     
+    if (sum == a + b + static_cast<double>(c)) {
+        std::cout << "Sum is equal to the arithmetic types promoted values." << std::endl;
+    } else {
+        std::cout << "Sum is not equal to the arithmetic types promoted values." << std::endl;
+    }
+    
+    if (sum != a + b + static_cast<double>(c)) {
+        std::cout << "Sum is not equal to the arithmetic types promoted values." << std::endl;
+    } else {
+        std::cout << "Sum is equal to the arithmetic types promoted values." << std::endl;
+    }
+    
+    return 0;
+}

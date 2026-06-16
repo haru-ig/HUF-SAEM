@@ -1,0 +1,36 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    std::array<std::variant<int, double, unsigned long>, 3> values = {a, b, c};
+
+    for (auto& value : values) {
+        if (std::holds_alternative<int>(value)) {
+            int val = std::get<int>(value);
+            std::cout << "Int: " << val;
+        } else if (std::holds_alternative<double>(value)) {
+            double val = std::get<double>(value);
+            std::cout << "Double: " << val;
+        } else if (std::holds_alternative<unsigned long>(value)) {
+            unsigned long val = std::get<unsigned long>(value);
+            std::cout << "Unsigned Long: " << val;
+        }
+        std::cout << std::endl;
+    }
+
+     
+    int sum_int = a + static_cast<int>(b) + static_cast<int>(c);
+    double sum_double = static_cast<double>(a) + b + static_cast<double>(c);
+    unsigned long sum_ulong = static_cast<unsigned long>(a) + static_cast<unsigned long>(b) + c;
+
+    std::cout << "Sum int: " << sum_int << ", Sum double: " << sum_double << ", Sum unsigned long: " << sum_ulong << std::endl;
+
+    if (sum_int == static_cast<int>(sum_double) && static_cast<int>(sum_double) == static_cast<int>(sum_ulong)) {
+        std::cout << "Sum int == Sum double == Sum unsigned long" << std::endl;
+    } else {
+        std::cout << "Sum int != Sum double != Sum unsigned long" << std::endl;
+    }
+}

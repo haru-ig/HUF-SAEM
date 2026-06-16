@@ -1,0 +1,53 @@
+#include <iostream>
+int main() {
+     
+    std::vector<int> vec = {5, 2, 9, 1, 7};
+
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    auto printVector = [&]() {
+        for (const auto& elem : vec) {
+            std::cout << elem << " ";
+        }
+        std::cout << std::endl;
+    };
+    printVector();
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    printVector();
+
+     
+    int target = 7;
+    if (std::binary_search(vec.begin(), vec.end(), target)) {
+        std::cout << "Found " << target << " in the vector." << std::endl;
+    } else {
+        std::cout << "Did not find " << target << " in the vector." << std::endl;
+    }
+
+     
+    int* ptr = vec.data();
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << *(ptr + i) << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.insert(vec.begin() + 2, 3);
+    printVector();
+
+     
+    vec.resize(8, 0);
+    printVector();
+
+     
+    vec.erase(vec.begin() + 3);
+    printVector();
+}

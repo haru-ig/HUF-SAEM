@@ -1,0 +1,29 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto result1 = a + static_cast<double>(b) * c - (int)(c / 2);
+    std::cout << "Result of arithmetic operations: " << result1 << std::endl;
+
+     
+    int arr[] = {a, b, c};
+    for (auto val : arr) {
+        std::cout << "Value: " << val << std::endl;
+    }
+
+     
+    if (result1 == static_cast<int>(b * 10)) {
+        std::cout << "Comparison result using == is true." << std::endl;
+    } else {
+        std::cout << "Comparison result using == is false." << std::endl;
+    }
+
+    if (result1 != static_cast<double>(a) + b * c) {
+        std::cout << "Comparison result using != is true." << std::endl;
+    } else {
+        std::cout << "Comparison result using != is false." << std::endl;
+    }
+}

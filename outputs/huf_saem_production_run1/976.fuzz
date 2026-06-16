@@ -1,0 +1,50 @@
+#include <iostream>
+int main() {
+     
+    std::vector<int> vec = {5, 2, 9, 1, 5, 6};
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(vec.begin(), vec.end(), [](int a, int b) { return a < b; });
+
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    auto it = std::lower_bound(vec.begin(), vec.end(), 5);
+    if (it != vec.end() && *it == 5) {
+        std::cout << "Found 5 at index: " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << "5 not found" << std::endl;
+    }
+
+     
+    vec.insert(it + 1, 7);
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (!vec.empty()) {
+        vec.erase(vec.begin() + 5);
+    }
+
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

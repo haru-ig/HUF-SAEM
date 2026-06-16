@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+     
+    unsigned int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto result1 = a + static_cast<int>(b);
+    auto result2 = c - static_cast<unsigned int>(b);
+    auto result3 = b * static_cast<double>(c);
+    auto result4 = c / static_cast<unsigned long>(a);
+
+     
+    std::array<std::variant<unsigned int, double, unsigned long>, 3> mixedValues = {a, b, c};
+    for (const auto& value : mixedValues) {
+         
+        if (value.index() == 0) {
+            std::cout << "Comparing unsigned int: " << std::get<unsigned int>(value) << "\n";
+        } else if (value.index() == 1) {
+            std::cout << "Comparing double: " << std::get<double>(value) << "\n";
+        } else if (value.index() == 2) {
+            std::cout << "Comparing unsigned long: " << std::get<unsigned long>(value) << "\n";
+        }
+    }
+
+     
+    std::cout << "Result of a + static_cast<int>(b): " << result1 << "\n";
+    std::cout << "Result of c - static_cast<unsigned int>(b): " << result2 << "\n";
+    std::cout << "Result of b * static_cast<double>(c): " << result3 << "\n";
+    std::cout << "Result of c / static_cast<unsigned long>(a): " << result4 << "\n";
+}

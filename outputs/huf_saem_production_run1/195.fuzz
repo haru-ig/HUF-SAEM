@@ -1,0 +1,14 @@
+#include <iostream>
+int main() {
+    constexpr int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    static_assert(fibonacci(10) == 55, "Fibonacci of 10 should be 55");
+
+    int size = 10;  
+    int arr[size];  
+
+    std::cout << "The 10th Fibonacci number is: " << fibonacci(10) << "\n";
+}

@@ -1,0 +1,11 @@
+#include <iostream>
+int main() {
+    int a = 5, b = 3, c = 4, d = 2;
+    bool result = (a != b) || (c != d);
+
+    int x = 1, y = 1, z = 2, w = 2;
+    bool result2 = (x == y) && (z == w);
+
+    std::cout << "result: " << result << std::endl;
+    std::cout << "result2: " << result2 << std::endl;
+}

@@ -1,0 +1,54 @@
+#include <iostream>
+int main() {
+    struct ResourceGuard {
+        int* ptr;
+        
+         
+        ResourceGuard() : ptr(new int(0)) {}
+        
+         
+        ~ResourceGuard() {
+            delete ptr;
+        }
+        
+         
+        ResourceGuard(const ResourceGuard& other) : ptr(new int(*other.ptr)) {}
+        
+         
+        ResourceGuard(ResourceGuard&& other) noexcept : ptr(other.ptr) {
+            other.ptr = nullptr;
+        }
+        
+         
+        ResourceGuard& operator=(const ResourceGuard& other) {
+            if (this != &other) {
+                delete ptr;
+                ptr = new int(*other.ptr);
+            }
+            return *this;
+        }
+        
+         
+        ResourceGuard& operator=(ResourceGuard&& other) noexcept {
+            if (this != &other) {
+                delete ptr;
+                ptr = other.ptr;
+                other.ptr = nullptr;
+            }
+            return *this;
+        }
+    };
+    
+     
+    ResourceGuard guard1;
+    
+     
+    auto lambda = [guard1]() {
+        std::cout << "Inside lambda, accessing copied resource: " << *guard1.ptr << std::endl;
+    };
+    
+     
+    lambda();
+    
+     
+}

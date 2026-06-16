@@ -1,0 +1,32 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+     
+    auto sum = a + b + c;
+    auto product = a * b;
+    auto difference = c - a;
+    auto quotient = b / a;
+
+     
+    std::array<auto, 3> arr = {a, b, c};
+    for (const auto& val : arr) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (sum == a + b + c) {
+        std::cout << "Sum is correct: " << sum << std::endl;
+    } else {
+        std::cout << "Sum is incorrect." << std::endl;
+    }
+
+    if (product != difference * quotient) {
+        std::cout << "Product and difference/quotient are not equal." << std::endl;
+    } else {
+        std::cout << "Product equals difference/quotient: " << product << std::endl;
+    }
+}

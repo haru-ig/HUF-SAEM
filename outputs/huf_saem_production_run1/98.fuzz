@@ -1,0 +1,28 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.14;
+    unsigned long c = 10UL;
+    auto result1 = a + b;  
+    auto result2 = b - c;  
+    auto result3 = a * c;  
+    auto result4 = c / a;  
+    std::cout << "result1: " << result1 << "\n";
+    std::cout << "result2: " << result2 << "\n";
+    std::cout << "result3: " << result3 << "\n";
+    std::cout << "result4: " << result4 << "\n";
+    if (result1 == 8.14) {
+        std::cout << "result1 is equal to 8.14\n";
+    } else {
+        std::cout << "result1 is not equal to 8.14\n";
+    }
+    if (result2 != -6.86) {
+        std::cout << "result2 is not equal to -6.86\n";
+    } else {
+        std::cout << "result2 is equal to -6.86\n";
+    }
+    int arr[] = {a, static_cast<int>(b), static_cast<int>(c)};
+    for (auto &val : arr) {
+        std::cout << "Array value: " << val << "\n";
+    }
+}

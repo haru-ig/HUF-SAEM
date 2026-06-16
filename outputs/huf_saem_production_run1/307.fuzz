@@ -1,0 +1,37 @@
+#include <iostream>
+int main() {
+    int a = 10;
+    double b = 3.5;
+    unsigned long c = 20UL;
+
+     
+    auto sum = a + static_cast<double>(c) * b;
+    auto product = a * static_cast<int>(b);
+    auto difference = c - static_cast<unsigned long>(a / b);
+
+     
+    std::array<auto, 3> values = {a, b, c};
+    for (const auto& val : values) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+     
+    if (sum == static_cast<double>(a + c * b)) {
+        std::cout << "Sum is equal to expected value." << std::endl;
+    } else {
+        std::cout << "Sum is not equal to expected value." << std::endl;
+    }
+
+    if (product != static_cast<int>(a * b)) {
+        std::cout << "Product is not equal to expected value." << std::endl;
+    } else {
+        std::cout << "Product is equal to expected value." << std::endl;
+    }
+
+    if (difference == static_cast<unsigned long>(c - a / b)) {
+        std::cout << "Difference is equal to expected value." << std::endl;
+    } else {
+        std::cout << "Difference is not equal to expected value." << std::endl;
+    }
+}

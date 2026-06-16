@@ -1,0 +1,55 @@
+#include <iostream>
+int main() {
+    std::vector<int> vec = {5, 2, 9, 1, 5, 6};
+
+     
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+
+     
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+
+     
+    std::sort(vec.begin(), vec.end());
+
+     
+    auto it = std::find(vec.begin(), vec.end(), 5);
+    if (it != vec.end()) {
+        std::cout << "Found 5 at index: " << std::distance(vec.begin(), it) << std::endl;
+    } else {
+        std::cout << "5 not found" << std::endl;
+    }
+
+     
+    auto lb = std::lower_bound(vec.begin(), vec.end(), 3);
+    if (lb != vec.end()) {
+        std::cout << "Lower bound for 3 is at index: " << std::distance(vec.begin(), lb) << std::endl;
+    } else {
+        std::cout << "No element in the vector is less than or equal to 3" << std::endl;
+    }
+
+     
+    vec.insert(lb, 7);
+
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+     
+    vec.resize(vec.size() - 2);
+
+     
+    for (const auto& elem : vec) {
+        std::cout << elem << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}

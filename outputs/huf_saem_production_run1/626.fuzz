@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+   
+  struct Resource {
+    int* data;
+    Resource(int value = 0) : data(new int(value)) {}
+    ~Resource() { delete data; }
+     
+    Resource(Resource&& other) noexcept : data(other.data) {
+      other.data = nullptr;
+    }
+     
+  };
+
+   
+  Resource res(42);
+  auto lambda = [res_copy = std::move(res)]() {
+    std::cout << "Inside lambda: " << *res_copy.data << std::endl;
+  };
+
+   
+  lambda();
+
+   
+}

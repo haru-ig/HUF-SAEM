@@ -1,0 +1,24 @@
+#include <iostream>
+int main() {
+    int a = 5;
+    double b = 3.2;
+    unsigned long c = 10;
+
+    auto result1 = a + b * c;  
+    auto result2 = static_cast<double>(a) + b * c;  
+
+    std::cout << "result1 (implicit promotion): " << result1 << "\n";
+    std::cout << "result2 (explicit conversion): " << result2 << "\n";
+
+    if (result1 == static_cast<double>(a) + b * c) {
+        std::cout << "result1 is equal to result2\n";
+    } else {
+        std::cout << "result1 is not equal to result2\n";
+    }
+
+    if (result1 != result2) {
+        std::cout << "result1 is not equal to result2\n";
+    } else {
+        std::cout << "result1 is equal to result2\n";
+    }
+}

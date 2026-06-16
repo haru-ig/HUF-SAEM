@@ -1,0 +1,19 @@
+#include <iostream>
+int main() {
+     
+    constexpr int factorial(int n) {
+        return (n <= 1) ? 1 : (n * factorial(n - 1));
+    }
+
+     
+    template <int N>
+    struct FactorialStruct {
+        static constexpr int value = factorial(N);
+    };
+
+     
+    static_assert(FactorialStruct<5>::value == 120, "Factorial of 5 should be 120");
+
+     
+    std::cout << "The factorial of 5 is: " << FactorialStruct<5>::value << std::endl;
+}

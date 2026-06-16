@@ -1,0 +1,25 @@
+#include <iostream>
+int main() {
+     
+    constexpr uint64_t fibonacci(uint64_t n) noexcept {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr uint64_t fibIndex = 10;  
+    static_assert(fibonacci(fibIndex) < UINT64_MAX / 2, "Fibonacci number is too large");
+
+     
+    std::array<uint64_t, fibonacci(fibIndex)> fibArray;
+
+     
+    for (size_t i = 0; i < fibArray.size(); ++i) {
+        fibArray[i] = fibonacci(i);
+    }
+
+     
+    static_assert(fibonacci(fibIndex) == fibonacci(fibIndex), "Compile-time computation failed");
+
+     
+    std::cout << "Fibonacci number at index " << fibIndex << " is: " << fibonacci(fibIndex) << std::endl;
+}

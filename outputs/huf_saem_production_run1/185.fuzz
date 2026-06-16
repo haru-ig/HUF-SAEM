@@ -1,0 +1,23 @@
+#include <iostream>
+int main() {
+     
+    constexpr unsigned long long fibonacci(unsigned int n) noexcept {
+        return (n <= 1) ? n : fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+     
+    constexpr unsigned int fibIndex = 10;  
+    static_assert(fibIndex < 94, "Fibonacci number exceeds maximum representable value in type 'unsigned long long'");
+
+     
+    std::array<unsigned long long, fibonacci(fibIndex)> fibArray;
+
+     
+     
+
+     
+    static_assert(fibArray.size() == fibonacci(fibIndex), "Array size does not match computed Fibonacci number");
+
+     
+    std::cout << "Fibonacci(" << fibIndex << ") = " << fibArray.size() << "\n";
+}
