@@ -28,6 +28,25 @@ _LANGUAGE_MODULES: dict = {
 
 _DECLARATOR_WRAPPERS = ("pointer_declarator", "reference_declarator", "array_declarator")
 
+# GCC backend-only types that appear in function signatures.  Functions whose
+# signature contains any of these tokens operate exclusively on internal RTL /
+# gimple / register-allocator data structures and have no C++ source-level
+# analogue.  We skip them before calling GPT-4o to avoid wasting quota on
+# certain NO_TRANSLATION responses.
+_GCC_LOW_LEVEL_SIG_TYPES = frozenset([
+    "rtx", "rtx_code", "machine_mode", "HARD_REG_SET", "reg_class",
+    "bitmap_iterator", "sbitmap", "bitmap_head",
+    "ira_allocno", "ira_object", "ira_loop",
+    "df_ref", "df_mw_hardreg",
+    "gimple_stmt_iterator", "gsi_iterator",
+    "opt_pass", "pass_manager",
+    "sreal", "bb_info",
+])
+
+# Maximum keyword count (if/for/while/…) before a snippet is considered too
+# large and deeply internal to have a translatable source-level analogue.
+_COMPLEXITY_CAP = 200
+
 # Human-readable descriptions for the top-level subdirectories of the GCC
 # source tree, used to give the distillation step context about what area
 # a snippet comes from without leaking compiler-internal class/API names.
@@ -39,6 +58,21 @@ _PASS_CATEGORY_NAMES: dict = {
     "include": "GCC public headers",
     "fixincludes": "system header fixups",
 }
+
+def _is_likely_translatable(snippet: str) -> bool:
+    """Return False if the function signature contains GCC backend-only types.
+
+    We inspect only the text before the opening '{' so we don't penalise
+    functions that happen to *mention* these tokens inside their body as
+    string literals or comments.
+    """
+    brace = snippet.find("{")
+    sig = snippet[:brace] if brace != -1 else snippet[:400]
+    for t in _GCC_LOW_LEVEL_SIG_TYPES:
+        if re.search(r"\b" + re.escape(t) + r"\b", sig):
+            return False
+    return True
+
 
 def _extract_relevant_lines(snippet: str, max_chars: int = 800) -> str:
     """Trim a function snippet to a short, contiguous excerpt starting at its
@@ -178,7 +212,14 @@ class SourceAnalyzer:
     def top_k_snippets(self, k: int = 10) -> List[Dict]:
         if not self._records:
             self.scan_files()
-        ranked = sorted(self._records, key=lambda r: r["complexity"], reverse=True)
+
+        # Drop mega-functions (too deeply internal) and backend-only signatures.
+        filtered = [
+            r for r in self._records
+            if r["complexity"] <= _COMPLEXITY_CAP and _is_likely_translatable(r["snippet"])
+        ]
+
+        ranked = sorted(filtered, key=lambda r: r["complexity"], reverse=True)
 
         # Diversify: take the highest-complexity snippet from each distinct
         # pass_category first, then fill remaining slots in complexity order.

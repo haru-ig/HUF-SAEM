@@ -22,8 +22,9 @@ STRICT RULES:
 expressions, statements, types, function/variable declarations, control flow, \
 attributes.
 2. NEVER use or mention compiler-internal class/type/API names from the excerpt \
-(e.g. Value, Instruction, CallInst, SelectInst, BasicBlock, IRBuilder, LLVMContext, \
-Module, TreeEntry, IRPosition, or anything in the `llvm::` namespace).
+(e.g. tree, gimple, rtx, basic_block, edge, tree_code, opt_pass, cgraph_node, \
+gimple_assign, gimple_call, gimple_cond, ssa_name, TREE_TYPE, TREE_CODE, \
+TREE_OPERAND, fold_build2, TYPE_OVERFLOW_UNDEFINED, or any GCC-internal macro/type).
 3. NEVER suggest #include-ing, linking against, or calling the compiler's own \
 headers/API.
 4. If the excerpt has no plausible {language}-source-level analogue, respond with \
@@ -37,16 +38,15 @@ class/struct, or inline block of statements -- something that can be written \
 *inside* `main`.
 
 Example:
-Excerpt precondition: "The SelectInst's true/false operands must both be float \
-constants, and its condition must be an `icmp ult` comparing the true operand to \
-the integer 2."
+Excerpt precondition: "A gimple_assign with MINUS_EXPR where both operands are \
+INTEGER_CST nodes and TYPE_OVERFLOW_UNDEFINED holds on TREE_TYPE of the result."
 Good translation:
-- Include a ternary expression `cond ? a : b` where `a` and `b` are floating-point \
-literals, and `cond` is an unsigned `<` comparison between one of those literals \
-(cast to an integer type) and the integer 2.
+- Subtract two compile-time integer constants of a signed type, e.g. \
+`constexpr int a = 5, b = 3; int r = a - b;` — the compiler can fold this \
+at compile time because signed overflow is undefined.
 Bad translation (do NOT do this):
-- Create a SelectInst with a TrueVal and FalseVal that are ConstantFP, and a CondVal \
-that is an ICmpInst with predicate ICMP_ULT.
+- Create a gimple_assign with MINUS_EXPR where both TREE_OPERAND results are \
+INTEGER_CST nodes and TYPE_OVERFLOW_UNDEFINED holds on TREE_TYPE.
 """
 
 _DISTILL_TEMPLATE = """\
