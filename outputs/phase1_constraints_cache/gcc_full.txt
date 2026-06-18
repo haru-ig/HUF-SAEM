@@ -1,0 +1,47 @@
+The cpp code below already starts with `#include <iostream>` and an open `int main() {` -- continue it by adding statements to the body of `main` (inspired by the compiler's GCC core compiler (frontend, middle-end, backend, optimizers) pass).
+Use ONLY standard cpp headers/features already available -- do NOT add `#include` directives, top-level function/class definitions, another `main`, or any compiler-internal headers, types, or APIs; use local lambdas, local classes, or inline blocks instead if needed.
+Try to incorporate the following characteristics into the code:
+- Use a logical OR (`||`) operation between two equality comparisons, where both comparisons use the `!=` operator, e.g., `int a = 5, b = 3, c = 4, d = 2; bool result = (a != b) || (c != d);`.
+- Use a logical AND (`&&`) operation between two equality comparisons, where both comparisons use the `==` operator, e.g., `int x = 1, y = 1, z = 2, w = 2; bool result2 = (x == y) && (z == w);`.
+- Ensure that the variables involved in the comparisons are of a type that could potentially be optimized by the compiler, such as `int` or `bool`, to allow for potential folding or transformation during compilation.
+IMPORTANT: `#include <iostream>` and `int main() {` are ALREADY written immediately after this comment -- do NOT repeat them or write them again in any form. Begin your output directly with the first statement of `main`'s body (e.g. a variable declaration), as if your text were pasted right after the `{`.
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below already starts with `#include <iostream>` and an open `int main() {` -- continue it by adding statements to the body of `main` (inspired by the compiler's arithmetic type promotion pass).
+Use ONLY standard cpp headers/features already available -- do NOT add `#include` directives, top-level function/class definitions, another `main`, or any compiler-internal headers, types, or APIs; use local lambdas, local classes, or inline blocks instead if needed.
+Try to incorporate the following characteristics into the code:
+- Declare local variables of mixed arithmetic types (int, double, unsigned long) and perform arithmetic between them, exercising implicit conversions.
+- Iterate over a stack-allocated array of those values with a range-based for loop.
+- Compare results with both == and != to exercise integer promotion rules.
+IMPORTANT: `#include <iostream>` and `int main() {` are ALREADY written immediately after this comment -- do NOT repeat them or write them again in any form. Begin your output directly with the first statement of `main`'s body (e.g. a variable declaration), as if your text were pasted right after the `{`.
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below already starts with `#include <iostream>` and an open `int main() {` -- continue it by adding statements to the body of `main` (inspired by the compiler's object lifetime / RAII pass).
+Use ONLY standard cpp headers/features already available -- do NOT add `#include` directives, top-level function/class definitions, another `main`, or any compiler-internal headers, types, or APIs; use local lambdas, local classes, or inline blocks instead if needed.
+Try to incorporate the following characteristics into the code:
+- Declare a local struct or class with a constructor, destructor, and at least one copy or move operation.
+- Create stack instances and let them go out of scope, exercising RAII cleanup.
+- Pass one instance by value to a local lambda to trigger copy/move elision.
+IMPORTANT: `#include <iostream>` and `int main() {` are ALREADY written immediately after this comment -- do NOT repeat them or write them again in any form. Begin your output directly with the first statement of `main`'s body (e.g. a variable declaration), as if your text were pasted right after the `{`.
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below already starts with `#include <iostream>` and an open `int main() {` -- continue it by adding statements to the body of `main` (inspired by the compiler's constant folding / constexpr pass).
+Use ONLY standard cpp headers/features already available -- do NOT add `#include` directives, top-level function/class definitions, another `main`, or any compiler-internal headers, types, or APIs; use local lambdas, local classes, or inline blocks instead if needed.
+Try to incorporate the following characteristics into the code:
+- Write a constexpr function that computes a value at compile time via recursion or a loop.
+- Use the result as a template non-type argument or array size.
+- Verify the compile-time value with a static_assert.
+IMPORTANT: `#include <iostream>` and `int main() {` are ALREADY written immediately after this comment -- do NOT repeat them or write them again in any form. Begin your output directly with the first statement of `main`'s body (e.g. a variable declaration), as if your text were pasted right after the `{`.
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below already starts with `#include <iostream>` and an open `int main() {` -- continue it by adding statements to the body of `main` (inspired by the compiler's STL container / iterator pass).
+Use ONLY standard cpp headers/features already available -- do NOT add `#include` directives, top-level function/class definitions, another `main`, or any compiler-internal headers, types, or APIs; use local lambdas, local classes, or inline blocks instead if needed.
+Try to incorporate the following characteristics into the code:
+- Use std::vector or std::array with at least one erase, insert, or resize call.
+- Iterate with both index-based and iterator-based loops.
+- Sort the container and perform a binary search or lower_bound lookup.
+IMPORTANT: `#include <iostream>` and `int main() {` are ALREADY written immediately after this comment -- do NOT repeat them or write them again in any form. Begin your output directly with the first statement of `main`'s body (e.g. a variable declaration), as if your text were pasted right after the `{`.
