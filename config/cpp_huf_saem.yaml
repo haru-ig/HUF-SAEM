@@ -20,7 +20,7 @@ target:
   path_example_code: null
   path_hand_written_prompt: null
   trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
-  input_hint: "#include <iostream>\nint main() {"
+  input_hint: "#include <iostream>"
   target_string: null
 
 llm:

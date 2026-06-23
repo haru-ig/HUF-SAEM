@@ -79,13 +79,11 @@ TREE_OPERAND, fold_build2, TYPE_OVERFLOW_UNDEFINED, or any GCC-internal macro/ty
 headers/API.
 4. If the excerpt has no plausible {language}-source-level analogue, respond with \
 exactly: NO_TRANSLATION
-5. The description will be used as guidance for code that CONTINUES inside an \
-already-open `int main() {{ ... }}` function body (with `#include <iostream>` \
-already present). Do NOT describe extra `#include` directives, new top-level \
-function/class definitions, or another `main`. If the excerpt's precondition \
-concerns a "function", describe its {language} analogue as a local lambda, local \
-class/struct, or inline block of statements -- something that can be written \
-*inside* `main`.
+5. The description will be used as guidance for a COMPLETE, self-contained \
+{language} program. You MAY describe top-level function/class/template \
+definitions as well as code inside `main`. Still describe only standard \
+{language} source constructs -- never the compiler's own internal headers, \
+types, or APIs.
 
 Example:
 Excerpt precondition: "A gimple_assign with MINUS_EXPR where both operands are \
@@ -107,12 +105,11 @@ NOT example user code):
 {snippet}
 ```
 
-List 2-4 bullet points describing {language} code to ADD INSIDE THE BODY of an \
-already-open `int main() {{ ... }}` function (with `#include <iostream>` already \
-present) so the above code path gets exercised while compiling it. Follow the \
-rules and format from the system prompt -- in particular, do not introduce new \
-top-level functions, another `main`, or extra `#include`s; use local \
-lambdas/classes/blocks instead if needed. Start each bullet with '- '.
+List 2-4 bullet points describing {language} code for a COMPLETE, self-contained \
+{language} program so the above code path gets exercised while compiling it. The \
+code may use top-level function/class/template definitions and/or statements in \
+`main`. Follow the rules and format from the system prompt. Start each bullet \
+with '- '.
 """
 
 
@@ -285,21 +282,20 @@ class DistillationAgent:
         all_includes = ["<iostream>"] + extra_headers
         includes_str = ", ".join(f"`#include {h}`" for h in all_includes)
         return (
-            f"The {language} code below already starts with {includes_str} "
-            f"and an open `int main() {{` -- continue it by adding statements to "
-            f"the body of `main`{category_note}.\n"
-            f"Use ONLY standard {language} headers/features already available -- "
-            f"do NOT add `#include` directives, top-level function/class "
-            f"definitions, another `main`, or any compiler-internal headers, "
-            f"types, or APIs; use local lambdas, local classes, or inline blocks "
-            f"instead if needed.\n"
+            f"The {language} code below starts with {includes_str} already "
+            f"present. Write a COMPLETE, self-contained {language} program that "
+            f"includes its own `int main()` and exercises the following "
+            f"characteristics{category_note}.\n"
+            f"You MAY define top-level functions, classes, and templates, and add "
+            f"standard `#include` directives as needed. Use ONLY standard "
+            f"{language} headers/features -- do NOT use any compiler-internal "
+            f"headers, types, or APIs.\n"
             f"Try to incorporate the following characteristics into the code:\n"
             f"{chosen['text']}\n"
-            f"IMPORTANT: {includes_str} and `int main() {{` are ALREADY "
-            f"written immediately after this comment -- do NOT repeat them or "
-            f"write them again in any form. Begin your output directly with the "
-            f"first statement of `main`'s body (e.g. a variable declaration), "
-            f"as if your text were pasted right after the `{{`."
+            f"IMPORTANT: {includes_str} is ALREADY written immediately after "
+            f"this comment -- continue directly from there with the rest of the "
+            f"program (you may add more `#include`s, then your definitions and "
+            f"`int main()`)."
         )
 
     def build_constraint_specs(self, constraints: List[Dict], language: str) -> List[str]:

@@ -156,7 +156,11 @@ class HUFSAEMCoordinator:
                     if include_line not in begin:
                         main_idx = begin.find("int main")
                         if main_idx >= 0:
+                            # Scaffold pre-opens main: insert the include above it.
                             begin = begin[:main_idx] + include_line + "\n" + begin[main_idx:]
+                        else:
+                            # Header-only scaffold: append the include to the header.
+                            begin = begin.rstrip() + "\n" + include_line
                 self.target.prompt_used["begin"] = begin
 
     def _init_phase2(self, cfg: Dict) -> None:

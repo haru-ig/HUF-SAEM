@@ -88,25 +88,47 @@ class CPPTarget(Target):
 
     def clean(self, code: str) -> str:
         code = comment_remover(code)
-        # generate() always prepends prompt_used["begin"] to the LLM output.
-        # Ollama sometimes echoes the scaffold at the start of its response,
-        # producing a double-header.  Three observed forms:
-        #   1. Full echo:   LLM repeats begin verbatim.
-        #   2. Extra-include echo: LLM adds extra #includes before int main().
-        #   3. Partial echo: LLM emits only "int main() {" without the headers.
-        # A single regex covers all three: optional #include lines followed by
-        # int main() { at position 0 of the content after begin.
         begin = self.prompt_used["begin"]
-        after_first = code[len(begin):]
-        stripped = after_first.lstrip("\n")
-        echo_pat = re.compile(
-            r'(?:#include\s*<[^>]+>\s*)*'   # zero or more #include lines
-            r'\s*'                            # optional blank lines
-            r'int\s+main\s*\(\s*\)\s*\{'    # int main() {
+        # The echo/de-nest workarounds below only apply when the scaffold
+        # pre-opens main (begin ends with "int main() {").  Under a header-only
+        # scaffold the LLM emits a complete program with its own main at the
+        # correct scope, so running them would wrongly delete that main; in
+        # that case we just balance braces.
+        scaffold_opens_main = (
+            re.search(r'int\s+main\s*\([^;{]*\)\s*\{\s*$', begin.rstrip()) is not None
         )
-        m = echo_pat.match(stripped)
-        if m:
-            code = begin + "\n" + stripped[m.end():]
+        if scaffold_opens_main:
+            # generate() always prepends prompt_used["begin"] to the LLM output.
+            # Ollama sometimes echoes the scaffold at the start of its response,
+            # producing a double-header.  Three observed forms:
+            #   1. Full echo:   LLM repeats begin verbatim.
+            #   2. Extra-include echo: LLM adds extra #includes before int main().
+            #   3. Partial echo: LLM emits only "int main() {" without the headers.
+            # A single regex covers all three: optional #include lines followed by
+            # int main() { at position 0 of the content after begin.
+            after_first = code[len(begin):]
+            stripped = after_first.lstrip("\n")
+            echo_pat = re.compile(
+                r'(?:#include\s*<[^>]+>\s*)*'   # zero or more #include lines
+                r'\s*'                            # optional blank lines
+                r'int\s+main\s*\(\s*\)\s*\{'    # int main() {
+            )
+            m = echo_pat.match(stripped)
+            if m:
+                code = begin + "\n" + stripped[m.end():]
+            elif re.search(r'^[ \t]*int\s+main\s*\([^;{]*\)\s*\{', stripped, re.MULTILINE):
+                # The LLM ignored the scaffold and regenerated a full standalone
+                # program: echoed #includes, then type/function definitions, then
+                # its OWN int main().  echo_pat above misses this because the
+                # definitions sit between the includes and main.  The scaffold has
+                # already emitted "int main() {", so a plain concatenation nests
+                # the whole program inside main -> "a function-definition is not
+                # allowed here before '{' token" (the dominant compile failure),
+                # plus a stray trailing brace appended by _close_open_braces.
+                # Drop the scaffold's premature "int main() {", keeping only its
+                # #include header, and let the self-contained program follow.
+                header = re.sub(r'int\s+main\s*\(\s*\)\s*\{\s*$', '', begin).rstrip()
+                code = header + "\n" + stripped
         code = _close_open_braces(code)
         return code
 
