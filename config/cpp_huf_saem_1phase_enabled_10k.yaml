@@ -7,7 +7,7 @@ fuzzing:
   num: 10000
   total_time: 24          # hours
   otf: true               # on-the-fly validation (required for Phase 4 coverage)
-  resume: true
+  resume: false
   evaluate: false
   use_hand_written_prompt: false
   no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
