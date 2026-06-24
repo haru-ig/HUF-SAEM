@@ -191,6 +191,17 @@ def main_with_config(ctx, folder, cpu, batch_size, target, model_name):
         config_dict["fuzzing"]["target_name"] = target
     print(config_dict)
 
+    # Phase 1 (source-aware autoprompting) and Fuzz4All-style autoprompting are
+    # mutually exclusive prompt strategies — running both would double-inject and
+    # confound any comparison. Fail fast with a clear message.
+    if config_dict["fuzzing"].get("autoprompting", False) and (
+        config_dict.get("huf_saem", {}).get("phase1", {}).get("enabled", False)
+    ):
+        raise ValueError(
+            "Config error: fuzzing.autoprompting and huf_saem.phase1.enabled are "
+            "mutually exclusive. Enable exactly one prompt strategy."
+        )
+
     target = make_target_with_config(config_dict)
 
     coordinator = None

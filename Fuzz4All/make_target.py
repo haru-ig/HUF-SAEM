@@ -44,6 +44,8 @@ def make_target_with_config(config_dict: Dict[str, Any]) -> Target:
         "max_length": llm.get("max_length", 1024),
         "use_hw": fuzzing.get("use_hand_written_prompt", False),
         "no_input_prompt": fuzzing.get("no_input_prompt", False),
+        "autoprompting": fuzzing.get("autoprompting", False),
+        "autoprompt_model": fuzzing.get("autoprompt_model", "gpt-4"),
         "prompt_strategy": fuzzing.get("prompt_strategy", 0),
         "level": fuzzing.get("log_level", 0),
         "template": "fuzzing_with_config_file",

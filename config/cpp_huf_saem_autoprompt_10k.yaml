@@ -1,0 +1,102 @@
+# HUF-SAEM C++ fuzzing configuration — Fuzz4All-style AUTOPROMPTING (no phases).
+#
+# Reproduces upstream Fuzz4All's autoprompting algorithm: an API LLM
+# (autoprompt_model) authors candidate prompts, each scored by generating with
+# the target model (deepseek-coder-v2) and counting unique compilable programs;
+# the best-scoring prompt is used for the run.
+#
+# This is the third arm of the comparison:
+#   - cpp_huf_saem_baseline_10k.yaml      : no phases, no autoprompting (raw scaffold)
+#   - cpp_huf_saem_1phase_enabled_10k.yaml: Phase 1 source-aware autoprompting
+#   - this file                           : Fuzz4All autoprompting
+# Same generator (deepseek-coder-v2) across all three, so the prompt strategy is
+# the isolated variable.
+#
+# NOTE: autoprompting and phase1.enabled are mutually exclusive — enabling both
+# raises a ValueError at startup.
+
+fuzzing:
+  output_folder: Results/cpp_huf_saem
+  num: 10000
+  total_time: 24          # hours
+  otf: true
+  resume: false
+  evaluate: false
+  use_hand_written_prompt: false
+  # Must be false so autoprompting runs (autoprompting takes precedence anyway,
+  # but keep this explicit to avoid confusion).
+  no_input_prompt: false
+  # Fuzz4All-style autoprompting. Requires OPENAI_API_KEY.
+  autoprompting: true
+  # API model used to AUTHOR prompts. Set to gpt-4o to match Phase 1's
+  # distillation_model, so the auxiliary LLM is held constant across arms and
+  # the comparison isolates the prompt STRATEGY, not the meta-model. (Upstream
+  # Fuzz4All used gpt-4; switch back only for a faithful-repro secondary number.)
+  autoprompt_model: gpt-4o
+  prompt_strategy: 3
+  log_level: 1
+
+target:
+  language: cpp
+  path_documentation: config/documentation/cpp/cpp_23.md
+  path_example_code: null
+  path_hand_written_prompt: null
+  trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
+  input_hint: "#include <bits/stdc++.h>"
+  target_string: null
+
+llm:
+  temperature: 0.8
+  batch_size: 5
+  device: cuda
+  model_name: ollama/deepseek-coder-v2
+  max_length: 1024
+  additional_eos_tokens: []
+
+# --------------------------------------------------------------------------- #
+# All HUF-SAEM phases disabled — autoprompting is a base-engine feature.
+# --------------------------------------------------------------------------- #
+huf_saem:
+
+  phase1:
+    enabled: false
+    source_dir: null
+    source_language: cpp
+    complexity_threshold: 4
+    top_k_snippets: 10
+    distillation_model: gpt-4o
+    constraint_cache: null
+    rotation_interval: 50
+
+  phase2:
+    enabled: false
+    github_repo: null
+    csv_path: null
+    github_token: null
+    mutate_ratio: 0.20
+    mutator_dir: null
+    synthesis_model: gpt-4o
+
+  phase3:
+    enabled: false
+    window_size: 50
+    cloze_threshold: 0.30
+    mask_ratio: 0.15
+    seed_db_path: null
+    embedding_model: all-MiniLM-L6-v2
+    islands:
+      num_islands: 2
+      biases:
+        - memory_allocation
+        - concurrency
+      migration_interval: 50
+      migration_fraction: 0.10
+    cloze_model: gpt-4o
+
+  phase4:
+    enabled: false
+    block_threshold: 10
+    min_downstream_size: 5
+    solver_interval: 100
+    solver_model: gpt-4o
+    gcov_binary: gcov

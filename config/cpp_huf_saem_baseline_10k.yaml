@@ -1,0 +1,92 @@
+# HUF-SAEM C++ fuzzing configuration — ALL PHASES OFF (ablation baseline).
+#
+# This is the controlled baseline for the Phase 1 ablation. It is byte-for-byte
+# identical to cpp_huf_saem_1phase_enabled_10k.yaml EXCEPT that phase1.enabled
+# is false. Same LLM, same scaffold/input_hint, same num/temperature/etc., so
+# the ONLY variable vs. run2 is whether Phase 1 is active.
+#
+# NOTE: this is NOT upstream Fuzz4All. The engine still uses the Ollama backend
+# and the custom C++ post-processing; auto-prompting is disabled. Label results
+# as "HUF-SAEM (no phases)" baseline, not "Fuzz4All".
+
+fuzzing:
+  output_folder: Results/cpp_huf_saem
+  num: 10000
+  total_time: 24          # hours
+  otf: true               # on-the-fly validation (required for Phase 4 coverage)
+  resume: false
+  evaluate: false
+  use_hand_written_prompt: false
+  no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
+  prompt_strategy: 3
+  log_level: 1
+
+target:
+  language: cpp
+  path_documentation: config/documentation/cpp/cpp_23.md
+  path_example_code: null
+  path_hand_written_prompt: null
+  trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
+  input_hint: "#include <bits/stdc++.h>"
+  target_string: null
+
+llm:
+  temperature: 0.8
+  batch_size: 5
+  device: cuda
+  model_name: ollama/deepseek-coder-v2
+  max_length: 1024
+  additional_eos_tokens: []
+
+# --------------------------------------------------------------------------- #
+# HUF-SAEM Architecture Configuration
+# All four phases disabled — this run exercises the base engine only.
+# --------------------------------------------------------------------------- #
+huf_saem:
+
+  # Phase 1: Source-Aware Contextual Autoprompting
+  phase1:
+    enabled: false
+    source_dir: null
+    source_language: cpp
+    complexity_threshold: 4
+    top_k_snippets: 10
+    distillation_model: gpt-4o
+    constraint_cache: null
+    rotation_interval: 50
+
+  # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
+  phase2:
+    enabled: false
+    github_repo: null
+    csv_path: null
+    github_token: null
+    mutate_ratio: 0.20
+    mutator_dir: null
+    synthesis_model: gpt-4o
+
+  # Phase 3: Cloze-Masked Evolutionary Seed Preservation
+  phase3:
+    enabled: false
+    window_size: 50
+    cloze_threshold: 0.30
+    mask_ratio: 0.15
+    seed_db_path: null
+    embedding_model: all-MiniLM-L6-v2
+    islands:
+      num_islands: 2
+      biases:
+        - memory_allocation
+        - concurrency
+      migration_interval: 50
+      migration_fraction: 0.10
+    cloze_model: gpt-4o
+
+  # Phase 4: Active Constraint-Solving Feedback Loop
+  phase4:
+    enabled: false
+    block_threshold: 10
+    min_downstream_size: 5
+    solver_interval: 100
+    solver_model: gpt-4o
+    gcov_binary: gcov

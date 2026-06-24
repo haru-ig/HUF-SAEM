@@ -9,6 +9,7 @@ import torch
 from rich.progress import track
 
 from Fuzz4All.model import make_model
+from Fuzz4All.util.api_request import create_config, request_engine
 from Fuzz4All.util.Logger import LEVEL, Logger
 from Fuzz4All.util.util import simple_parse
 
@@ -72,6 +73,10 @@ class Target(object):
         # prompt based variables
         self.hw = kwargs["use_hw"]
         self.no_input_prompt = kwargs["no_input_prompt"]
+        # Fuzz4All-style autoprompting (opt-in). When enabled, auto_prompt() runs
+        # the original GPT-based prompt search regardless of no_input_prompt.
+        self.autoprompting = kwargs.get("autoprompting", False)
+        self.autoprompt_model = kwargs.get("autoprompt_model", "gpt-4")
         self.prompt_used = None
         self.prompt = None
         self.initial_prompt = None
@@ -127,13 +132,41 @@ class Target(object):
     def write_back_file(self, code: str):
         raise NotImplementedError
 
+    def _backend_generate(
+        self, prompt: str, n: int = 1, temperature=None
+    ) -> List[str]:
+        """Generate n samples from `prompt` using the active backend.
+
+        Routes to Ollama or HuggingFace depending on self.backend so that both
+        the main generation loop and prompt scoring work regardless of backend.
+        The Ollama chat API returns one completion per call, so we loop n times.
+        """
+        if getattr(self, "backend", None) == "ollama" and HAS_OLLAMA:
+            options = {} if temperature is None else {"temperature": temperature}
+            outs = []
+            for _ in range(n):
+                response = ollama.chat(
+                    model=self.ollama_model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    options=options or None,
+                )
+                content = response["message"]["content"]
+                code = simple_parse(content)
+                outs.append(code if code else content)
+            return outs
+        return self.model.generate(
+            prompt,
+            batch_size=n,
+            temperature=self.temperature if temperature is None else temperature,
+            max_length=self.max_length,
+        )
+
     # each target defines their way of validating prompts (can overwrite)
     def validate_prompt(self, prompt: str):
-        fos = self.model.generate(
-            prompt,
-            batch_size=self.batch_size,
-            temperature=self.temperature,
-            max_length=self.max_length,
+        # Score a candidate prompt by sampling a batch and counting the unique,
+        # compilable programs it yields (identical scoring to upstream Fuzz4All).
+        fos = self._backend_generate(
+            prompt, n=self.batch_size, temperature=self.temperature
         )
         unique_set = set()
         score = 0
@@ -175,7 +208,56 @@ class Target(object):
                 self.folder + "/prompts/best_prompt.txt", "r", encoding="utf-8"
             ) as f:
                 return f.read()
-        if kwargs["no_input_prompt"]:
+        if self.autoprompting:
+            # Upstream Fuzz4All autoprompting: use an API LLM to author candidate
+            # prompts, score each by generating with the *target* model, keep best.
+            # Takes precedence over no_input_prompt when explicitly enabled.
+            self.m_logger.logo(
+                f"Auto-prompting with {self.autoprompt_model} ... ", level=LEVEL.INFO
+            )
+            message = kwargs["message"]
+            # first run with temperature 0.0 to get the greedy prompt
+            config = create_config(
+                {},
+                self._create_auto_prompt_message(message),
+                max_tokens=500,
+                temperature=0.0,
+                model=self.autoprompt_model,
+            )
+            response = request_engine(config)
+            greedy_prompt = self.wrap_prompt(response.choices[0].message.content)
+            with open(
+                self.folder + "/prompts/greedy_prompt.txt", "w", encoding="utf-8"
+            ) as f:
+                f.write(greedy_prompt)
+            # repeated runs with temperature 1 to get additional prompts;
+            # choose the prompt with the max score
+            best_prompt, best_score = greedy_prompt, self.validate_prompt(greedy_prompt)
+            with open(self.folder + "/prompts/scores.txt", "a") as f:
+                f.write(f"greedy score: {str(best_score)}")
+            for i in track(range(3), description="Generating prompts..."):
+                config = create_config(
+                    {},
+                    self._create_auto_prompt_message(message),
+                    max_tokens=500,
+                    temperature=1,
+                    model=self.autoprompt_model,
+                )
+                response = request_engine(config)
+                prompt = self.wrap_prompt(response.choices[0].message.content)
+                with open(
+                    self.folder + "/prompts/prompt_{}.txt".format(i),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    f.write(prompt)
+                score = self.validate_prompt(prompt)
+                if score > best_score:
+                    best_score = score
+                    best_prompt = prompt
+                with open(self.folder + "/prompts/scores.txt", "a") as f:
+                    f.write(f"\n{i} prompt score: {str(score)}")
+        elif kwargs["no_input_prompt"]:
             self.m_logger.logo("Without any input prompt ... ", level=LEVEL.INFO)
             best_prompt = (
                 f"{self.prompt_used['separator']}\n{self.prompt_used['begin']}"
@@ -185,7 +267,8 @@ class Target(object):
             best_prompt = self.wrap_prompt(kwargs["hw_prompt"])
         else:
             raise NotImplementedError(
-                "Auto-prompting with API requests is disabled. Only Ollama/local models are supported."
+                "No prompt strategy selected: enable fuzzing.autoprompting, set "
+                "no_input_prompt: true, or provide a hand-written prompt."
             )
 
         # dump best prompt
