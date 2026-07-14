@@ -27,11 +27,22 @@ class BugIngester:
         with open(self.csv_path, "r", encoding="utf-8", errors="replace") as f:
             reader = csv.DictReader(f)
             for row in reader:
+                # Normalize header keys so spaced headers ("short desc",
+                # "reported to") match the underscore names we look up below.
+                # The shipped bugs/*.csv files use spaces; without this every
+                # row parses empty and Phase 2 silently synthesizes 0 mutators.
+                norm = {
+                    (k.strip().lower().replace(" ", "_") if k else k): v
+                    for k, v in row.items()
+                }
                 record = {
-                    "title": row.get("short_desc") or row.get("title") or "",
-                    "body": row.get("long_desc") or row.get("body") or "",
-                    "url": row.get("url") or row.get("bug_url") or "",
-                    "symptom": row.get("symptom") or row.get("status") or "",
+                    "title": norm.get("short_desc") or norm.get("title") or "",
+                    "body": norm.get("long_desc") or norm.get("body") or "",
+                    "url": norm.get("url")
+                    or norm.get("bug_url")
+                    or norm.get("reported_to")
+                    or "",
+                    "symptom": norm.get("symptom") or norm.get("status") or "",
                 }
                 records.append(record)
         return records
