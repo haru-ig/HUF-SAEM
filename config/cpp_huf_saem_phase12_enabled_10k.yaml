@@ -1,0 +1,107 @@
+# HUF-SAEM C++ fuzzing configuration — Phase 1 & Phase 2 ON (Phase 3 & 4 OFF).
+#
+# Ablation arm: Source-Aware Autoprompting (Phase 1) + Bug-Report-Driven
+# Mutator Synthesis (Phase 2) enabled; Phases 3 and 4 disabled.
+# 10000 fuzzing inputs, 24 h wall-clock limit.
+#
+# Same LLM / scaffold / input_hint / num / temperature as the other 10k arms,
+# so the only variables vs. the baseline are Phase 1 + Phase 2.
+
+fuzzing:
+  output_folder: Results/cpp_huf_saem
+  num: 10000
+  total_time: 24          # hours
+  otf: true               # on-the-fly validation (required for Phase 4 coverage)
+  resume: false
+  evaluate: false
+  use_hand_written_prompt: false
+  no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
+  prompt_strategy: 3
+  log_level: 1
+
+target:
+  language: cpp
+  path_documentation: config/documentation/cpp/cpp_23.md
+  path_example_code: null
+  path_hand_written_prompt: null
+  trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
+  input_hint: "#include <bits/stdc++.h>"
+  target_string: null
+
+llm:
+  temperature: 0.8
+  batch_size: 5
+  device: cuda
+  model_name: ollama/deepseek-coder-v2
+  max_length: 1024
+  additional_eos_tokens: []
+
+# --------------------------------------------------------------------------- #
+# HUF-SAEM Architecture Configuration
+# Phases 1 & 2 enabled; Phases 3 & 4 disabled.
+# --------------------------------------------------------------------------- #
+huf_saem:
+
+  # Phase 1: Source-Aware Contextual Autoprompting
+  # Scans compiler source, distills constraints via GPT-4o, injects into prompt.
+  phase1:
+    enabled: true
+    # Path to the GCC source tree (shallow clone of gcc-mirror/gcc)
+    source_dir: /home/ec2-user/gcc
+    # Grammar for tree-sitter: "cpp" | "c" | "python"
+    source_language: cpp
+    # Minimum conditional nesting depth to flag a function
+    complexity_threshold: 4
+    # Number of top-complexity snippets to distill (one GPT-4o call each)
+    top_k_snippets: 10
+    distillation_model: gpt-4o
+    # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
+    constraint_cache: outputs/phase1_constraints_cache/gcc_full.txt
+    # Rotate to the next distilled constraint every N generated files (0 = no rotation)
+    rotation_interval: 50
+
+  # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
+  # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.
+  phase2:
+    enabled: true
+    # GitHub repo to fetch closed bug reports from (GCC uses Bugzilla, not GitHub
+    # issues, so we ingest a local CSV instead — see csv_path below)
+    github_repo: null
+    # Local CSV with existing bug data (see bugs/*.csv for format)
+    csv_path: bugs/gcc.csv
+    # GitHub token (unused: csv_path is set, so no GitHub API calls)
+    github_token: null
+    # Fraction of iterations that apply a mutator instead of pure generation
+    mutate_ratio: 0.20
+    # Directory to persist synthesized .py mutator scripts.
+    # MUST live OUTSIDE output_folder: phase-2 init runs before fuzz.py's
+    # "folder must not exist" check, so defaulting to {output_folder}/mutators/
+    # would create the output folder early and trip that assertion.
+    mutator_dir: outputs/huf_saem_phase12_10k_mutators
+    synthesis_model: gpt-4o
+
+  # Phase 3: Cloze-Masked Evolutionary Seed Preservation
+  phase3:
+    enabled: false
+    window_size: 50
+    cloze_threshold: 0.30
+    mask_ratio: 0.15
+    seed_db_path: null
+    embedding_model: all-MiniLM-L6-v2
+    islands:
+      num_islands: 2
+      biases:
+        - memory_allocation
+        - concurrency
+      migration_interval: 50
+      migration_fraction: 0.10
+    cloze_model: gpt-4o
+
+  # Phase 4: Active Constraint-Solving Feedback Loop
+  phase4:
+    enabled: false
+    block_threshold: 10
+    min_downstream_size: 5
+    solver_interval: 100
+    solver_model: gpt-4o
+    gcov_binary: gcov
