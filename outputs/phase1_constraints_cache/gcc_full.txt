@@ -1,0 +1,51 @@
+The cpp code below starts with `#include <iostream>`, `#include <cstring>` already present. Write a COMPLETE, self-contained cpp program that includes its own `int main()` and exercises the following characteristics (inspired by the compiler's libobjc pass).
+You MAY define top-level functions, classes, and templates, and add standard `#include` directives as needed. Use ONLY standard cpp headers/features -- do NOT use any compiler-internal headers, types, or APIs.
+Try to incorporate the following characteristics into the code:
+- Define a function that takes two `const void*` parameters and compares them using `strcmp`, returning an integer result. This function should mimic the behavior of `objc_compare_strings`.
+- In the `main` function, declare two `const char*` string variables and initialize them with different string literals.
+- Call the comparison function from `main`, passing the addresses of the two string variables as arguments.
+- Include a conditional statement in `main` to handle the return value of the comparison function, printing different messages based on whether the strings are equal, one is null, or they are different.
+IMPORTANT: `#include <iostream>`, `#include <cstring>` is ALREADY written immediately after this comment -- continue directly from there with the rest of the program (you may add more `#include`s, then your definitions and `int main()`).
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below starts with `#include <iostream>` already present. Write a COMPLETE, self-contained cpp program that includes its own `int main()` and exercises the following characteristics (inspired by the compiler's GCC core compiler (frontend, middle-end, backend, optimizers) pass).
+You MAY define top-level functions, classes, and templates, and add standard `#include` directives as needed. Use ONLY standard cpp headers/features -- do NOT use any compiler-internal headers, types, or APIs.
+Try to incorporate the following characteristics into the code:
+- Write a function that contains a logical "or" operation between two comparisons, where both comparisons use the `!=` (not equal) operator. For example, `if (a != 2 || b != 4)`.
+- Write another function or extend the same function to include a logical "and" operation between two comparisons, where both comparisons use the `==` (equal) operator. For example, `if (c == 3 && d == 5)`.
+- Use variables of integral types for the comparisons, ensuring that the comparisons are between variables and integer constants, e.g., `int a = 1, b = 2, c = 3, d = 4;`.
+- Ensure that the logical operations are part of conditional statements, such as `if` statements, to trigger the optimizer's handling of these logical constructs.
+IMPORTANT: `#include <iostream>` is ALREADY written immediately after this comment -- continue directly from there with the rest of the program (you may add more `#include`s, then your definitions and `int main()`).
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below starts with `#include <iostream>` already present. Write a COMPLETE, self-contained cpp program that includes its own `int main()` and exercises the following characteristics (inspired by the compiler's GCC core compiler (frontend, middle-end, backend, optimizers) pass).
+You MAY define top-level functions, classes, and templates, and add standard `#include` directives as needed. Use ONLY standard cpp headers/features -- do NOT use any compiler-internal headers, types, or APIs.
+Try to incorporate the following characteristics into the code:
+- Define a function that takes a parameter of a pointer type and within the function, pass a function pointer as an argument to another function. This will involve converting a pointer to a function into the function itself for diagnostics.
+- Use a macro defined in a system header that returns a value of a different type than expected by the function, to trigger the handling of wrong-type macros.
+- Ensure that the function call is made within a context where the location information can be tracked, such as within a nested function call or a macro expansion, to exercise the location handling logic.
+- Include a scenario where a null pointer constant is passed as an argument to a function, to test the handling of null pointer constants in argument passing.
+IMPORTANT: `#include <iostream>` is ALREADY written immediately after this comment -- continue directly from there with the rest of the program (you may add more `#include`s, then your definitions and `int main()`).
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below starts with `#include <iostream>` already present. Write a COMPLETE, self-contained cpp program that includes its own `int main()` and exercises the following characteristics (inspired by the compiler's GCC core compiler (frontend, middle-end, backend, optimizers) pass).
+You MAY define top-level functions, classes, and templates, and add standard `#include` directives as needed. Use ONLY standard cpp headers/features -- do NOT use any compiler-internal headers, types, or APIs.
+Try to incorporate the following characteristics into the code:
+- Define a namespace and declare a function inside it, e.g., `namespace S { void func(); }`.
+- Provide a definition for the function outside the namespace, e.g., `void S::func() { /* function body */ }`.
+- Ensure that the function is called from `main`, e.g., `int main() { S::func(); return 0; }`.
+IMPORTANT: `#include <iostream>` is ALREADY written immediately after this comment -- continue directly from there with the rest of the program (you may add more `#include`s, then your definitions and `int main()`).
+
+===PHASE1_SPEC_BREAK===
+
+The cpp code below starts with `#include <iostream>` already present. Write a COMPLETE, self-contained cpp program that includes its own `int main()` and exercises the following characteristics (inspired by the compiler's GCC core compiler (frontend, middle-end, backend, optimizers) pass).
+You MAY define top-level functions, classes, and templates, and add standard `#include` directives as needed. Use ONLY standard cpp headers/features -- do NOT use any compiler-internal headers, types, or APIs.
+Try to incorporate the following characteristics into the code:
+- Define a template class or function that uses a type parameter, and instantiate it with a type that is not a built-in type like `int`, `void`, or `char`, ensuring that the type is not a translation unit declaration.
+- Include a local entity within the template, such as a static variable or a function defined within the template, and instantiate the template in a way that involves this local entity.
+- Use template specialization or a template instantiation that triggers the instantiation of a template containing a translation unit-local entity, which should lead to a diagnostic message being issued by the compiler.
+- Ensure that the template instantiation involves a type or entity that is not directly one of the excluded types or nodes (e.g., not `NULL_TREE`, `error_mark_node`, or any of the specific type nodes like `integer_type_node`).
+IMPORTANT: `#include <iostream>` is ALREADY written immediately after this comment -- continue directly from there with the rest of the program (you may add more `#include`s, then your definitions and `int main()`).
