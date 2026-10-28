@@ -106,3 +106,44 @@ huf_saem:
     solver_interval: 100
     solver_model: gpt-4o
     gcov_binary: gcov
+
+# --------------------------------------------------------------------------- #
+# Tier-1 bug oracle (independent of the four phases).
+#
+# Off by default: with `enabled: false` validation stays exactly what it has
+# always been -- one compile at the default -O level -- so runs produced before
+# this block existed remain comparable.
+#
+# Note that compiler-crash detection (ICE / signal death / compile hang) is
+# ALWAYS active regardless of this block; it only changes how a result is
+# classified, never what gets generated. This block controls the expensive
+# part: differential execution across optimisation levels, which is the only
+# way to catch a wrong-code bug.
+# --------------------------------------------------------------------------- #
+oracle:
+  enabled: false
+  # "differential" = compile + run under every configuration and diff the
+  # outputs. "compile_only" = crash detection alone (same cost as before).
+  mode: differential
+  # Compilers to cross-check. Defaults to the --target compiler when omitted.
+  # Adding clang++ roughly doubles the cost and finds disagreements GCC alone
+  # cannot show.
+  compilers:
+    - g++
+  opt_levels: ["-O0", "-O1", "-O2", "-O3"]
+  std: c++23
+  extra_flags: ["-w"]        # warnings are noise here; ICEs still print
+  compile_timeout: 30        # seconds; exceeding this is reported as a hang
+  hang_threshold: 20         # a successful compile slower than this is flagged
+  run_timeout: 5             # seconds per generated binary
+  mem_limit_mb: 2048         # address-space cap for generated binaries
+  # Re-check every divergence with ASan+UBSan and discard it when the program
+  # itself has undefined behaviour. Turning this off makes runs faster and the
+  # findings much noisier.
+  sanitize: true
+  sanitize_timeout: 20
+  # Two different compilers disagreeing about validity is usually an extension,
+  # not a bug. Same-compiler disagreement across -O levels is always reported.
+  cross_compiler_reject_is_bug: false
+  jobs: 4                    # configurations compiled in parallel
+  bug_dir: null              # defaults to <output_folder>/bugs_found

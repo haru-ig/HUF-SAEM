@@ -18,6 +18,19 @@ Maintains a ChromaDB vector store of valid seed programs. When the compilation s
 **Phase 4 — Active Constraint-Solving Feedback Loop**
 Instruments the target with `gcov` and monitors branch coverage. When a branch is repeatedly reached but never traversed, a GPT-4o agent analyzes the blocking condition and generates an input specifically crafted to satisfy it, breaking through local optima that random generation cannot escape.
 
+### Bug oracle
+
+Independent of the four phases, and opt-in through an `oracle:` config block.
+Compiles each generated program under several (compiler, `-O` level) pairs, runs
+every binary, and compares stdout and exit status — a divergence is a wrong-code
+(miscompilation) candidate, the bug class a compile-only oracle cannot see.
+Candidates are filtered through a determinism re-run and an ASan+UBSan pass so
+that undefined behaviour in the generated program is not misreported as a
+compiler bug. Compiler-crash detection (ICE, signal death, compile hang) reads
+the compiler's output rather than its exit status and is always active. See
+`how_to_run.md` for the full configuration and for `tools/run_oracle.py`, which
+replays an existing corpus through the oracle without re-fuzzing.
+
 ## Setup
 
 HUF-SAEM is designed to run on an AWS EC2 **g5.2xlarge** (NVIDIA A10G, 24 GB VRAM) using the AWS Deep Learning AMI. See `CLAUDE.md` for complete step-by-step environment setup instructions.
@@ -75,6 +88,7 @@ Three ready-to-use config files are provided:
 | `config/cpp_huf_saem.yaml` | Base template — all phases disabled (vanilla Fuzz4All behaviour) |
 | `config/cpp_huf_saem_1phase_enabled.yaml` | Phase 1 only enabled |
 | `config/cpp_huf_saem_4phases_enabled.yaml` | All 4 phases enabled |
+| `config/cpp_huf_saem_bughunt_10k.yaml` | Phase 1 + differential bug oracle (bug hunting, not coverage comparison) |
 
 Each phase is independently toggled with `enabled: true/false` in the `huf_saem:` block. Phases with `enabled: false` are skipped entirely and the fuzzer behaves as vanilla Fuzz4All.
 

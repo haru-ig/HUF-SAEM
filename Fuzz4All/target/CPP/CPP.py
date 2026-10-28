@@ -5,6 +5,7 @@ from typing import List, Union
 
 import torch
 
+from Fuzz4All.huf_saem.oracle import classify_compiler_output, oracle_from_config
 from Fuzz4All.target.target import FResult, Target
 from Fuzz4All.util.Logger import LEVEL
 from Fuzz4All.util.util import comment_remover
@@ -62,6 +63,13 @@ class CPPTarget(Target):
             self.config_dict = config_dict
         else:
             raise NotImplementedError
+        # Tier-1 bug oracle (opt-in via the `oracle:` config block). None keeps
+        # the historical compile-only behaviour, so existing arms stay
+        # byte-for-byte comparable.
+        self._oracle = oracle_from_config(self.config_dict, default_compiler=self.target_name)
+        # The file the last validate_compiler() call actually accepted: either
+        # `filename` itself, or the /tmp copy with a main() appended.
+        self._validated_source = None
 
     def write_back_file(self, code):
         try:
@@ -178,6 +186,18 @@ class CPPTarget(Target):
             )  # kill all tests thank you
             return FResult.TIMED_OUT, compiler
 
+        self._validated_source = filename
+
+        # A compiler crash must be recognised from what the compiler SAYS, not
+        # from its exit status: GCC exits 1 on a typical ICE, the same status
+        # it uses for an ordinary syntax error, so checking the status alone
+        # files real bugs away with the noise.
+        crash = classify_compiler_output(
+            exit_code.returncode, (exit_code.stdout or "") + (exit_code.stderr or "")
+        )
+        if crash:
+            return FResult.ERROR, f"[{crash}] {compiler}\n{exit_code.stderr}"
+
         if exit_code.returncode == 1:
             if "undefined reference to `main'" in exit_code.stderr:
                 try:
@@ -194,6 +214,7 @@ class CPPTarget(Target):
                     text=True,
                 )
                 if exit_code.returncode == 0:
+                    self._validated_source = "/tmp/temp{}.cpp".format(self.CURRENT_TIME)
                     return FResult.SAFE, "its safe"
             return FResult.FAILURE, exit_code.stderr
         elif exit_code.returncode != 0:
@@ -204,6 +225,14 @@ class CPPTarget(Target):
     def validate_individual(self, filename) -> (FResult, str):
         fresult, msg = self.validate_compiler(self.target_name, filename)
         if fresult == FResult.SAFE:
+            # The program is well-formed under the reference configuration, so
+            # it is now worth the (much more expensive) differential run: the
+            # only bug class a single compile can reveal is a crash.
+            if self._oracle is not None and not getattr(self, "_scoring_prompt", False):
+                verdict = self._oracle.check(self._validated_source or filename)
+                if verdict.is_bug:
+                    where = f"\nsaved to: {verdict.saved_to}" if verdict.saved_to else ""
+                    return FResult.ERROR, f"{verdict}{where}"
             return FResult.SAFE, "its safe"
         elif fresult == FResult.ERROR:
             return FResult.ERROR, f"{msg}"

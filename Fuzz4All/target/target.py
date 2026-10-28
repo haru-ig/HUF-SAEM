@@ -170,6 +170,10 @@ class Target(object):
         )
         unique_set = set()
         score = 0
+        # Prompt scoring only asks "does this compile?"; running the full
+        # differential oracle here would multiply the cost of the prompt search
+        # for no extra signal.
+        self._scoring_prompt = True
         for fo in fos:
             code = self.prompt_used["begin"] + "\n" + fo
             wb_file = self.write_back_file(code)
@@ -181,6 +185,7 @@ class Target(object):
             ):
                 unique_set.add(self.clean_code(code))
                 score += 1
+        self._scoring_prompt = False
         return score
 
     # each target defines their way of validating prompts

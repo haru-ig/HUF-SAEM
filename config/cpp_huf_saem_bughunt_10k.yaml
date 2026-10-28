@@ -1,0 +1,160 @@
+# HUF-SAEM C++ bug-hunting configuration — Phase 1 ON + Tier-1 oracle ON.
+#
+# Same generator, prompts and budget as cpp_huf_saem_1phase_enabled_10k.yaml;
+# the only difference is that validation runs the differential oracle instead
+# of a single -O0 compile. Use this arm to look for BUGS, not to compare
+# coverage: the oracle costs ~8 compiles + ~5 program runs per input, so the
+# inputs/hour here are not comparable with the coverage ablation arms.
+#
+# Findings land in <output_folder>/bugs_found/<kind>/<hash>/.
+
+fuzzing:
+  output_folder: Results/cpp_huf_saem
+  num: 10000
+  total_time: 24          # hours
+  otf: true               # on-the-fly validation (required for Phase 4 coverage)
+  resume: false
+  evaluate: false
+  use_hand_written_prompt: false
+  no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
+  prompt_strategy: 3
+  log_level: 1
+
+target:
+  language: cpp
+  path_documentation: config/documentation/cpp/cpp_23.md
+  path_example_code: null
+  path_hand_written_prompt: null
+  trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
+  input_hint: "#include <bits/stdc++.h>"
+  target_string: null
+
+llm:
+  temperature: 0.8
+  batch_size: 5
+  device: cuda
+  model_name: ollama/deepseek-coder-v2
+  max_length: 1024
+  additional_eos_tokens: []
+
+# --------------------------------------------------------------------------- #
+# HUF-SAEM Architecture Configuration
+# Each phase is independently opt-in. Set enabled: true to activate.
+# --------------------------------------------------------------------------- #
+huf_saem:
+
+  # Phase 1: Source-Aware Contextual Autoprompting
+  # Scans compiler source, distills constraints via GPT-4o, injects into prompt.
+  phase1:
+    enabled: true
+    # Path to the GCC source tree (shallow clone of gcc-mirror/gcc)
+    source_dir: /home/ec2-user/gcc
+    # Grammar for tree-sitter: "cpp" | "c" | "python"
+    source_language: cpp
+    # Minimum conditional nesting depth to flag a function
+    complexity_threshold: 4
+    # Number of top-complexity snippets to distill (one GPT-4o call each)
+    top_k_snippets: 10
+    distillation_model: gpt-4o
+    # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
+    # Cached outside output_folder: _init_phase1 runs (and may create this
+    # path's parent dir) before fuzz.py's "folder must not exist" check.
+    constraint_cache: outputs/phase1_constraints_cache/gcc_full.txt
+    # Rotate to the next distilled constraint every N generated files (0 = no rotation)
+    rotation_interval: 50
+
+  # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
+  # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.
+  phase2:
+    enabled: false
+    # GitHub repo to fetch closed bug reports from
+    github_repo: null        # e.g. "llvm/llvm-project"
+    # Local CSV with existing bug data (see bugs/*.csv for format)
+    csv_path: null           # e.g. bugs/clang.csv
+    # GitHub token (or set GITHUB_TOKEN env var)
+    github_token: null
+    # Fraction of iterations that apply a mutator instead of pure generation
+    mutate_ratio: 0.20
+    # Directory to persist synthesized .py mutator scripts
+    mutator_dir: null        # defaults to {output_folder}/mutators/
+    synthesis_model: gpt-4o
+
+  # Phase 3: Cloze-Masked Evolutionary Seed Preservation
+  # Maintains a valid-seed vector DB; activates cloze-fill when success rate drops.
+  phase3:
+    enabled: false
+    # Rolling window size for computing the success rate
+    window_size: 50
+    # Success rate threshold below which cloze mode activates (0.0–1.0)
+    cloze_threshold: 0.30
+    # Fraction of tokens to mask in each seed
+    mask_ratio: 0.15
+    # ChromaDB persistent storage path
+    seed_db_path: null       # defaults to {output_folder}/seed_db/
+    # sentence-transformers model for embedding seeds
+    embedding_model: all-MiniLM-L6-v2
+    islands:
+      num_islands: 2
+      biases:
+        - memory_allocation
+        - concurrency
+      # Iterations between inter-island migrations
+      migration_interval: 50
+      # Fraction of top-population to migrate
+      migration_fraction: 0.10
+    cloze_model: gpt-4o
+
+  # Phase 4: Active Constraint-Solving Feedback Loop
+  # Instruments with gcov, detects blocked branches, uses GPT-4o to solve constraints.
+  phase4:
+    enabled: false
+    # Consecutive misses before a branch is flagged as "blocked"
+    block_threshold: 10
+    # Minimum uncovered downstream lines to consider a branch worth targeting
+    min_downstream_size: 5
+    # Check blocked branches every N iterations
+    solver_interval: 100
+    solver_model: gpt-4o
+    gcov_binary: gcov
+
+# --------------------------------------------------------------------------- #
+# Tier-1 bug oracle (independent of the four phases).
+#
+# Off by default: with `enabled: false` validation stays exactly what it has
+# always been -- one compile at the default -O level -- so runs produced before
+# this block existed remain comparable.
+#
+# Note that compiler-crash detection (ICE / signal death / compile hang) is
+# ALWAYS active regardless of this block; it only changes how a result is
+# classified, never what gets generated. This block controls the expensive
+# part: differential execution across optimisation levels, which is the only
+# way to catch a wrong-code bug.
+# --------------------------------------------------------------------------- #
+oracle:
+  enabled: true
+  # "differential" = compile + run under every configuration and diff the
+  # outputs. "compile_only" = crash detection alone (same cost as before).
+  mode: differential
+  # Compilers to cross-check. Defaults to the --target compiler when omitted.
+  # Adding clang++ roughly doubles the cost and finds disagreements GCC alone
+  # cannot show.
+  compilers:
+    - g++
+    - clang++
+  opt_levels: ["-O0", "-O1", "-O2", "-O3"]
+  std: c++23
+  extra_flags: ["-w"]        # warnings are noise here; ICEs still print
+  compile_timeout: 30        # seconds; exceeding this is reported as a hang
+  hang_threshold: 20         # a successful compile slower than this is flagged
+  run_timeout: 5             # seconds per generated binary
+  mem_limit_mb: 2048         # address-space cap for generated binaries
+  # Re-check every divergence with ASan+UBSan and discard it when the program
+  # itself has undefined behaviour. Turning this off makes runs faster and the
+  # findings much noisier.
+  sanitize: true
+  sanitize_timeout: 20
+  # Two different compilers disagreeing about validity is usually an extension,
+  # not a bug. Same-compiler disagreement across -O levels is always reported.
+  cross_compiler_reject_is_bug: false
+  jobs: 4                    # configurations compiled in parallel
+  bug_dir: null              # defaults to <output_folder>/bugs_found
