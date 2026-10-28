@@ -64,8 +64,8 @@ class CPPTarget(Target):
         else:
             raise NotImplementedError
         # Tier-1 bug oracle (opt-in via the `oracle:` config block). None keeps
-        # the historical compile-only behaviour, so existing arms stay
-        # byte-for-byte comparable.
+        # the historical single-compile validation, so existing arms generate
+        # the same inputs (only ICE classification differs, see below).
         self._oracle = oracle_from_config(self.config_dict, default_compiler=self.target_name)
         # The file the last validate_compiler() call actually accepted: either
         # `filename` itself, or the /tmp copy with a main() appended.

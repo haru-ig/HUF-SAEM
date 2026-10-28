@@ -125,9 +125,11 @@ Two things change that:
 **Crash detection is always on.** The compiler's own output is scanned for an
 internal compiler error, a signal death, or a compile hang, regardless of exit
 status (GCC exits 1 on a typical ICE — the same status as a syntax error).
-Hits are logged as `has potential error!` in `log.txt`. This only affects how
-a result is classified, never what is generated, so runs stay comparable with
-earlier ones.
+Hits are logged as `has potential error!` in `log.txt`. This never changes
+what is generated, so coverage and input counts stay comparable with earlier
+runs. It does change classification: an ICE that used to be counted as an
+ordinary compile failure is now counted as a potential error, so error/failure
+counts are not directly comparable with runs made before this change.
 
 **Differential execution is opt-in** via an `oracle:` block:
 
@@ -135,7 +137,7 @@ earlier ones.
 oracle:
   enabled: true
   mode: differential          # or compile_only for crash detection alone
-  compilers: [g++, clang++]
+  compilers: [g++]            # add clang++ for an independent reference (2x cost)
   opt_levels: ["-O0", "-O1", "-O2", "-O3"]
   std: c++23
   sanitize: true              # discard divergences caused by UB in the program
@@ -177,9 +179,17 @@ no one has ever looked for a wrong-code bug in those programs. Re-check them
 without re-fuzzing:
 
 ```bash
-python tools/run_oracle.py outputs/huf_saem_1phase_10k_run2 \
-    --compilers g++ clang++ --opt-levels -O0 -O1 -O2 -O3 -j 6
+python tools/run_oracle.py outputs/huf_saem_1phase_run2 \
+    --opt-levels -O0 -O1 -O2 -O3 -j 6
 ```
+
+This checks g++ against itself across `-O` levels, so every candidate is a g++
+candidate. Adding `--compilers g++ clang++` also catches g++ bugs that are
+present at every `-O` level (e.g. in the C++ front end), but it doubles the cost,
+adds noise from implementation-defined behaviour, and a divergence no longer
+says which compiler is wrong — triage those by hand before reporting.
+
+Run this on the Linux EC2 host: on macOS `g++` is Apple Clang.
 
 The run directory is never modified; artefacts go to `--out`
 (default `outputs/oracle_findings`). Exit status is 1 when something was found.

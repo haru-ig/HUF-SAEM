@@ -11,8 +11,8 @@ outputs are compared. The run directory is never modified; artefacts go to
 Usage:
     python tools/run_oracle.py RUN_DIR [RUN_DIR ...] [options]
 
-    python tools/run_oracle.py outputs/huf_saem_1phase_10k_run2 \
-        --compilers g++ clang++ --opt-levels -O0 -O1 -O2 -O3 -j 6
+    python tools/run_oracle.py outputs/huf_saem_1phase_run2 \
+        --opt-levels -O0 -O1 -O2 -O3 -j 6
 
 Exit status is 1 when at least one bug candidate was found.
 """
