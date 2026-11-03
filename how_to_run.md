@@ -157,7 +157,12 @@ A divergence is a miscompilation candidate. Before anything is reported it must
 survive three gates:
 
 1. **determinism** — the reference binary is run twice; a program that prints
-   an address or a timestamp is dropped;
+   an address or a timestamp is dropped. Programs are built `-fPIE -pie` for
+   this reason, not for hardening: `gcc14-g++` links non-PIE by default here,
+   which pins a string literal's address at link time, so a program printing
+   that pointer looks perfectly deterministic to the gate while still
+   differing across `-O` levels. Under PIE, ASLR moves it between runs and
+   the gate sees it;
 2. **UB** — the program is rebuilt with ASan+UBSan and run; if the sanitizers
    complain, the divergence is the program's fault, not the compiler's;
 3. **uninitialised reads** — the program is built twice more, with

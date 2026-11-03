@@ -269,7 +269,13 @@ class DifferentialOracle:
         compilers: Sequence[str] = ("g++",),
         opt_levels: Sequence[str] = ("-O0", "-O1", "-O2", "-O3"),
         std: str = "c++23",
-        extra_flags: Sequence[str] = ("-w",),
+        # -fPIE/-pie is not a hardening choice here, it is what makes the
+        # determinism gate work. gcc14-g++ on Amazon Linux links non-PIE by
+        # default, so a program that prints a pointer gets a fixed address:
+        # identical across two runs of one binary (the gate sees determinism)
+        # but different across -O levels, because the layout moved. Under PIE
+        # the address is randomised per run and the gate drops the program.
+        extra_flags: Sequence[str] = ("-w", "-fPIE", "-pie"),
         compile_timeout: float = 30.0,
         run_timeout: float = 5.0,
         hang_threshold: float = 20.0,

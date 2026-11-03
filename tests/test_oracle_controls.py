@@ -127,6 +127,26 @@ int main() {
     assert not verdict.is_bug, f"input-dependent program reported as {verdict.kind}"
 
 
+def test_address_leak_is_not_a_miscompilation(oracle, tmp_path):
+    """A printed pointer value differs by -O level because the layout moved.
+
+    The determinism gate is meant to drop these, but it compares two runs of
+    the same binary -- which only varies if the address does. gcc14-g++ links
+    non-PIE by default on this host, pinning the literal at link time, so the
+    gate passed and the program was filed as wrong_code. Building PIE lets
+    ASLR move it between runs, which is what the gate is looking for.
+    """
+    verdict = _check(oracle, tmp_path, "address_leak", """
+#include <cstdio>
+int main() {
+    const char* s = "Hello, World!";
+    printf("%d\\n", (int)(long long)s);
+    return 0;
+}
+""")
+    assert not verdict.is_bug, f"address leak reported as {verdict.kind}"
+
+
 def test_well_defined_program_is_safe(oracle, tmp_path):
     verdict = _check(oracle, tmp_path, "plain", """
 #include <cstdio>
