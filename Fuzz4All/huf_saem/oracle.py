@@ -30,6 +30,7 @@ import resource
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -270,6 +271,7 @@ class DifferentialOracle:
         self.jobs = max(1, jobs)
         self.language = language
         self._seen_signatures: set = set()
+        self._uninit_gate_support: Dict[str, bool] = {}
         self.stats: Dict[str, int] = {}
 
         self.configs = [
@@ -451,6 +453,10 @@ class DifferentialOracle:
             if ub is not None:
                 return Verdict("ub", "divergence explained by UB in the program",
                                ub[:2000])
+            uninit = self._uninit_report(ref_cfg.compiler, source_file, workdir)
+            if uninit is not None:
+                return Verdict("ub", "divergence explained by an uninitialised read",
+                               uninit[:2000])
 
         detail_lines = []
         for fingerprint, names in groups.items():
@@ -508,6 +514,86 @@ class DifferentialOracle:
         if re.search(r"runtime error:|AddressSanitizer|UndefinedBehaviorSanitizer|LeakSanitizer", text):
             return text.strip()
         return None
+
+    def supports_uninit_gate(self, compiler: str) -> bool:
+        """Whether *compiler* understands -ftrivial-auto-var-init (GCC 12+).
+
+        Probed once per compiler against a trivial program, so a program that
+        simply fails to build is never mistaken for a missing flag. The first
+        negative result is announced on stderr: a silently absent gate looks
+        exactly like a clean corpus, which is the failure mode worth shouting
+        about.
+        """
+        cached = self._uninit_gate_support.get(compiler)
+        if cached is not None:
+            return cached
+
+        probe_dir = tempfile.mkdtemp(prefix="huf_oracle_probe_")
+        try:
+            src = os.path.join(probe_dir, "probe.cpp")
+            with open(src, "w", encoding="utf-8") as f:
+                f.write("int main() { return 0; }\n")
+            proc = self._compile(
+                src, _Config(compiler, "-O1"), os.path.join(probe_dir, "probe.out"),
+                extra=["-ftrivial-auto-var-init=zero"],
+            )
+            supported = proc.returncode == 0 and not proc.timed_out
+        finally:
+            shutil.rmtree(probe_dir, ignore_errors=True)
+
+        self._uninit_gate_support[compiler] = supported
+        if not supported:
+            print(
+                f"\n*** WARNING: {compiler} does not support "
+                f"-ftrivial-auto-var-init (needs GCC 12+).\n"
+                f"*** The uninitialised-read gate is DISABLED for this run.\n"
+                f"*** ASan/UBSan cannot see uninitialised reads, so programs "
+                f"that read an indeterminate\n"
+                f"*** value will be reported as wrong_code. Expect false "
+                f"positives; use gcc14-g++ instead.\n",
+                file=sys.stderr,
+            )
+        return supported
+
+    def _uninit_report(self, compiler: str, source: str, workdir: str) -> Optional[str]:
+        """Return a description of an uninitialised read, or None if clean.
+
+        ASan and UBSan do not see reads of uninitialised automatic variables --
+        that is MemorySanitizer, which needs clang and an instrumented
+        libstdc++. GCC 12+ can stand in for it: build the program twice with
+        the two -ftrivial-auto-var-init modes, which differ only in what an
+        uninitialised local starts out holding. If the two builds behave
+        differently the program read one, so the cross-optimisation divergence
+        says nothing about the compiler.
+
+        Requires GCC >= 12. On an older compiler the flag does not exist and
+        the gate cannot run at all; rather than quietly reporting every
+        program clean -- which lets uninitialised reads through as wrong_code
+        and is how this corpus produced a flood of false positives once
+        already -- that case is announced once via supports_uninit_gate().
+        """
+        if not self.supports_uninit_gate(compiler):
+            return None
+
+        fingerprints = {}
+        for mode in ("zero", "pattern"):
+            exe = os.path.join(workdir, f"autoinit_{mode}.out")
+            proc = self._compile(
+                source, _Config(compiler, "-O1"), exe,
+                extra=[f"-ftrivial-auto-var-init={mode}"],
+            )
+            if proc.returncode != 0 or proc.timed_out:
+                return None  # this program was rejected -- cannot tell
+            fingerprints[mode] = self._fingerprint(self._execute(exe, workdir))
+
+        if fingerprints["zero"] == fingerprints["pattern"]:
+            return None
+        return (
+            "behaviour changes with -ftrivial-auto-var-init, so the program "
+            "reads an uninitialised variable\n"
+            f"--- =zero ---\n{fingerprints['zero'][:700]}\n"
+            f"--- =pattern ---\n{fingerprints['pattern'][:700]}"
+        )
 
     # -- artefacts ----------------------------------------------------------
 

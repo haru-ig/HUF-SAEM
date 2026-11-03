@@ -152,7 +152,33 @@ candidate. Before anything is reported it must survive two gates:
 1. **determinism** — the reference binary is run twice; a program that prints
    an address or a timestamp is dropped;
 2. **UB** — the program is rebuilt with ASan+UBSan and run; if the sanitizers
-   complain, the divergence is the program's fault, not the compiler's.
+   complain, the divergence is the program's fault, not the compiler's;
+3. **uninitialised reads** — the program is built twice more, with
+   `-ftrivial-auto-var-init=zero` and `=pattern`. These differ only in what an
+   uninitialised local starts out holding, so a behaviour change means the
+   program read one. ASan and UBSan cannot see this (that is MemorySanitizer,
+   which needs clang and an instrumented libstdc++), and it is the single most
+   common false positive on LLM-generated corpora — `int n; std::cin >> n;`
+   with no stdin leaves `n` indeterminate and every `-O` level then prints
+   something different. Needs GCC 12+; on an older compiler the gate cannot
+   run and the oracle says so loudly at startup.
+
+### Setup the gates depend on
+
+GCC ships the `-fsanitize` driver flags but not the runtime libraries. Without
+them the sanitizer build compiles fine and then dies at load with
+`error while loading shared libraries: libasan.so.N` — which looks to the gate
+like a program with no UB, so **every** divergence gets reported. Install the
+runtime matching the compiler you fuzz:
+
+```bash
+sudo dnf install -y libasan libubsan   # for g++ 11 (libasan.so.6)
+sudo dnf install -y libasan8           # for gcc14-g++ (libasan.so.8)
+```
+
+`tools/run_oracle.py` defaults to `gcc14-g++`: GCC 11 is in deep maintenance,
+so a miscompile found there is likely already fixed upstream, and the
+uninitialised-read gate needs a GCC 12+ flag.
 
 Findings land in `<bug_dir>/<kind>/<hash>/` as `program.cpp`, `report.txt` and
 `report.json`. Kinds: `ice`, `compiler_signal`, `compile_hang`, `wrong_code`,
@@ -183,8 +209,8 @@ python tools/run_oracle.py outputs/huf_saem_1phase_run2 \
     --opt-levels -O0 -O1 -O2 -O3 -j 6
 ```
 
-This checks g++ against itself across `-O` levels, so every candidate is a g++
-candidate. Adding `--compilers g++ clang++` also catches g++ bugs that are
+This checks one compiler against itself across `-O` levels, so every candidate
+belongs to that compiler. Adding `--compilers g++ clang++` also catches g++ bugs that are
 present at every `-O` level (e.g. in the C++ front end), but it doubles the cost,
 adds noise from implementation-defined behaviour, and a divergence no longer
 says which compiler is wrong — triage those by hand before reporting.

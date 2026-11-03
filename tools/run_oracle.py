@@ -35,7 +35,10 @@ from Fuzz4All.huf_saem.oracle import DifferentialOracle  # noqa: E402
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("run_dirs", nargs="+", help="directories containing *.fuzz programs")
-    p.add_argument("--compilers", nargs="+", default=["g++"], help="compilers to cross-check (default: g++)")
+    p.add_argument("--compilers", nargs="+", default=["gcc14-g++"],
+                   help="compilers to cross-check (default: gcc14-g++). GCC 11 is in deep "
+                        "maintenance, and the uninitialised-read gate needs "
+                        "-ftrivial-auto-var-init, which is GCC 12+.")
     p.add_argument("--opt-levels", nargs="+", default=["-O0", "-O1", "-O2", "-O3"])
     p.add_argument("--std", default="c++23")
     p.add_argument("--out", default="outputs/oracle_findings", help="where bug artefacts are written")
@@ -72,7 +75,13 @@ def main(argv=None) -> int:
         print(f"warning: skipping unavailable compiler(s): {', '.join(missing)}", file=sys.stderr)
 
     print(f"configurations: {', '.join(c.name for c in oracle.configs)}")
-    print(f"UB gate: {'off' if args.no_sanitize else 'on'}   artefacts: {args.out}\n")
+    print(f"UB gate: {'off' if args.no_sanitize else 'on'}   artefacts: {args.out}")
+    if not args.no_sanitize:
+        # Probe up front so a missing gate is known before the run starts,
+        # not thousands of programs in.
+        gated = [c for c in oracle.compilers if oracle.supports_uninit_gate(c)]
+        print(f"uninitialised-read gate: {'on' if gated else 'OFF (see warning above)'}")
+    print()
 
     grand_total = Counter()
     found = []
