@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from Fuzz4All.huf_saem.oracle import DifferentialOracle  # noqa: E402
+from Fuzz4All.huf_saem.oracle import DEFAULT_STDIN, DifferentialOracle  # noqa: E402
 
 
 def parse_args(argv=None):
@@ -47,6 +47,10 @@ def parse_args(argv=None):
     p.add_argument("--run-timeout", type=float, default=5.0)
     p.add_argument("--compile-timeout", type=float, default=30.0)
     p.add_argument("--no-sanitize", action="store_true", help="skip the UB gate (faster, noisier)")
+    p.add_argument("--empty-stdin", action="store_true",
+                   help="run programs with stdin closed instead of the fixed input stream. "
+                        "Reproduces the old behaviour; expect false positives from programs "
+                        "whose input read fails and leaves a variable indeterminate.")
     p.add_argument("--cross-compiler-rejects", action="store_true",
                    help="also report programs one compiler accepts and another rejects")
     p.add_argument("-v", "--verbose", action="store_true", help="print every non-safe verdict")
@@ -66,6 +70,7 @@ def main(argv=None) -> int:
         cross_compiler_reject_is_bug=args.cross_compiler_rejects,
         bug_dir=args.out,
         jobs=1,  # parallelism is across programs, not across configurations
+        stdin_data=None if args.empty_stdin else DEFAULT_STDIN,
     )
     if not oracle.available:
         print(f"ERROR: none of {args.compilers} found on PATH", file=sys.stderr)
@@ -81,6 +86,7 @@ def main(argv=None) -> int:
         # not thousands of programs in.
         gated = [c for c in oracle.compilers if oracle.supports_uninit_gate(c)]
         print(f"uninitialised-read gate: {'on' if gated else 'OFF (see warning above)'}")
+    print(f"stdin: {'closed (--empty-stdin)' if args.empty_stdin else 'fixed input stream'}")
     print()
 
     grand_total = Counter()

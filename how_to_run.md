@@ -146,8 +146,15 @@ oracle:
 ```
 
 Each program is compiled under every (compiler, -O level) pair, every binary is
-run, and stdout + exit status are compared. A divergence is a miscompilation
-candidate. Before anything is reported it must survive two gates:
+run against a **fixed deterministic input stream**, and stdout + exit status are
+compared. Feeding real input matters: with stdin closed, `int n; std::cin >> n;`
+leaves `n` holding stack garbage that differs per `-O` level, and the oracle
+reports the program's own undefined behaviour as a miscompilation. On
+`outputs/huf_saem_baseline_10k` that one change took the first 420 programs from
+16 candidates to 0. `--empty-stdin` restores the old behaviour.
+
+A divergence is a miscompilation candidate. Before anything is reported it must
+survive three gates:
 
 1. **determinism** — the reference binary is run twice; a program that prints
    an address or a timestamp is dropped;
@@ -158,10 +165,15 @@ candidate. Before anything is reported it must survive two gates:
    uninitialised local starts out holding, so a behaviour change means the
    program read one. ASan and UBSan cannot see this (that is MemorySanitizer,
    which needs clang and an instrumented libstdc++), and it is the single most
-   common false positive on LLM-generated corpora — `int n; std::cin >> n;`
-   with no stdin leaves `n` indeterminate and every `-O` level then prints
-   something different. Needs GCC 12+; on an older compiler the gate cannot
-   run and the oracle says so loudly at startup.
+   common false positive on LLM-generated corpora. Needs GCC 12+; on an older
+   compiler the gate cannot run and the oracle says so loudly at startup.
+
+   This gate is a backstop, not the primary defence, and it has a known hole:
+   it compares two fixed sentinels, so a program guarded by `if (n <= 0)`
+   behaves identically under both (`zero` gives 0, `pattern` gives a negative
+   int) and passes while the real builds still diverge. The fixed stdin stream
+   is what actually removes this class; the sentinel check only catches
+   uninitialised locals that no input would have defined.
 
 ### Setup the gates depend on
 

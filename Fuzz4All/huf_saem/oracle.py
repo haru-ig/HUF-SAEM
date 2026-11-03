@@ -135,19 +135,44 @@ def _rlimits(mem_mb: Optional[int], cpu_s: int, fsize_mb: int = 64):
     return _apply
 
 
+def _default_stdin() -> bytes:
+    """A fixed, deterministic input stream fed to every generated program.
+
+    Running with stdin closed is what makes an LLM corpus unusable for a
+    differential oracle: `int n; std::cin >> n;` then leaves n holding
+    whatever the stack held, each -O level sees different garbage, and the
+    oracle reports a miscompilation that is really the program's own
+    undefined behaviour. Feeding real input makes the extraction succeed, so
+    n is defined and the optimisation levels agree.
+
+    Deliberately boring: a small count first (most generated programs read a
+    length before a list), then ints, then floats, then words -- enough for a
+    program to consume without blocking, identical on every run and every
+    configuration, which is all the oracle requires.
+    """
+    numbers = " ".join(str(i) for i in range(1, 257))
+    floats = " ".join(f"{i}.5" for i in range(1, 65))
+    words = " ".join(f"word{i}" for i in range(1, 65))
+    return f"5\n{numbers}\n{floats}\n{words}\n".encode()
+
+
+DEFAULT_STDIN = _default_stdin()
+
+
 def _run(
     cmd: Sequence[str],
     timeout: float,
     cwd: Optional[str] = None,
     preexec=None,
     env: Optional[Dict[str, str]] = None,
+    stdin_data: Optional[bytes] = None,
 ) -> _Proc:
     """Run *cmd*, killing the whole process group if it overruns *timeout*."""
     started = time.time()
     try:
         proc = subprocess.Popen(
             list(cmd),
-            stdin=subprocess.DEVNULL,
+            stdin=subprocess.PIPE if stdin_data is not None else subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=cwd,
@@ -159,7 +184,7 @@ def _run(
         return _Proc(127, "", str(exc), False, time.time() - started)
 
     try:
-        out, err = proc.communicate(timeout=timeout)
+        out, err = proc.communicate(input=stdin_data, timeout=timeout)
         timed_out = False
     except subprocess.TimeoutExpired:
         try:
@@ -255,6 +280,7 @@ class DifferentialOracle:
         bug_dir: Optional[str] = None,
         jobs: int = 4,
         language: str = "cpp",
+        stdin_data: Optional[bytes] = DEFAULT_STDIN,
     ) -> None:
         self.compilers = [c for c in compilers if shutil.which(c)]
         self.opt_levels = list(opt_levels)
@@ -270,6 +296,7 @@ class DifferentialOracle:
         self.bug_dir = bug_dir
         self.jobs = max(1, jobs)
         self.language = language
+        self.stdin_data = stdin_data
         self._seen_signatures: set = set()
         self._uninit_gate_support: Dict[str, bool] = {}
         self.stats: Dict[str, int] = {}
@@ -305,6 +332,7 @@ class DifferentialOracle:
             timeout=self.run_timeout,
             cwd=cwd,
             preexec=_rlimits(self.mem_limit_mb, int(self.run_timeout) + 1),
+            stdin_data=self.stdin_data,
         )
 
     @staticmethod
@@ -509,6 +537,9 @@ class DifferentialOracle:
                 **os.environ,
                 "ASAN_OPTIONS": f"hard_rss_limit_mb={max(self.mem_limit_mb, 8192)}:detect_leaks=0",
             },
+            # Same input as the runs that diverged, or the sanitizer build
+            # takes a different path through the program and sees nothing.
+            stdin_data=self.stdin_data,
         )
         text = run.output
         if re.search(r"runtime error:|AddressSanitizer|UndefinedBehaviorSanitizer|LeakSanitizer", text):
