@@ -201,6 +201,32 @@ Findings land in `<bug_dir>/<kind>/<hash>/` as `program.cpp`, `report.txt` and
 `report.json`. Kinds: `ice`, `compiler_signal`, `compile_hang`, `wrong_code`,
 `hang_divergence`, `reject_divergence`.
 
+### Benign divergences the gates cannot catch
+
+The gates above remove divergences that are *defects* — in the program
+(an indeterminate read) or in the harness (a dead sanitizer, a non-PIE
+binary). They cannot remove divergences that are **conforming**: where the
+standard permits more than one answer and `-O0` and `-O2` each pick a
+different one. No sanitizer or build flag distinguishes these from a real
+miscompilation, so they have to be recognised during triage.
+
+The one seen on these corpora:
+
+**Unspecified return magnitudes.** `strcmp("Hello", "World")` returns `-15`
+at `-O0` (glibc, the byte difference) and `-1` at `-O1` and above (GCC folds
+it to the sign). C11 §7.24.4.2 promises only a value greater than, equal to
+or less than zero, so both are correct. The same applies to `memcmp` and
+`strncmp`. `-fno-builtin-strcmp` suppresses it but also disables the
+constant-folding a compiler fuzzer wants to exercise, so don't.
+
+Others to expect in this family: iteration order of unordered containers,
+the relative order of equal elements under `std::sort`, and floating-point
+results that differ with contraction or reassociation.
+
+A candidate is only interesting once you have ruled these out — check what
+the standard actually guarantees about the value being printed before
+reporting anything upstream.
+
 Ready-made config:
 
 ```bash
