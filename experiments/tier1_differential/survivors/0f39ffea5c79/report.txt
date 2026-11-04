@@ -1,0 +1,7 @@
+[wrong_code] 2 distinct behaviours across 4 configurations
+--- gcc14-g++ -O0 ---
+rc=0
+The strings are different. Result: -15
+--- gcc14-g++ -O1, gcc14-g++ -O2, gcc14-g++ -O3 ---
+rc=0
+The strings are different. Result: -1

@@ -1,0 +1,15 @@
+  5856 programs in 501.0 min
+    safe                   3108  (53.1%)
+    nonterminating         1785  (30.5%)
+    invalid                 450  (7.7%)
+    ub                      277  (4.7%)
+    nondeterministic        236  (4.0%)
+
+=== total ===
+  safe                   3108
+  nonterminating         1785
+  invalid                 450
+  ub                      277
+  nondeterministic        236
+
+bug candidates: 0

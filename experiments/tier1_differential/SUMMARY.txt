@@ -1,0 +1,117 @@
+############################################################
+# TIER-1 DIFFERENTIAL ORACLE — RESULTS
+# Replay of two existing corpora through the bug oracle.
+# Does running a real differential oracle over the Phase-1
+# ablation corpora find any GCC 14 miscompilation?
+# run: 2026-11-03 16:14 -> 2026-11-04 ~02:00 UTC
+############################################################
+
+RESULT: zero compiler bugs, both arms.
+
+Oracle: gcc14-g++ at -O0/-O1/-O2/-O3, stdout+exit status compared
+across the four configurations. Replay only -- neither corpus was
+re-fuzzed, and neither run directory was modified.
+
+======================================================================
+VERDICT TALLIES
+----------------------------------------------------------------------
+                      phase1_on            phase1_off
+                      (1phase_10k_run2)    (baseline_10k)
+  programs            10000                5856
+  wall clock          575 min              501 min
+
+  safe                 9094  (90.9%)        3108  (53.1%)
+  invalid               750   (7.5%)         450   (7.7%)
+  nondeterministic       81   (0.8%)         236   (4.0%)
+  wrong_code             41   (0.4%)           0   (0.0%)
+  ub                     25   (0.2%)         277   (4.7%)
+  nonterminating          9   (0.1%)        1785  (30.5%)
+
+======================================================================
+TRIAGE OF THE 41 CANDIDATES
+----------------------------------------------------------------------
+  41 candidate files
+  32 distinct programs       (rest are Fuzz4All mutations of each other)
+  13 survive the PIE re-check    (tools/triage_findings.py, triage.log)
+   0 are compiler bugs
+
+All 13 survivors are the same shape -- a `const void*` comparator
+calling strcmp -- in two benign sub-classes:
+
+  (a) strcmp magnitude, 8 programs
+      -15 at -O0 (glibc returns the byte difference)
+       -1 at -O1+ (GCC folds the call and returns the sign)
+      C11 7.24.4.2 promises only the sign. Both are conforming.
+
+  (b) &std::string passed where const char* is expected, 10 programs
+      "greater" at -O0/-O1 vs "less" at -O2/-O3.
+      static_cast<const char*>(&some_std_string) reads the object's
+      SSO pointer field, so strcmp compares two stack ADDRESSES.
+      Which sorts higher depends on frame layout, which changes with
+      -O level. PIE does not catch this: ASLR relocates both buffers
+      together, so their relative order is invariant within a binary
+      and the determinism gate sees two identical runs.
+  (the two overlap; some programs contain both patterns)
+
+All 41 trace to ONE Phase-1 prompt, generated from the libobjc pass:
+"Define a function that takes two `const void*` parameters and
+compares them using `strcmp` ... mimic the behavior of
+objc_compare_strings." The Phase-1 arm's 41-vs-0 lead over baseline is
+that single prompt spec, not a bug-finding advantage.
+
+======================================================================
+WHY THE ARMS ARE NOT COMPARABLE AS RAW COUNTS
+----------------------------------------------------------------------
+1. baseline's effective denominator is ~3100, not 5856. 1785 programs
+   (30.5%) came back nonterminating, and the oracle never compares
+   configurations when the -O0 reference does not terminate
+   (oracle.py, step 4). Those programs were never checked for
+   miscompilation at all. This is a side effect of feeding a real
+   stdin stream (commit 238e5d7) interacting with that corpus's
+   interactive style -- previously they bailed instantly on a failed
+   read.
+
+2. The corpora differ structurally. Programs reading stdin:
+     baseline_10k      3770 / 5856  (64.4%)
+     1phase_10k_run2    102 / 10000  (1.0%)
+   Phase-1 prompts demand a self-contained program with its own
+   main(); the baseline prompt is a bare #include continuation and
+   the model defaults to interactive toy programs. This asymmetry
+   drives nearly every difference in the tally above.
+
+3. zero vs zero cannot rank the arms on bug finding.
+
+======================================================================
+CONFIDENCE
+----------------------------------------------------------------------
+The zero means "nothing survived five gates plus manual triage", NOT
+that the oracle is exhaustive.
+
+Five false-positive classes surfaced in these corpora; three were
+invisible to the gate meant to catch them, and two of those gates
+failed SILENTLY -- a dead detector and a clean corpus produce the same
+summary line:
+  1. dead ASan gate (libasan not installed; sanitizer binary died at
+     load, loader error did not match the gate's regex)      -> fixed
+  2. indeterminate reads with stdin closed                   -> fixed
+  3. non-PIE address leaks                                   -> fixed
+  4. strcmp magnitude (unspecified; not fixable by a gate)   -> triage
+  5. &std::string address comparison (PIE-immune)            -> triage
+
+Oracle sensitivity was verified against planted controls, not assumed:
+tests/test_oracle_controls.py flags wrong_code, hang_divergence and
+ice, and stays quiet on the known-benign classes. The 0 is a real 0,
+not a dead detector.
+
+KNOWN BLIND SPOT: a program that hangs at -O0 and terminates when
+optimised is never examined -- it is counted as nonterminating and
+never compared. That direction is a plausible real bug shape, and it
+is 30.5% of the baseline arm.
+
+======================================================================
+FILES
+----------------------------------------------------------------------
+  survivors/<hash>/       the 13 post-PIE survivors (program + report)
+  triage.log              tools/triage_findings.py output
+  run_phase1_{on,off}.log raw oracle logs
+  tally_phase1_{on,off}.txt

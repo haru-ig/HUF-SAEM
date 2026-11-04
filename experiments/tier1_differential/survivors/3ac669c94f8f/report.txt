@@ -1,0 +1,9 @@
+[wrong_code] 2 distinct behaviours across 4 configurations
+--- gcc14-g++ -O0, gcc14-g++ -O1 ---
+rc=0
+The first string is greater than the second string.
+The first string is less than the second string according to std::string compare.
+--- gcc14-g++ -O2, gcc14-g++ -O3 ---
+rc=0
+The first string is less than the second string.
+The first string is less than the second string according to std::string compare.

@@ -1,0 +1,17 @@
+  10000 programs in 575.0 min
+    safe                   9094  (90.9%)
+    invalid                 750  (7.5%)
+    nondeterministic         81  (0.8%)
+    wrong_code               41  (0.4%)
+    ub                       25  (0.2%)
+    nonterminating            9  (0.1%)
+
+=== total ===
+  safe                   9094
+  invalid                 750
+  nondeterministic         81
+  wrong_code               41
+  ub                       25
+  nonterminating            9
+
+bug candidates: 41
