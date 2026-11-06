@@ -73,7 +73,7 @@ huf_saem:
     seed_classes: [run, compile]
     exclude_known_bugs: true
     max_seed_bytes: 4096
-    mutate_ratio: 0.5
+    mutate_ratio: 1.0   # pure mutation after the seeds, as in the pilot
     parent_mutant_ratio: 0.5
     max_similarity: 0.9
     operators: [retype, deepen, loops, merge, compute]
