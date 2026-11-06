@@ -53,10 +53,31 @@ huf_saem:
     # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
     constraint_cache: null   # e.g. Results/cpp_huf_saem/prompts/phase1_constraints.txt
 
-  # Phase 2: Bug-Report-Driven Metamorphic Mutator Synthesis
-  # Ingests bug reports, synthesizes Python AST mutators via GPT-4o.
+  # Phase 2 has two modes:
+  #   regression_seeds (recommended) -- feed the compiler's own regression
+  #     tests as seeds first, then LLM-mutate seeds and compiling mutants.
+  #     Seeds: python experiments/phase2_regression_seeds/extract_seeds.py
+  #   bug_report_mutators (legacy; the default when `mode` is absent) --
+  #     GPT-4o synthesizes regex mutators from bug-report titles.
   phase2:
     enabled: false
+    mode: bug_report_mutators
+
+    # --- regression_seeds mode ---
+    seed_manifest: experiments/phase2_regression_seeds/manifest.jsonl
+    seed_dir: experiments/phase2_regression_seeds/seeds
+    seed_classes: [run, compile]   # runnable and compile-only seeds
+    exclude_known_bugs: true       # skip seeds that already crash/miscompile the screening GCC
+    max_seed_bytes: 4096
+    # After the seeds are used up: fraction of batches that are LLM mutations
+    # (the rest are ordinary Fuzz4All generation)
+    # mutate_ratio: 0.5
+    parent_mutant_ratio: 0.5       # parent = an earlier compiling mutant (else a seed)
+    max_similarity: 0.9            # drop mutants this similar to their parent
+    operators: [retype, deepen, loops, merge, compute]
+    rng_seed: 0
+
+    # --- bug_report_mutators mode ---
     # GitHub repo to fetch closed bug reports from
     github_repo: null        # e.g. "llvm/llvm-project"
     # Local CSV with existing bug data (see bugs/*.csv for format)

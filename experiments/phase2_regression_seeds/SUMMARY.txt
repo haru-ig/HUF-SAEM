@@ -1,0 +1,62 @@
+############################################################
+# PHASE-2 PILOT STEP 1 -- regression-test seed extraction
+# compiler gcc14-g++  -std=c++23  source /home/ec2-user/gcc/gcc/testsuite/g++.dg
+############################################################
+candidates                : 3390
+
+outcome:
+  accepted                     2074
+  excluded_dir                 652
+  expects_error                456
+  local_include                107
+  rejected_by_gcc14_c++23      52
+  duplicate_of                 27
+  multi_file                   15
+  not_compilable_kind          6
+  expects_ice                  1
+
+excluded directories:
+  excluded_dir:gomp            156
+  excluded_dir:lto             150
+  excluded_dir:modules         120
+  excluded_dir:ubsan           64
+  excluded_dir:tm              35
+  excluded_dir:asan            29
+  excluded_dir:analyzer        21
+  excluded_dir:compat          12
+  excluded_dir:reflect         12
+  excluded_dir:cpp             10
+  excluded_dir:gcov            10
+  excluded_dir:guality         7
+  excluded_dir:pch             7
+  excluded_dir:tree-prof       7
+  excluded_dir:goacc           4
+  excluded_dir:dfp             3
+  excluded_dir:tsan            3
+  excluded_dir:contracts       1
+  excluded_dir:plugin          1
+
+ACCEPTED seeds            : 2074
+  runnable (exit 0 @ -O0) : 466
+     of which torture/    : 152
+  compile-only            : 1608
+  KNOWN BUG in gcc14      : 20   (crash/ICE/hang/oracle-divergence on the seed itself)
+  clean seeds             : 2054
+
+known-bug triggers:
+  crash@-O2                    12
+  crash@-O3                    12
+  oracle:wrong_code            7
+  crash@-O0                    6
+  crash@dg_flags               4
+  oracle:ice                   1
+
+runnable-seed oracle verdicts:
+  safe                         451
+  wrong_code                   7
+  nondeterministic             6
+  ice                          1
+  ub                           1
+
+seed size (bytes, accepted): median 343  p90 1563  max 25896
+  <= 2 KB: 1931   <= 4 KB: 2010

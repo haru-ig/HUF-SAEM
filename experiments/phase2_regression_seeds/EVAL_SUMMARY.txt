@@ -1,0 +1,36 @@
+################################################################
+# PHASE-2 PILOT -- oracle verdicts on regression-seeded mutants
+################################################################
+mutants evaluated: 3000
+
+verdicts                 mutants            phase-1 corpus (tier-1)
+  safe                   2241 ( 74.7%)     9094 ( 90.9%)
+  invalid                 716 ( 23.9%)      750 (  7.5%)
+  nondeterministic         18 (  0.6%)       81 (  0.8%)
+  ub                       10 (  0.3%)       25 (  0.2%)
+  wrong_code                9 (  0.3%)       41 (  0.4%)
+  nonterminating            6 (  0.2%)        9 (  0.1%)
+
+per operator (n / still-valid / bug candidates):
+  compute      600   valid  78.2%   candidates 1
+  deepen       600   valid  66.0%   candidates 1
+  loops        600   valid  80.3%   candidates 3
+  merge        600   valid  78.0%   candidates 2
+  retype       600   valid  78.2%   candidates 2
+
+bug candidates: 9  (known-signature ICEs: 0)
+  distinct seeds behind them: 5
+  distinct signatures       : 9
+    01312 [wrong_code] op=loops seed=torture/pr96881-1.C  2 distinct behaviours across 4 configurations
+    01539 [wrong_code] op=compute seed=opt/pr17697-2.C  2 distinct behaviours across 4 configurations
+    01753 [wrong_code] op=merge seed=warn/pr89622.C  2 distinct behaviours across 4 configurations
+    02477 [wrong_code] op=loops seed=cpp1y/pr77321.C  2 distinct behaviours across 4 configurations
+    02610 [wrong_code] op=retype seed=cpp1y/pr59867.C  2 distinct behaviours across 4 configurations
+    02611 [wrong_code] op=deepen seed=cpp1y/pr59867.C  2 distinct behaviours across 4 configurations
+    02612 [wrong_code] op=loops seed=cpp1y/pr59867.C  2 distinct behaviours across 4 configurations
+    02613 [wrong_code] op=merge seed=cpp1y/pr59867.C  2 distinct behaviours across 4 configurations
+    02615 [wrong_code] op=retype seed=cpp1y/pr59867.C  2 distinct behaviours across 4 configurations
+
+similarity to seed (difflib, normalised): median 0.724  p90 0.928  >=0.9: 500 (16.7%)
+
+NOTE: wrong_code candidates are unconfirmed until triaged (tools/triage_findings.py); the phase-1 corpus had 41 candidates, 0 real bugs.

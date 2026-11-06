@@ -48,8 +48,13 @@ class HUFSAEMCoordinator:
         self._p1_batch_size: int = config_dict.get("llm", {}).get("batch_size", 5)
 
         # Phase 2
-        self._p2_mutator_registry = None
+        self._p2_mutator_registry = None      # legacy bug_report_mutators mode
         self._p2_mutate_ratio: float = 0.0
+        self._p2_engine = None                # regression_seeds mode
+        self._p2_provenance_path: Optional[str] = None
+        self._p2_records: int = 0
+        self._resume: bool = bool(config_dict["fuzzing"].get("resume", False))
+        self._llm_temperature = config_dict.get("llm", {}).get("temperature")
 
         # Phase 3
         self._p3_seed_db = None
@@ -163,7 +168,78 @@ class HUFSAEMCoordinator:
                             begin = begin.rstrip() + "\n" + include_line
                 self.target.prompt_used["begin"] = begin
 
+    # Phase 2 modes. Configs written before regression_seeds existed carry no
+    # `mode` key and must keep reproducing the bug-report regex mutators.
+    _P2_MODES = ("bug_report_mutators", "regression_seeds")
+
     def _init_phase2(self, cfg: Dict) -> None:
+        mode = cfg.get("mode", "bug_report_mutators")
+        if mode not in self._P2_MODES:
+            raise ValueError(f"huf_saem.phase2.mode must be one of {self._P2_MODES}, got {mode!r}")
+        if mode == "regression_seeds":
+            self._init_phase2_regression(cfg)
+        else:
+            self._init_phase2_bug_reports(cfg)
+
+    def _init_phase2_regression(self, cfg: Dict) -> None:
+        import json
+        import random
+
+        from Fuzz4All.huf_saem.phase2_regression_seeds import (
+            RegressionSeedEngine,
+            load_seeds,
+        )
+
+        manifest = cfg.get("seed_manifest")
+        seed_dir = cfg.get("seed_dir")
+        if not manifest or not os.path.exists(manifest) or not seed_dir or not os.path.isdir(seed_dir):
+            raise ValueError(
+                "huf_saem.phase2 (regression_seeds) needs seed_manifest and seed_dir from "
+                "experiments/phase2_regression_seeds/extract_seeds.py; got "
+                f"seed_manifest={manifest!r} seed_dir={seed_dir!r}"
+            )
+        rng = random.Random(int(cfg.get("rng_seed", 0)))
+        seeds = load_seeds(
+            manifest,
+            seed_dir,
+            classes=cfg.get("seed_classes", ["run", "compile"]),
+            exclude_known_bugs=bool(cfg.get("exclude_known_bugs", True)),
+            max_bytes=int(cfg.get("max_seed_bytes", 4096)),
+            rng=rng,
+        )
+        temperature = cfg.get("temperature", self._llm_temperature)
+
+        def generate(prompt: str, n: int):
+            # Same backend (Ollama / HF) and model as ordinary generation.
+            return self.target._backend_generate(prompt, n=n, temperature=temperature)
+
+        self._p2_engine = RegressionSeedEngine(
+            seeds,
+            generate,
+            batch_size=self._p1_batch_size,
+            mutate_ratio=float(cfg.get("mutate_ratio", 0.5)),
+            parent_mutant_ratio=float(cfg.get("parent_mutant_ratio", 0.5)),
+            max_similarity=float(cfg.get("max_similarity", 0.9)),
+            operators=cfg.get("operators"),
+            rng=rng,
+        )
+        # Written lazily: fuzz.py refuses to start if the output folder already
+        # exists, and this runs before that check.
+        self._p2_provenance_path = os.path.join(self.output_folder, "phase2_provenance.jsonl")
+        if self._resume and os.path.exists(self._p2_provenance_path):
+            with open(self._p2_provenance_path, encoding="utf-8") as f:
+                prov = [json.loads(l) for l in f if l.strip()]
+
+            def read(path: str):
+                try:
+                    with open(path, encoding="utf-8", errors="replace") as fh:
+                        return fh.read()
+                except OSError:
+                    return None
+
+            self._p2_engine.restore(prov, read)
+
+    def _init_phase2_bug_reports(self, cfg: Dict) -> None:
         from Fuzz4All.huf_saem.phase2_bug_ingester import BugIngester
         from Fuzz4All.huf_saem.phase2_implementation_synthesis_agent import (
             ImplementationSynthesisAgent,
@@ -301,7 +377,44 @@ class HUFSAEMCoordinator:
     # Phase 2 — Mutator application
     # ------------------------------------------------------------------
 
+    def maybe_phase2_batch(self):
+        """regression_seeds mode: a list of (code, meta) to use instead of
+        ordinary generation this iteration, or None to generate normally."""
+        if self._p2_engine is None:
+            return None
+        return self._p2_engine.next_batch()
+
+    def record_phase2(self, file_name: str, code: str, meta, f_result) -> None:
+        """Feed a Phase 2 output's validation result back and log provenance.
+
+        f_result None (on-the-fly validation off) means validity is unknown:
+        the output is logged but a mutant never joins the parent pool.
+        """
+        if self._p2_engine is None or not meta:
+            return
+        import json
+        from Fuzz4All.target.target import FResult
+
+        valid = None if f_result is None else (f_result == FResult.SAFE)
+        meta = self._p2_engine.record(code, meta, valid)
+        row = dict(meta, file=file_name, valid=valid,
+                   result=None if f_result is None else f_result.name)
+        with open(self._p2_provenance_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+        self._p2_records += 1
+        if self._p2_records % 10 == 0:  # cheap; short runs still get stats
+            self._write_phase2_stats()
+
+    def _write_phase2_stats(self) -> None:
+        import json
+        if self._p2_engine is None:
+            return
+        path = os.path.join(self.output_folder, "phase2_stats.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self._p2_engine.stats(), f, indent=1)
+
     def maybe_apply_mutator(self, code: str, iteration: int) -> str:
+        """Legacy bug_report_mutators mode: regex mutator on a generated program."""
         if self._p2_mutator_registry is None:
             return code
         import random

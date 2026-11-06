@@ -37,9 +37,11 @@ huf_saem:
     source_dir: /path/to/llvm/lib/Transforms
 
   phase2:
-    enabled: true          # Bug-Report-Driven Mutator Synthesis
-    csv_path: bugs/clang.csv
-    mutate_ratio: 0.20
+    enabled: true          # Regression-seeded mutation (see "Phase 2" below)
+    mode: regression_seeds
+    seed_manifest: experiments/phase2_regression_seeds/manifest.jsonl
+    seed_dir: experiments/phase2_regression_seeds/seeds
+    mutate_ratio: 0.5
 
   phase3:
     enabled: true          # Cloze-Masked Evolutionary Seed Preservation
@@ -51,6 +53,36 @@ huf_saem:
 ```
 
 Phases not listed (or with `enabled: false`) are skipped — the fuzzer runs exactly as vanilla Fuzz4All.
+
+### Phase 2: regression-seeded mutation
+
+`mode: regression_seeds` feeds GCC's own regression tests (`gcc/testsuite/g++.dg`
+`pr*.C` + `torture/`) to the compiler first, then has the generation LLM mutate
+seeds and earlier mutants that compiled. Build the seed set once (needs the GCC
+source clone from setup step 5 and `gcc14-g++`; ~1 h on 8 cores):
+
+```bash
+python experiments/phase2_regression_seeds/extract_seeds.py -j 8
+# -> experiments/phase2_regression_seeds/{manifest.jsonl, seeds/, SUMMARY.txt}
+```
+
+Then run the Phase-2-only ablation arm:
+
+```bash
+python Fuzz4All/fuzz.py --config config/cpp_huf_saem_phase2_regression_10k.yaml main_with_config \
+    --folder outputs/huf_saem_phase2_regression_10k_run1 \
+    --batch_size 5 --model_name ollama/deepseek-coder-v2 --target g++
+```
+
+Each run folder gets `phase2_provenance.jsonl` (per output: seed or mutant,
+operator, parent, similarity to parent, validation result) and
+`phase2_stats.json` (operator validity, near-copies dropped, pool size).
+Seeds that already crash or miscompile the screening compiler (bugs fixed
+upstream after GCC 14.2) are excluded by default (`exclude_known_bugs`).
+
+The old bug-report regex mutators remain available as
+`mode: bug_report_mutators`, which is also the default when `mode` is absent,
+so earlier configs reproduce unchanged.
 
 ---
 

@@ -9,8 +9,8 @@ HUF-SAEM adds four phases on top of Fuzz4All's core fuzzing loop. Each phase is 
 **Phase 1 — Source-Aware Contextual Autoprompting**
 Scans the compiler's own source code (e.g. `llvm/lib/Transforms`) using tree-sitter, extracts deeply nested conditional logic, and uses GPT-4o to reverse-engineer the input conditions that trigger specific optimization passes. The resulting constraints are injected directly into Fuzz4All's autoprompting matrix, turning generic documentation-driven prompts into targeted, source-aware instructions.
 
-**Phase 2 — Bug-Report-Driven Metamorphic Mutator Synthesis**
-Ingests closed bug reports from the target compiler's GitHub issue tracker or local CSV files. A GPT-4o agent analyzes each bug's triggering code and synthesizes a standalone Python AST mutation script using tree-sitter. These mutators run deterministically at CPU speed, giving the fuzzer high-throughput mutation without an LLM call on every iteration.
+**Phase 2 — Regression-Seeded Mutation**
+Feeds the target compiler's own regression tests (for GCC, `g++.dg` bug reproducers and `torture/` tests, screened to compile and with already-known bugs removed) as seed inputs first, then has the generation LLM mutate seeds and earlier compiling mutants (retype, deepen, loops, merge, compute), dropping near-copies of the parent. In a pilot, the seeds alone reached 34.6% GCC line coverage and seeds plus mutants 35.8%, against ~29% for generation-only arms. The original bug-report-driven regex mutator synthesis remains available as `mode: bug_report_mutators`.
 
 **Phase 3 — Cloze-Masked Evolutionary Seed Preservation**
 Maintains a ChromaDB vector store of valid seed programs. When the compilation success rate drops below a configurable threshold (e.g. 30% for Rust's borrow checker), the system switches to cloze-fill mode: it masks portions of known-valid seeds and prompts the LLM to fill in the blanks. Multiple evolutionary islands with distinct biases (e.g. memory allocation, concurrency) run in parallel to prevent generative collapse.

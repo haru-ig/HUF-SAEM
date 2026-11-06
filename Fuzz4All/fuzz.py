@@ -75,17 +75,26 @@ def fuzz(
         ):
             # Phase 3: cloze mode may override generation entirely
             cloze_code = coordinator.maybe_cloze_generate() if coordinator else None
+            # Phase 2 (regression_seeds): regression-test seeds first, then LLM
+            # mutants of seeds / valid mutants; None means generate as usual.
+            p2_batch = None
             if cloze_code:
                 fos = [cloze_code]
             else:
-                fos = target.generate()
+                p2_batch = coordinator.maybe_phase2_batch() if coordinator else None
+                if p2_batch:
+                    fos = [code for code, _ in p2_batch]
+                else:
+                    fos = target.generate()
+            p2_metas = [meta for _, meta in p2_batch] if p2_batch else [None] * len(fos or [])
             if not fos:
                 target.initialize()
                 continue
             prev = []
             for index, fo in enumerate(fos):
-                # Phase 2: optionally apply a synthesized mutator
-                if coordinator:
+                # Phase 2 (legacy bug_report_mutators): optionally apply a
+                # synthesized regex mutator to a generated program
+                if coordinator and p2_metas[index] is None:
                     fo = coordinator.maybe_apply_mutator(fo, count)
                 file_name = os.path.join(output_folder, f"{count}.fuzz")
                 write_to_file(fo, file_name)
@@ -103,6 +112,11 @@ def fuzz(
                         from Fuzz4All.target.target import FResult
                         if f_result == FResult.SAFE:
                             coordinator.run_coverage_and_update(file_name)
+                        # Phase 2: provenance + validity feedback (compiling
+                        # mutants become parents for later mutation)
+                        coordinator.record_phase2(file_name, fo, p2_metas[index], f_result)
+                elif coordinator:
+                    coordinator.record_phase2(file_name, fo, p2_metas[index], None)
             target.update(prev=prev)
             # Phase 1: rotate to the next constraint spec when due
             if coordinator:
