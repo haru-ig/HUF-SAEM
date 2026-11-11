@@ -209,10 +209,17 @@ class HUFSAEMCoordinator:
         )
         temperature = cfg.get("temperature", self._llm_temperature)
 
-        def generate(prompt: str, n: int):
-            # Same backend (Ollama / HF) and model as ordinary generation.
-            return self.target._backend_generate(prompt, n=n, temperature=temperature)
+        vary_seed = bool(cfg.get("vary_sampling_seed", False))
 
+        if vary_seed:
+            def generate(prompt: str, n: int, seed: int):
+                # Same backend (Ollama / HF) and model as ordinary generation.
+                return self.target._backend_generate(prompt, n=n, temperature=temperature, seed=seed)
+        else:
+            def generate(prompt: str, n: int):
+                return self.target._backend_generate(prompt, n=n, temperature=temperature)
+
+        self._p2_log_rejected = bool(cfg.get("log_rejected", False))
         self._p2_engine = RegressionSeedEngine(
             seeds,
             generate,
@@ -222,6 +229,10 @@ class HUFSAEMCoordinator:
             max_similarity=float(cfg.get("max_similarity", 0.9)),
             operators=cfg.get("operators"),
             rng=rng,
+            prompt_version=int(cfg.get("prompt_version", 1)),
+            retry_near_copies=bool(cfg.get("retry_near_copies", False)),
+            dedupe=bool(cfg.get("dedupe", False)),
+            on_reject=self._log_phase2_reject if self._p2_log_rejected else None,
         )
         # Written lazily: fuzz.py refuses to start if the output folder already
         # exists, and this runs before that check.
@@ -404,6 +415,14 @@ class HUFSAEMCoordinator:
         self._p2_records += 1
         if self._p2_records % 10 == 0:  # cheap; short runs still get stats
             self._write_phase2_stats()
+
+    def _log_phase2_reject(self, code: str, meta) -> None:
+        """Rejected Phase 2 candidates (never fuzz inputs), kept with their code
+        so a later replay can measure whether rejecting them lost coverage."""
+        import json
+        os.makedirs(self.output_folder, exist_ok=True)
+        with open(os.path.join(self.output_folder, "phase2_rejected.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(dict(meta, code=code)) + "\n")
 
     def _write_phase2_stats(self) -> None:
         import json

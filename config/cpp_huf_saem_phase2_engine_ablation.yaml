@@ -1,0 +1,104 @@
+# Phase-2 mutation-engine ablation (experiments/phase2_engine_ablation/).
+#
+# Identical Phase 2 engine and settings to cpp_huf_saem_phase2_regression_10k.yaml,
+# but the seeds are NOT regression tests: they are programs 0..1999 of the
+# Phase-1 10k corpus (huf_saem_1phase_10k_run2) that compile under gcc14.
+# Question: does the Phase 2 mutation engine beat Phase-1 generation +
+# Fuzz4All's built-in mutation, starting from the same LLM-written programs?
+#
+# Prerequisite: python experiments/phase2_engine_ablation/build_seeds.py
+# num is set after building seeds: n_seeds + 3000 mutants.
+
+fuzzing:
+  output_folder: Results/cpp_huf_saem
+  num: 4430              # 1430 seeds + 3000 mutants
+  total_time: 24          # hours
+  otf: true               # on-the-fly validation (required for Phase 4 coverage)
+  resume: false
+  evaluate: false
+  use_hand_written_prompt: false
+  no_input_prompt: true   # required for Ollama backends; auto_prompt() raises NotImplementedError otherwise
+  prompt_strategy: 3
+  log_level: 1
+
+target:
+  language: cpp
+  path_documentation: config/documentation/cpp/cpp_23.md
+  path_example_code: null
+  path_hand_written_prompt: null
+  trigger_to_generate_input: "// END OF DOCUMENTATION\n// BEGIN C++ PROGRAM"
+  input_hint: "#include <bits/stdc++.h>"
+  target_string: null
+
+llm:
+  temperature: 0.8
+  batch_size: 5
+  device: cuda
+  model_name: ollama/deepseek-coder-v2
+  max_length: 1024
+  additional_eos_tokens: []
+
+# --------------------------------------------------------------------------- #
+# HUF-SAEM Architecture Configuration
+# Phase 2 (regression_seeds) enabled; Phases 1, 3, 4 disabled.
+# --------------------------------------------------------------------------- #
+huf_saem:
+
+  # Phase 1: Source-Aware Contextual Autoprompting
+  # Scans compiler source, distills constraints via GPT-4o, injects into prompt.
+  phase1:
+    enabled: false
+    # Path to the GCC source tree (shallow clone of gcc-mirror/gcc)
+    source_dir: /home/ec2-user/gcc
+    # Grammar for tree-sitter: "cpp" | "c" | "python"
+    source_language: cpp
+    # Minimum conditional nesting depth to flag a function
+    complexity_threshold: 4
+    # Number of top-complexity snippets to distill (one GPT-4o call each)
+    top_k_snippets: 10
+    distillation_model: gpt-4o
+    # Optional: cache the distilled constraint spec so GPT-4o isn't called on resume
+    constraint_cache: outputs/phase1_constraints_cache/gcc_full.txt
+    # Rotate to the next distilled constraint every N generated files (0 = no rotation)
+    rotation_interval: 50
+
+  # Phase 2: regression_seeds mode (see config/cpp_huf_saem.yaml for all keys)
+  phase2:
+    enabled: true
+    mode: regression_seeds
+    seed_manifest: experiments/phase2_engine_ablation/manifest.jsonl
+    seed_dir: experiments/phase2_engine_ablation/seeds
+    seed_classes: [run, compile]
+    exclude_known_bugs: true
+    max_seed_bytes: 4096
+    mutate_ratio: 1.0   # pure mutation after the seeds, as in the pilot
+    parent_mutant_ratio: 0.5
+    max_similarity: 0.9
+    operators: [retype, deepen, loops, merge, compute]
+    rng_seed: 0
+
+  # Phase 3: Cloze-Masked Evolutionary Seed Preservation
+  phase3:
+    enabled: false
+    window_size: 50
+    cloze_threshold: 0.30
+    mask_ratio: 0.15
+    seed_db_path: null
+    embedding_model: all-MiniLM-L6-v2
+    islands:
+      num_islands: 2
+      biases:
+        - memory_allocation
+        - concurrency
+      migration_interval: 50
+      migration_fraction: 0.10
+    cloze_model: gpt-4o
+
+  # Phase 4: Active Constraint-Solving Feedback Loop
+  phase4:
+    enabled: false
+    block_threshold: 10
+    min_downstream_size: 5
+    solver_interval: 100
+    solver_model: gpt-4o
+    gcov_binary: gcov

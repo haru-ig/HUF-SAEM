@@ -310,3 +310,79 @@ def test_missing_seed_files_is_a_clear_error(tmp_path):
 
 def test_every_operator_has_an_instruction():
     assert set(OPERATORS) == {"retype", "deepen", "loops", "merge", "compute"}
+
+
+# -- engine v2: neutral prompt, retry, dedupe, sampling seeds, reject log ------
+
+
+def test_prompt_v2_is_provenance_neutral_and_v1_unchanged():
+    from Fuzz4All.huf_saem.phase2_regression_seeds import OPERATORS_V2
+    v1 = RegressionSeedEngine([_seed(0)], lambda p, n: [], prompt_version=1)
+    v2 = RegressionSeedEngine([_seed(0)], lambda p, n: [], prompt_version=2)
+    parent = v1._pick_parent()
+    p1, p2 = v1.build_prompt("retype", parent, None), v2.build_prompt("retype", parent, None)
+    assert "regression test suite" in p1 and OPERATORS["retype"] in p1
+    assert "regression" not in p2 and OPERATORS_V2["retype"] in p2
+    with pytest.raises(ValueError, match="prompt_version"):
+        RegressionSeedEngine([_seed(0)], lambda p, n: [], prompt_version=3)
+
+
+def test_retry_only_when_most_of_batch_are_near_copies():
+    calls = []
+
+    def gen(prompt, n):
+        calls.append((prompt, n))
+        if len(calls) == 1:  # 3 near-copies + 2 good
+            return [_fenced(PARENT)] * 3 + [_fenced(DIFFERENT), _fenced(DIFFERENT.replace("7", "9"))]
+        return [_fenced(DIFFERENT.replace("7", "5"))] * n
+
+    eng = RegressionSeedEngine([_seed(0)], gen, batch_size=5, mutate_ratio=1.0, operators=["retype"],
+                               retry_near_copies=True)
+    eng.next_batch()
+    batch = eng.next_batch()
+    assert len(calls) == 2 and calls[1][1] == 3, "retry asks only for the 3 missing programs"
+    assert "rejected because it was almost" in calls[1][0]
+    assert len(batch) == 5 and [m["retry"] for _, m in batch].count(True) == 3
+    assert eng.counts["retry_calls"] == 1
+
+    # 2 of 5 near-copies: below the threshold, no retry
+    calls.clear()
+    eng2 = RegressionSeedEngine([_seed(0)], lambda p, n: (calls.append(1) or
+                                [_fenced(PARENT)] * 2 + [_fenced(DIFFERENT)] * 3),
+                                batch_size=5, mutate_ratio=1.0, retry_near_copies=True)
+    eng2.next_batch(); eng2.next_batch()
+    assert len(calls) == 1
+
+
+def test_dedupe_rejects_exact_repeats_across_batches():
+    eng = RegressionSeedEngine([_seed(0)], lambda p, n: [_fenced(DIFFERENT)] * n,
+                               batch_size=3, mutate_ratio=1.0, dedupe=True)
+    eng.next_batch()
+    assert len(eng.next_batch()) == 1          # 3 identical samples -> 1 kept
+    assert eng.next_batch() is None            # already seen -> all rejected
+    assert eng.counts["duplicate"] == 5
+
+
+def test_sampling_seed_passed_when_generate_accepts_it():
+    seeds_seen = []
+
+    def gen(prompt, n, seed):
+        seeds_seen.append(seed)
+        return []
+
+    eng = RegressionSeedEngine([_seed(0)], gen, batch_size=2, mutate_ratio=1.0)
+    eng.next_batch(); eng.next_batch(); eng.next_batch()
+    assert len(seeds_seen) == 2 and seeds_seen[0] != seeds_seen[1]
+
+
+def test_rejected_candidates_reported_with_reason_and_code():
+    rejected = []
+    outputs = [_fenced(PARENT), _fenced("int helper() { return 1; }\n"), _fenced(DIFFERENT)]
+    eng = RegressionSeedEngine([_seed(0)], lambda p, n: outputs, batch_size=3, mutate_ratio=1.0,
+                               on_reject=lambda code, meta: rejected.append((code, meta)))
+    eng.next_batch(); eng.next_batch()
+    reasons = sorted(m["reason"] for _, m in rejected)
+    assert reasons == ["near_copy", "no_main"]
+    near = next(m for _, m in rejected if m["reason"] == "near_copy")
+    assert near["sim_parent"] >= 0.9 and near["op"] in OPERATORS
+    assert all(code for code, _ in rejected)

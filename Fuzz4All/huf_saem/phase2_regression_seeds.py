@@ -25,6 +25,7 @@ Seeds come from ``experiments/phase2_regression_seeds/extract_seeds.py``
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
 import os
 import random
@@ -95,6 +96,63 @@ SECOND program:
 {code}
 ```
 """
+
+# --- prompt version 2 ---------------------------------------------------------
+# v1 told the model every parent came from GCC's regression suite, which is
+# false for LLM-written seeds and for mutant parents. v2 is provenance-neutral
+# and asks for larger changes: in the runs so far 19-75% of samples per
+# operator were near-copies of the parent (retype worst), mostly because
+# "change the types and constants" invites a handful of textual edits.
+
+PROMPT_V2 = """\
+You are helping test the GCC C++ optimizer. Below is a C++ program used as a \
+starting point. Write a NEW C++ program that keeps the kind of construct this \
+program exercises, but transforms it substantially as follows:
+
+{instruction}
+
+Requirements for the new program:
+- One complete, self-contained C++23 translation unit with int main(). Standard headers only.
+- Valid, well-defined C++: no undefined behaviour (no signed overflow, no out-of-bounds \
+access, no uninitialised reads, no use of objects after their lifetime ends, no data races).
+- Deterministic: no input, no randomness, no time, no threads, no printing of addresses.
+- It MUST print its computed results with printf or std::cout, so that a wrong \
+optimization changes the output. Do not just call abort() on mismatch.
+- It must terminate quickly (well under one second).
+- It must differ substantially from the original: rename the identifiers, restructure \
+the functions and statements, and rewrite most lines. A program that only edits a \
+few tokens of the original is not acceptable. No comments explaining the test.
+
+Original program:
+```cpp
+{parent}
+```
+{partner}
+Reply with only the new program in a single ```cpp code block."""
+
+OPERATORS_V2: Dict[str, str] = dict(
+    OPERATORS,
+    retype=(
+        "Rebuild the program around different data types: change the type of most "
+        "variables, parameters and return values (different integer widths, signedness, "
+        "floating point, enums, small structs or classes wrapping the values), change every "
+        "literal (include boundary values such as 0, -1, INT_MAX), and rewrite the "
+        "expressions and helper functions so they work naturally with the new types."
+    ),
+    loops=(
+        "Rebuild the control flow: replace the loop structure with a different one "
+        "(for/while/do-while, nested or flattened, different bounds, strides and directions), "
+        "add early exits, switch statements and extra conditions, and move work between "
+        "loops and helper functions, so the optimizer's loop and branch transformations "
+        "behave differently."
+    ),
+)
+
+RETRY_FEEDBACK = """
+
+IMPORTANT: a previous answer to this request was rejected because it was almost \
+identical to the original program. Make much larger changes this time: different \
+names, different structure, different helper functions, rewritten expressions."""
 
 _CODE_BLOCK = re.compile(r"```(?:c\+\+|cpp|cc|C)?\s*\n(.*?)```", re.S)
 _HAS_MAIN = re.compile(r"\bmain\s*\(")
@@ -213,6 +271,10 @@ class RegressionSeedEngine:
         operators: Optional[Sequence[str]] = None,
         max_pool: int = 5000,
         rng: Optional[random.Random] = None,
+        prompt_version: int = 1,
+        retry_near_copies: bool = False,
+        dedupe: bool = False,
+        on_reject: Optional[Callable[[str, Meta], None]] = None,
     ) -> None:
         if not seeds:
             raise ValueError("phase2 regression_seeds: no seeds loaded (check seed_manifest / seed_dir)")
@@ -232,7 +294,23 @@ class RegressionSeedEngine:
         self.cursor = 0                      # next seed to emit
         self.mutant_pool: List[_Parent] = []  # mutants that compiled
         self.op_stats: Dict[str, _OpStats] = {o: _OpStats() for o in self.operators}
-        self.counts: Dict[str, int] = {"seed": 0, "mutant": 0, "near_copy": 0, "no_main": 0}
+        if prompt_version not in (1, 2):
+            raise ValueError(f"phase2 regression_seeds: prompt_version must be 1 or 2, got {prompt_version}")
+        self.prompt_version = prompt_version
+        self.retry_near_copies = retry_near_copies
+        self.dedupe = dedupe
+        self.on_reject = on_reject
+        self._seen_hashes: set = set()
+        self._calls = 0
+        # Does generate_fn take a per-call sampling seed? (tests pass 2-arg stubs)
+        try:
+            import inspect
+            self._gen_takes_seed = "seed" in inspect.signature(generate_fn).parameters
+        except (TypeError, ValueError):
+            self._gen_takes_seed = False
+
+        self.counts: Dict[str, int] = {"seed": 0, "mutant": 0, "near_copy": 0, "no_main": 0,
+                                       "duplicate": 0, "retry_calls": 0}
         self._next_mutant_id = 0
 
     # -- scheduling ---------------------------------------------------------
@@ -271,11 +349,60 @@ class RegressionSeedEngine:
         return _Parent(s.id, s.code, s.id)
 
     def build_prompt(self, op: str, parent: _Parent, partner: Optional[Seed]) -> str:
-        return PROMPT.format(
-            instruction=OPERATORS[op],
+        template, ops = (PROMPT, OPERATORS) if self.prompt_version == 1 else (PROMPT_V2, OPERATORS_V2)
+        return template.format(
+            instruction=ops[op],
             parent=parent.code.strip(),
             partner=PARTNER.format(code=partner.code.strip()) if partner else "",
         )
+
+    def _generate(self, prompt: str, n: int) -> List[str]:
+        self._calls += 1
+        try:
+            if self._gen_takes_seed:
+                # A distinct sampling seed per call: identical prompts sent with
+                # Ollama's default seed came back as exact duplicates (2.5-5.5%
+                # of kept mutants).
+                return self.generate_fn(prompt, n, seed=self.rng.randrange(2**31)) or []
+            return self.generate_fn(prompt, n) or []
+        except Exception:
+            return []
+
+    def _reject(self, code: str, meta: Meta, reason: str) -> None:
+        self.counts[reason] += 1
+        if reason == "near_copy" and meta.get("op") in self.op_stats:
+            self.op_stats[str(meta["op"])].near_copies += 1
+        if self.on_reject is not None:
+            try:
+                self.on_reject(code, dict(meta, reason=reason))
+            except Exception:
+                pass
+
+    def _filter(self, texts: List[str], base: Meta, parent: _Parent) -> Tuple[List[Tuple[str, Meta]], int]:
+        kept: List[Tuple[str, Meta]] = []
+        near = 0
+        for text in texts:
+            code = extract_code(text)
+            if not _HAS_MAIN.search(code):
+                self._reject(code, base, "no_main")
+                continue
+            sim = similarity(parent.code, code)
+            meta = dict(base, sim_parent=round(sim, 3))
+            if sim >= self.max_similarity:
+                # Near-verbatim regurgitation of the parent: costs a compile
+                # and (we assume) adds nothing, so it is dropped unwritten.
+                near += 1
+                self._reject(code, meta, "near_copy")
+                continue
+            if self.dedupe:
+                h = hashlib.sha1(_normalise(code).encode()).hexdigest()
+                if h in self._seen_hashes:
+                    self._reject(code, meta, "duplicate")
+                    continue
+                self._seen_hashes.add(h)
+            self.counts["mutant"] += 1
+            kept.append((code, meta))
+        return kept, near
 
     def _mutate_batch(self) -> List[Tuple[str, Meta]]:
         op = self._pick_op()
@@ -285,29 +412,16 @@ class RegressionSeedEngine:
             candidates = [s for s in self.seeds if s.id != parent.root_seed] or self.seeds
             partner = self.rng.choice(candidates)
         prompt = self.build_prompt(op, parent, partner)
-        try:
-            texts = self.generate_fn(prompt, self.batch_size) or []
-        except Exception:
-            return []
-        out: List[Tuple[str, Meta]] = []
-        for text in texts:
-            code = extract_code(text)
-            if not _HAS_MAIN.search(code):
-                self.counts["no_main"] += 1
-                continue
-            sim = similarity(parent.code, code)
-            if sim >= self.max_similarity:
-                # Near-verbatim regurgitation of the parent (17% of pilot
-                # mutants). It costs a compile and adds nothing; drop it before
-                # it is written.
-                self.counts["near_copy"] += 1
-                self.op_stats[op].near_copies += 1
-                continue
-            self.counts["mutant"] += 1
-            out.append((code, {
-                "origin": "mutant", "op": op, "parent": parent.id, "root_seed": parent.root_seed,
-                "partner": partner.id if partner else None, "sim_parent": round(sim, 3),
-            }))
+        base: Meta = {"origin": "mutant", "op": op, "parent": parent.id, "root_seed": parent.root_seed,
+                      "partner": partner.id if partner else None, "retry": False}
+        out, near = self._filter(self._generate(prompt, self.batch_size), base, parent)
+        # One retry when most of the batch came back as near-copies.
+        missing = self.batch_size - len(out)
+        if self.retry_near_copies and missing > 0 and near * 2 >= self.batch_size:
+            self.counts["retry_calls"] += 1
+            more, _ = self._filter(self._generate(prompt + RETRY_FEEDBACK, missing),
+                                   dict(base, retry=True), parent)
+            out += more
         return out
 
     # -- feedback -----------------------------------------------------------

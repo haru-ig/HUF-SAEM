@@ -133,7 +133,7 @@ class Target(object):
         raise NotImplementedError
 
     def _backend_generate(
-        self, prompt: str, n: int = 1, temperature=None
+        self, prompt: str, n: int = 1, temperature=None, seed=None
     ) -> List[str]:
         """Generate n samples from `prompt` using the active backend.
 
@@ -144,11 +144,14 @@ class Target(object):
         if getattr(self, "backend", None) == "ollama" and HAS_OLLAMA:
             options = {} if temperature is None else {"temperature": temperature}
             outs = []
-            for _ in range(n):
+            for i in range(n):
+                # seed (optional): a distinct sampling seed per sample, so n
+                # requests with the same prompt cannot come back identical.
+                opts = dict(options, seed=seed + i) if seed is not None else options
                 response = ollama.chat(
                     model=self.ollama_model_name,
                     messages=[{"role": "user", "content": prompt}],
-                    options=options or None,
+                    options=opts or None,
                 )
                 content = response["message"]["content"]
                 code = simple_parse(content)
