@@ -47,6 +47,12 @@ class HUFSAEMCoordinator:
         self._p1_rotation_interval: int = 50             # files between constraint rotations
         self._p1_batch_size: int = config_dict.get("llm", {}).get("batch_size", 5)
 
+        # Phase 1, targets mode: targets handed to the Phase 2 engine
+        self._p1_targets = None
+        self._p1_p_targeted: float = 0.0
+        self._p1_check_hits: bool = False
+        self._p1_target_spans: Dict[str, Any] = {}
+
         # Phase 2
         self._p2_mutator_registry = None      # legacy bug_report_mutators mode
         self._p2_mutate_ratio: float = 0.0
@@ -96,7 +102,61 @@ class HUFSAEMCoordinator:
     # Delimiter used to join/split multiple constraint specs in the cache file.
     _SPEC_DELIMITER = "\n\n===PHASE1_SPEC_BREAK===\n\n"
 
+    # Phase 1 modes. Configs written before the redesign carry no `mode` key
+    # and keep the original behaviour (distilled specs injected into the
+    # generation prompt).
+    _P1_MODES = ("prompt_specs", "targets")
+
     def _init_phase1(self, cfg: Dict) -> None:
+        mode = cfg.get("mode", "prompt_specs")
+        if mode not in self._P1_MODES:
+            raise ValueError(f"huf_saem.phase1.mode must be one of {self._P1_MODES}, got {mode!r}")
+        if mode == "targets":
+            self._init_phase1_targets(cfg)
+        else:
+            self._init_phase1_prompt_specs(cfg)
+
+    def _init_phase1_targets(self, cfg: Dict) -> None:
+        """Load coverage-gap targets + validated hints for Phase 2 to aim at.
+
+        Built offline by phase1_matchpd_targets (targets) and
+        phase1_target_hints (GPT-4o hints checked against GCC's own folding
+        dumps). Only effective together with phase2 mode regression_seeds.
+        """
+        import json
+        from Fuzz4All.huf_saem.phase2_regression_seeds import Target
+
+        tpath, hpath = cfg.get("targets_file"), cfg.get("hints_file")
+        if not tpath or not os.path.exists(tpath) or not hpath or not os.path.exists(hpath):
+            raise ValueError("huf_saem.phase1 (targets) needs targets_file and hints_file; got "
+                             f"targets_file={tpath!r} hints_file={hpath!r}")
+        with open(tpath) as f:
+            targets = {t["id"]: t for t in (json.loads(l) for l in f if l.strip())}
+        use = cfg.get("use_hints", "validated")   # validated | triggerable
+        if use not in ("validated", "triggerable"):
+            raise ValueError(f"huf_saem.phase1.use_hints must be validated or triggerable, got {use!r}")
+        loaded = []
+        with open(hpath) as f:
+            for l in f:
+                if not l.strip():
+                    continue
+                h = json.loads(l)
+                t = targets.get(h["id"])
+                if t is None or not h.get("hint") or not h.get("example"):
+                    continue
+                if not (h.get("validated") if use == "validated" else h.get("triggerable")):
+                    continue
+                span = tuple(t["match_pd_lines"])
+                loaded.append(Target(h["id"], h["hint"], h["example"], span,
+                                     list(t.get("related_test_dirs", []))))
+                self._p1_target_spans[h["id"]] = span
+        if not loaded:
+            raise ValueError(f"huf_saem.phase1 (targets): no usable hints in {hpath} (use_hints={use})")
+        self._p1_targets = loaded
+        self._p1_p_targeted = float(cfg.get("p_targeted", 0.5))
+        self._p1_check_hits = bool(cfg.get("check_hits", True))
+
+    def _init_phase1_prompt_specs(self, cfg: Dict) -> None:
         from Fuzz4All.huf_saem.phase1_distillation_agent import (
             DistillationAgent,
             infer_extra_cpp_headers,
@@ -233,6 +293,8 @@ class HUFSAEMCoordinator:
             retry_near_copies=bool(cfg.get("retry_near_copies", False)),
             dedupe=bool(cfg.get("dedupe", False)),
             on_reject=self._log_phase2_reject if self._p2_log_rejected else None,
+            targets=self._p1_targets,
+            p_targeted=self._p1_p_targeted,
         )
         # Written lazily: fuzz.py refuses to start if the output folder already
         # exists, and this runs before that check.
@@ -407,6 +469,15 @@ class HUFSAEMCoordinator:
         from Fuzz4All.target.target import FResult
 
         valid = None if f_result is None else (f_result == FResult.SAFE)
+        tid = meta.get("target")
+        if tid and self._p1_check_hits and tid in self._p1_target_spans:
+            # Did this mutant really make GCC apply its target rule? One extra
+            # -O2 compile with folding dumps (instrumented GCC, counters
+            # redirected so coverage replays are not disturbed).
+            from Fuzz4All.huf_saem.phase1_target_hints import rule_fires
+            hit, _, _ = rule_fires(code, self._p1_target_spans[tid])
+            self._p2_engine.target_feedback(tid, hit)
+            meta = dict(meta, target_hit=hit)
         meta = self._p2_engine.record(code, meta, valid)
         row = dict(meta, file=file_name, valid=valid,
                    result=None if f_result is None else f_result.name)

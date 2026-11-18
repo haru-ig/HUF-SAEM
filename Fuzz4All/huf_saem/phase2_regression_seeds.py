@@ -229,6 +229,42 @@ def load_seeds(
 
 
 # --------------------------------------------------------------------------- #
+# Targets (supplied by Phase 1 in `targets` mode)
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class Target:
+    """A piece of GCC to aim mutations at, with a validated C++ hint."""
+    id: str
+    hint: str
+    example: str
+    span: Tuple[int, int]                  # match.pd lines of the rule
+    related_dirs: List[str] = field(default_factory=list)
+    tries: int = 0
+    hits: int = 0
+
+    @property
+    def weight(self) -> float:
+        # Unhit targets dominate; a target already hit keeps a small chance
+        # (hitting it in a new context can still reach new code around it).
+        return (1.0 if self.hits == 0 else 0.1) / (1.0 + 0.05 * self.tries)
+
+
+TARGET_INSTRUCTION = """Keep the kind of construct this program exercises and transform it, and ALSO make the \
+new program contain the following, so that a specific GCC optimization is exercised:
+
+{hint}
+
+Example of code that does this (do not copy it verbatim; adapt it to the program):
+```cpp
+{example}
+```
+Compute it from values that are not compile-time constants (e.g. function parameters \
+or loop variables), and make its result affect the printed output."""
+
+
+# --------------------------------------------------------------------------- #
 # Engine
 # --------------------------------------------------------------------------- #
 
@@ -275,6 +311,8 @@ class RegressionSeedEngine:
         retry_near_copies: bool = False,
         dedupe: bool = False,
         on_reject: Optional[Callable[[str, Meta], None]] = None,
+        targets: Optional[List[Target]] = None,
+        p_targeted: float = 0.0,
     ) -> None:
         if not seeds:
             raise ValueError("phase2 regression_seeds: no seeds loaded (check seed_manifest / seed_dir)")
@@ -301,6 +339,8 @@ class RegressionSeedEngine:
         self.dedupe = dedupe
         self.on_reject = on_reject
         self._seen_hashes: set = set()
+        self.targets: Dict[str, Target] = {t.id: t for t in (targets or [])}
+        self.p_targeted = p_targeted if self.targets else 0.0
         self._calls = 0
         # Does generate_fn take a per-call sampling seed? (tests pass 2-arg stubs)
         try:
@@ -310,7 +350,8 @@ class RegressionSeedEngine:
             self._gen_takes_seed = False
 
         self.counts: Dict[str, int] = {"seed": 0, "mutant": 0, "near_copy": 0, "no_main": 0,
-                                       "duplicate": 0, "retry_calls": 0}
+                                       "duplicate": 0, "retry_calls": 0,
+                                       "targeted_batches": 0, "target_hits": 0, "target_checks": 0}
         self._next_mutant_id = 0
 
     # -- scheduling ---------------------------------------------------------
@@ -404,7 +445,49 @@ class RegressionSeedEngine:
             kept.append((code, meta))
         return kept, near
 
+    def _pick_target(self) -> Target:
+        ts = list(self.targets.values())
+        return self.rng.choices(ts, weights=[t.weight for t in ts], k=1)[0]
+
+    def _related_parent(self, target: Target) -> _Parent:
+        dirs = tuple(d.rstrip("/") + "/" for d in target.related_dirs)
+        pool = [s for s in self.seeds if dirs and s.src.startswith(dirs)] or self.seeds
+        s = self.rng.choice(pool)
+        return _Parent(s.id, s.code, s.id)
+
+    def build_targeted_prompt(self, target: Target, parent: _Parent) -> str:
+        instruction = TARGET_INSTRUCTION.format(hint=target.hint.strip(), example=target.example.strip())
+        return PROMPT_V2.format(instruction=instruction, parent=parent.code.strip(), partner="")
+
+    def _targeted_batch(self) -> List[Tuple[str, Meta]]:
+        target = self._pick_target()
+        target.tries += 1
+        self.counts["targeted_batches"] += 1
+        parent = self._related_parent(target)
+        prompt = self.build_targeted_prompt(target, parent)
+        base: Meta = {"origin": "mutant", "op": "target", "target": target.id, "parent": parent.id,
+                      "root_seed": parent.root_seed, "partner": None, "retry": False}
+        out, near = self._filter(self._generate(prompt, self.batch_size), base, parent)
+        missing = self.batch_size - len(out)
+        if self.retry_near_copies and missing > 0 and near * 2 >= self.batch_size:
+            self.counts["retry_calls"] += 1
+            more, _ = self._filter(self._generate(prompt + RETRY_FEEDBACK, missing),
+                                   dict(base, retry=True), parent)
+            out += more
+        return out
+
+    def target_feedback(self, target_id: str, hit: bool) -> None:
+        t = self.targets.get(target_id)
+        if t is None:
+            return
+        self.counts["target_checks"] += 1
+        if hit:
+            t.hits += 1
+            self.counts["target_hits"] += 1
+
     def _mutate_batch(self) -> List[Tuple[str, Meta]]:
+        if self.p_targeted > 0 and self.rng.random() < self.p_targeted:
+            return self._targeted_batch()
         op = self._pick_op()
         parent = self._pick_parent()
         partner = None
@@ -476,5 +559,7 @@ class RegressionSeedEngine:
             "seeds_total": len(self.seeds),
             "seeds_emitted": self.cursor,
             "mutant_pool": len(self.mutant_pool),
+            "targets": len(self.targets),
+            "targets_hit": sum(1 for t in self.targets.values() if t.hits),
             "ops": {o: vars(s) | {"weight": round(s.weight, 3)} for o, s in self.op_stats.items()},
         }
