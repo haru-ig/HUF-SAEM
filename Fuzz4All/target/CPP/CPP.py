@@ -159,11 +159,20 @@ class CPPTarget(Target):
         )
         return code
 
+    @staticmethod
+    def _options_arg(filename) -> str:
+        """Allowlisted options from the program's `// huf-options:` header,
+        shell-quoted, with a trailing space ("" when there are none)."""
+        import shlex
+        from Fuzz4All.huf_saem.options import read_options, sanitize
+        opts, _ = sanitize(read_options(filename))
+        return (shlex.join(opts) + " ") if opts else ""
+
     def validate_compiler(self, compiler, filename) -> (FResult, str):
         # check without -c option (+ linking)
         try:
             exit_code = subprocess.run(
-                f"{compiler} -x c++ -std=c++23 {filename} -o /tmp/out{self.CURRENT_TIME}",
+                f"{compiler} -x c++ -std=c++23 {self._options_arg(filename)}{filename} -o /tmp/out{self.CURRENT_TIME}",
                 shell=True,
                 capture_output=True,
                 encoding="utf-8",
@@ -207,7 +216,7 @@ class CPPTarget(Target):
                     pass
                 self.write_back_file(code + main_code)
                 exit_code = subprocess.run(
-                    f"{compiler} -std=c++23 -x c++ /tmp/temp{self.CURRENT_TIME}.cpp -o /tmp/out{self.CURRENT_TIME}",
+                    f"{compiler} -std=c++23 -x c++ {self._options_arg(filename)}/tmp/temp{self.CURRENT_TIME}.cpp -o /tmp/out{self.CURRENT_TIME}",
                     shell=True,
                     capture_output=True,
                     encoding="utf-8",

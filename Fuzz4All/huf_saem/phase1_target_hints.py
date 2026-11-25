@@ -108,7 +108,9 @@ def rule_fires(source: str, span: Tuple[int, int], timeout: int = 60) -> Tuple[b
             f.write(source)
         env = dict(os.environ, GCOV_PREFIX=os.path.join(d, "gcda"), GCOV_PREFIX_STRIP=GCOV_STRIP)
         try:
-            p = subprocess.run([GXX, "-std=c++23", "-O2", "-w", "-c", "t.cc", "-o", "t.o",
+            from Fuzz4All.huf_saem.options import parse_options, sanitize
+            opts, _ = sanitize(parse_options(source))   # program's own options override -O2
+            p = subprocess.run([GXX, "-std=c++23", "-O2", "-w", *opts, "-c", "t.cc", "-o", "t.o",
                                 "-fdump-tree-all-folding"],
                                cwd=d, env=env, capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:

@@ -215,6 +215,21 @@ def _program_hash(path: str) -> str:
         return _hash_text(path)
 
 
+def _program_options(path: str) -> List[str]:
+    """Allowlisted options from the program's `// huf-options:` header, minus
+    its -O level (the oracle varies that itself). -Ofast becomes -ffast-math so
+    its float semantics apply at every level."""
+    from Fuzz4All.huf_saem.options import read_options, sanitize
+    opts, _ = sanitize(read_options(path))
+    out = []
+    for o in opts:
+        if o == "-Ofast":
+            out.append("-ffast-math")
+        elif not re.match(r"^-O([0-3sgz])?$", o):
+            out.append(o)
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Verdicts
 # --------------------------------------------------------------------------- #
@@ -367,11 +382,17 @@ class DifferentialOracle:
         return verdict
 
     def _check_in(self, source_file: str, workdir: str) -> Verdict:
+        # Per-program options (option-aware fuzzing): applied at every -O
+        # level, so the levels still differ only in optimisation.
+        from Fuzz4All.huf_saem.options import oracle_mode
+        prog_opts = _program_options(source_file)
+        mode = oracle_mode(prog_opts, self.configs[0].compiler) if prog_opts else "full"
+
         # ---- 1. compile under every configuration (in parallel) -----------
         def compile_one(idx_cfg):
             idx, cfg = idx_cfg
             exe = os.path.join(workdir, f"a{idx}.out")
-            return cfg, exe, self._compile(source_file, cfg, exe)
+            return cfg, exe, self._compile(source_file, cfg, exe, extra=prog_opts)
 
         with ThreadPoolExecutor(max_workers=self.jobs) as pool:
             compiled = list(pool.map(compile_one, enumerate(self.configs)))
@@ -450,6 +471,12 @@ class DifferentialOracle:
                 )
             # Otherwise drop the rejecting configs and compare the rest.
 
+        if mode != "full":
+            # Crash and acceptance checks done; outputs cannot be compared:
+            # value-changing options (fast-math) legitimately alter results,
+            # and CPU features this host lacks mean the binaries cannot run.
+            return Verdict(f"unchecked_{mode}", f"compiled at every level; outputs not compared ({mode})")
+
         if len(ok) < 2:
             return SAFE
 
@@ -483,11 +510,11 @@ class DifferentialOracle:
 
         # ---- 7. UB gate ----------------------------------------------------
         if self.sanitize:
-            ub = self._sanitizer_report(ref_cfg.compiler, source_file, workdir)
+            ub = self._sanitizer_report(ref_cfg.compiler, source_file, workdir, prog_opts)
             if ub is not None:
                 return Verdict("ub", "divergence explained by UB in the program",
                                ub[:2000])
-            uninit = self._uninit_report(ref_cfg.compiler, source_file, workdir)
+            uninit = self._uninit_report(ref_cfg.compiler, source_file, workdir, prog_opts)
             if uninit is not None:
                 return Verdict("ub", "divergence explained by an uninitialised read",
                                uninit[:2000])
@@ -513,7 +540,8 @@ class DifferentialOracle:
 
     # -- UB gate ------------------------------------------------------------
 
-    def _sanitizer_report(self, compiler: str, source: str, workdir: str) -> Optional[str]:
+    def _sanitizer_report(self, compiler: str, source: str, workdir: str,
+                          prog_opts: Sequence[str] = ()) -> Optional[str]:
         """Return the sanitizer's complaint, or None if the program looks clean.
 
         A divergence in a program with undefined behaviour says nothing about
@@ -525,7 +553,7 @@ class DifferentialOracle:
             source,
             cfg,
             exe,
-            extra=["-g", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+            extra=[*prog_opts, "-g", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
         )
         if proc.returncode != 0 or proc.timed_out:
             return None  # sanitizers unavailable here; fall through to reporting
@@ -592,7 +620,8 @@ class DifferentialOracle:
             )
         return supported
 
-    def _uninit_report(self, compiler: str, source: str, workdir: str) -> Optional[str]:
+    def _uninit_report(self, compiler: str, source: str, workdir: str,
+                       prog_opts: Sequence[str] = ()) -> Optional[str]:
         """Return a description of an uninitialised read, or None if clean.
 
         ASan and UBSan do not see reads of uninitialised automatic variables --
@@ -617,7 +646,7 @@ class DifferentialOracle:
             exe = os.path.join(workdir, f"autoinit_{mode}.out")
             proc = self._compile(
                 source, _Config(compiler, "-O1"), exe,
-                extra=[f"-ftrivial-auto-var-init={mode}"],
+                extra=[*prog_opts, f"-ftrivial-auto-var-init={mode}"],
             )
             if proc.returncode != 0 or proc.timed_out:
                 return None  # this program was rejected -- cannot tell

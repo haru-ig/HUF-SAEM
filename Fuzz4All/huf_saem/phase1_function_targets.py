@@ -314,7 +314,9 @@ def line_counts(source: str, rel: str, lines: Sequence[int], timeout: int = 60) 
             f.write(source)
         env = dict(os.environ, GCOV_PREFIX=os.path.join(d, "g"), GCOV_PREFIX_STRIP="3")
         try:
-            p = subprocess.run([GXX, "-std=c++23", "-O2", "-w", "-c", "t.cc", "-o", "t.o"],
+            from Fuzz4All.huf_saem.options import parse_options, sanitize
+            opts, _ = sanitize(parse_options(source))   # program's own options override -O2
+            p = subprocess.run([GXX, "-std=c++23", "-O2", "-w", *opts, "-c", "t.cc", "-o", "t.o"],
                                cwd=d, env=env, capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
             return None, "compile timed out"

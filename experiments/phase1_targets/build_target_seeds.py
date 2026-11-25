@@ -68,10 +68,16 @@ def check(code: str, target: dict):
     try:
         src, exe = os.path.join(d, "s.cpp"), os.path.join(d, "a.out")
         open(src, "w").write(code)
-        p = subprocess.run(["gcc14-g++", "-std=c++23", "-O0", "-w", src, "-o", exe],
+        from Fuzz4All.huf_saem.options import parse_options, runs_on_host, sanitize, without_level
+        opts, _ = sanitize(parse_options(code))
+        p = subprocess.run(["gcc14-g++", "-std=c++23", "-O0", "-w", *without_level(opts), src, "-o", exe],
                            capture_output=True, text=True, timeout=60)
         if p.returncode != 0:
             return "compile", p.stderr[:300]
+        if not runs_on_host(opts):
+            # e.g. AVX-512 code on this Zen 2 host: it can be compiled and
+            # measured, not executed -- judge it on the target check alone.
+            return ("ok", "not run (host lacks CPU features)") if target_hit(code, target) else ("no_fire", "")
         try:
             r = subprocess.run([exe], input=DEFAULT_STDIN, capture_output=True, timeout=5, cwd=d)
         except subprocess.TimeoutExpired:

@@ -33,6 +33,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
+from Fuzz4All.huf_saem.options import parse_options, sanitize, set_options, strip_options
+
 OPERATORS: Dict[str, str] = {
     "retype": (
         "Change the types and constants involved: use different integer widths, "
@@ -221,6 +223,11 @@ def load_seeds(
                 continue
             with open(path, encoding="utf-8", errors="replace") as sf:
                 code = _PROVENANCE_HEADER.sub("", sf.read())
+            # Option-aware fuzzing: a seed may carry the compiler options it
+            # should be compiled with (allowlisted), as a `// huf-options:` header.
+            opts, _ = sanitize(r.get("options") or [])
+            if opts:
+                code = set_options(code, opts)
             seeds.append(Seed(r["id"], r["src"], code, r["class"]))
     torture = sorted((s for s in seeds if s.src.startswith("torture/")), key=lambda s: s.src)
     other = sorted((s for s in seeds if not s.src.startswith("torture/")), key=lambda s: s.src)
@@ -393,8 +400,8 @@ class RegressionSeedEngine:
         template, ops = (PROMPT, OPERATORS) if self.prompt_version == 1 else (PROMPT_V2, OPERATORS_V2)
         return template.format(
             instruction=ops[op],
-            parent=parent.code.strip(),
-            partner=PARTNER.format(code=partner.code.strip()) if partner else "",
+            parent=strip_options(parent.code).strip(),
+            partner=PARTNER.format(code=strip_options(partner.code).strip()) if partner else "",
         )
 
     def _generate(self, prompt: str, n: int) -> List[str]:
@@ -422,12 +429,18 @@ class RegressionSeedEngine:
     def _filter(self, texts: List[str], base: Meta, parent: _Parent) -> Tuple[List[Tuple[str, Meta]], int]:
         kept: List[Tuple[str, Meta]] = []
         near = 0
+        parent_opts = parse_options(parent.code)
+        parent_body = strip_options(parent.code)
         for text in texts:
-            code = extract_code(text)
+            # Mutants inherit the parent's compiler options; whatever header
+            # the model may have written is discarded.
+            code = strip_options(extract_code(text))
             if not _HAS_MAIN.search(code):
                 self._reject(code, base, "no_main")
                 continue
-            sim = similarity(parent.code, code)
+            sim = similarity(parent_body, code)
+            if parent_opts:
+                code = set_options(code, parent_opts)
             meta = dict(base, sim_parent=round(sim, 3))
             if sim >= self.max_similarity:
                 # Near-verbatim regurgitation of the parent: costs a compile
@@ -436,7 +449,9 @@ class RegressionSeedEngine:
                 self._reject(code, meta, "near_copy")
                 continue
             if self.dedupe:
-                h = hashlib.sha1(_normalise(code).encode()).hexdigest()
+                # _normalise drops comments, so add the options explicitly: the
+                # same program under different options is a different input.
+                h = hashlib.sha1((_normalise(code) + "\0" + " ".join(parse_options(code))).encode()).hexdigest()
                 if h in self._seen_hashes:
                     self._reject(code, meta, "duplicate")
                     continue
@@ -457,7 +472,7 @@ class RegressionSeedEngine:
 
     def build_targeted_prompt(self, target: Target, parent: _Parent) -> str:
         instruction = TARGET_INSTRUCTION.format(hint=target.hint.strip(), example=target.example.strip())
-        return PROMPT_V2.format(instruction=instruction, parent=parent.code.strip(), partner="")
+        return PROMPT_V2.format(instruction=instruction, parent=strip_options(parent.code).strip(), partner="")
 
     def _targeted_batch(self) -> List[Tuple[str, Meta]]:
         target = self._pick_target()

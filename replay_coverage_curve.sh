@@ -90,11 +90,20 @@ echo "[replay $(ts)] resetting counters ..."
 
 echo "rank,file_index,mtime_epoch,elapsed_sec,cum_compiled_ok,cum_compiled_fail,lines_hit,lines_total,lines_pct,funcs_hit,funcs_total,funcs_pct,br_hit,br_total,br_pct" > "$CSV"
 
+# Per-program compiler options (`// huf-options:` header, allowlisted), read
+# for the whole corpus in one pass. They follow $CFLAGS, so a program's own
+# -O level overrides -O2. Programs without a header compile exactly as before.
+declare -A PROG_OPTS
+while IFS=$'\t' read -r p o; do [ -n "$o" ] && PROG_OPTS["$p"]="$o"; done \
+    < <(cd "$REPO" && /opt/pytorch/bin/python -m Fuzz4All.huf_saem.options "$DIR" 2>/dev/null)
+echo "[replay $(ts)] programs with their own options: ${#PROG_OPTS[@]}"
+
 rank=0; ok=0; fail=0
 while read -r mtime path; do
     rank=$((rank+1))
     idx=$(basename "$path" .fuzz)
-    if timeout "$TIMEOUT" "$GXX" -x c++ $CFLAGS "$path" -o "$OBJ" >/dev/null 2>&1; then
+    # shellcheck disable=SC2086  # options are allowlisted single tokens
+    if timeout "$TIMEOUT" "$GXX" -x c++ $CFLAGS ${PROG_OPTS["$path"]:-} "$path" -o "$OBJ" >/dev/null 2>&1; then
         ok=$((ok+1))
     else
         fail=$((fail+1))

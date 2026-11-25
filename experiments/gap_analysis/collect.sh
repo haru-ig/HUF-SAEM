@@ -12,7 +12,11 @@ LCOV_OPTS="--ignore-errors gcov,source,mismatch,unused,empty,negative,unsupporte
 ts() { date -u '+%F %T'; }
 echo "[$(ts)] reset counters"; ( cd "$BUILD" && find . -name '*.gcda' -delete )
 echo "[$(ts)] compiling $(ls "$DIR"/*.fuzz | wc -l) programs, 6-way, -std=c++23 -O2 -c"
-ls "$DIR"/*.fuzz | xargs -P 6 -I{} bash -c 'timeout 60 '"$GXX"' -x c++ -std=c++23 -O2 -c "{}" -o /tmp/gap_obj_$$.o >/dev/null 2>&1 && echo OK || echo FAIL' > "$OUT/compile_$LABEL.txt"
+# path<TAB>options per program (`// huf-options:` header, allowlisted); a
+# program's own options follow -O2, so its -O level wins.
+( cd /home/ec2-user/HUF-SAEM && /opt/pytorch/bin/python -m Fuzz4All.huf_saem.options "$DIR" ) > "$OUT/jobs_$LABEL.txt"
+echo "[$(ts)] programs with their own options: $(awk -F'\t' '$2!=""' "$OUT/jobs_$LABEL.txt" | wc -l)"
+xargs -P 6 -d '\n' -I{} bash -c 'IFS=$'"'"'\t'"'"' read -r f o <<< "{}"; timeout 60 '"$GXX"' -x c++ -std=c++23 -O2 $o -c "$f" -o /tmp/gap_obj_$$.o >/dev/null 2>&1 && echo OK || echo FAIL' < "$OUT/jobs_$LABEL.txt" > "$OUT/compile_$LABEL.txt"
 rm -f /tmp/gap_obj_*.o
 echo "[$(ts)] ok=$(grep -c OK "$OUT/compile_$LABEL.txt") fail=$(grep -c FAIL "$OUT/compile_$LABEL.txt")"
 echo "[$(ts)] capture"
