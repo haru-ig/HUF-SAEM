@@ -32,13 +32,14 @@ from concurrent.futures import ThreadPoolExecutor
 REPO = "/home/ec2-user/HUF-SAEM"
 sys.path.insert(0, REPO)
 from Fuzz4All.huf_saem.phase1_target_hints import rule_fires  # noqa: E402
+from Fuzz4All.huf_saem.phase1_function_targets import check_target  # noqa: E402
 from Fuzz4All.huf_saem.phase2_regression_seeds import extract_code  # noqa: E402
 from Fuzz4All.huf_saem.oracle import DEFAULT_STDIN  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 PROMPT = """\
-The C++ code below makes GCC apply a specific optimization ({hint}).
+The C++ code below makes GCC execute a specific part of the compiler ({hint}).
 
 ```cpp
 {example}
@@ -56,7 +57,13 @@ negative numbers, large values) as long as no undefined behaviour occurs,
 Reply with only the program in a single ```cpp code block."""
 
 
-def check(code: str, span):
+def target_hit(code: str, target: dict) -> bool:
+    if target.get("kind", "matchpd") == "matchpd":
+        return rule_fires(code, tuple(target["match_pd_lines"]))[0]
+    return check_target(code, target)[0]
+
+
+def check(code: str, target: dict):
     d = tempfile.mkdtemp(prefix="tseed_")
     try:
         src, exe = os.path.join(d, "s.cpp"), os.path.join(d, "a.out")
@@ -71,8 +78,7 @@ def check(code: str, span):
             return "timeout", ""
         if r.returncode != 0 or not r.stdout.strip():
             return "run", f"rc={r.returncode} out={len(r.stdout)}B"
-        fired, err, _ = rule_fires(code, span)
-        return ("ok", "") if fired else ("no_fire", err[:200])
+        return ("ok", "") if target_hit(code, target) else ("no_fire", "")
     finally:
         subprocess.run(["rm", "-rf", d])
 
@@ -80,25 +86,27 @@ def check(code: str, span):
 def main():
     import ollama
     ap = argparse.ArgumentParser()
-    ap.add_argument("--targets", default=os.path.join(HERE, "matchpd_targets.jsonl"))
-    ap.add_argument("--hints", default=os.path.join(HERE, "matchpd_hints.jsonl"))
+    ap.add_argument("--targets", nargs="+", default=[os.path.join(HERE, "matchpd_targets.jsonl")])
+    ap.add_argument("--hints", nargs="+", default=[os.path.join(HERE, "matchpd_hints.jsonl")])
+    ap.add_argument("--out", default=os.path.join(HERE, "target_seeds"))
+    ap.add_argument("--combined", default=os.path.join(HERE, "combined_seeds"))
     ap.add_argument("--regression", default=f"{REPO}/experiments/phase2_regression_seeds")
     ap.add_argument("--attempts", type=int, default=3)
     ap.add_argument("-j", type=int, default=2)
     ap.add_argument("--model", default="deepseek-coder-v2")
     a = ap.parse_args()
 
-    targets = {json.loads(l)["id"]: json.loads(l) for l in open(a.targets)}
-    hints = [json.loads(l) for l in open(a.hints)]
+    targets = {json.loads(l)["id"]: json.loads(l) for p in a.targets for l in open(p)}
+    hints = [json.loads(l) for p in a.hints for l in open(p)]
     hints = [h for h in hints if h.get("validated") and h["id"] in targets]
-    out = os.path.join(HERE, "target_seeds")
+    out = a.out
     os.makedirs(os.path.join(out, "seeds"), exist_ok=True)
     rows, lock = [], threading.Lock()
     tally = {}
 
     def work(i_h):
         i, h = i_h
-        span = tuple(targets[h["id"]]["match_pd_lines"])
+        target = targets[h["id"]]
         prompt = PROMPT.format(hint=h["hint"].rstrip("."), example=h["example"].strip())
         status, detail, code = "no_attempt", "", ""
         for k in range(a.attempts):
@@ -109,12 +117,14 @@ def main():
             except Exception as e:
                 status, detail = "llm_error", repr(e)[:200]
                 continue
-            status, detail = check(code, span)
+            status, detail = check(code, target)
             if status == "ok":
                 break
         with lock:
             tally[status] = tally.get(status, 0) + 1
-            row = {"src": f"matchpd/{h['id'].split(':')[1]}.C", "target": h["id"], "status": status,
+            src = (f"matchpd/{h['id'].split(':')[1]}.C" if target.get("kind", "matchpd") == "matchpd"
+                   else f"{target['kind']}/{target['file'].replace('/', '_')}_{h['id'].rsplit(':', 1)[1]}.C")
+            row = {"src": src, "target": h["id"], "status": status,
                    "detail": detail, "attempts": k + 1}
             if status == "ok":
                 sid = "t" + hashlib.sha1(code.encode()).hexdigest()[:11]
@@ -136,7 +146,7 @@ def main():
     print("target seeds:", tally)
 
     # combined seed set for the run: regression seeds + target seeds
-    comb = os.path.join(HERE, "combined_seeds")
+    comb = a.combined
     os.makedirs(os.path.join(comb, "seeds"), exist_ok=True)
     reg_rows = [json.loads(l) for l in open(os.path.join(a.regression, "manifest.jsonl"))]
     n = 0

@@ -64,6 +64,32 @@ whose code triggers the rule at -O2; use function parameters for values so they 
 constant-folded away>"
 }}"""
 
+FUNCTION_PROMPT = """\
+Below is code from GCC 14's {area}: file gcc/{file}, function {function}.
+{situation}
+
+{comment}
+{guard}
+```c++
+{slice}
+```
+
+Task: decide whether compiling ordinary C++23 source with g++ -O2 on x86-64 (no extra \
+options) can make GCC execute {what}, and if so show how.
+
+Answer with ONLY a JSON object:
+{{
+  "triggerable": true or false,
+  "why": "<one sentence: which source construct leads GCC here, or why it cannot>",
+  "hint": "<one imperative sentence telling a programmer what to put in a C++ program so \
+GCC executes this code, naming the language feature / code shape and types needed>",
+  "example": "<a small self-contained C++ translation unit (functions only, no main \
+needed) that makes GCC execute this code at -O2; use function parameters for values so \
+they are not constant-folded away>"
+}}"""
+
+AREAS = {"optimiser": "middle-end / back-end optimiser", "cxx_frontend": "C++ front end"}
+
 RETRY = """\
 Your example did not work: {problem}
 Remember: values must come from function parameters (not constants) so the expression \
@@ -125,13 +151,37 @@ class HintGenerator:
                                                 max_tokens=self.max_tokens, temperature=0.2)
         return r.choices[0].message.content or ""
 
+    @staticmethod
+    def _user_prompt(target: dict) -> str:
+        if target.get("kind", "matchpd") == "matchpd":
+            return PROMPT.format(comment=target.get("comment", ""),
+                                 for_headers="\n".join(target.get("for_headers", [])), rule=target["rule"])
+        partial = target["target_type"] == "partial"
+        return FUNCTION_PROMPT.format(
+            area=AREAS[target["kind"]], file=target["file"], function=target["function"],
+            situation=("This function runs when GCC compiles our C++ test programs, but the region "
+                       "below never executes. The conditions on the path from the function start "
+                       "to it are listed first; all of them must hold." if partial else
+                       "This function is never called when GCC compiles our C++ test programs."),
+            comment=target.get("comment", ""),
+            guard=("Path conditions:\n" + target["guard_chain"]) if partial else "",
+            slice=target["slice"],
+            what="this region" if partial else "this function")
+
+    @staticmethod
+    def _check(target: dict, source: str):
+        """(fired, error, detail) for either target kind."""
+        if target.get("kind", "matchpd") == "matchpd":
+            fired, err, applied = rule_fires(source, tuple(target["match_pd_lines"]))
+            return fired, err, applied
+        from Fuzz4All.huf_saem.phase1_function_targets import check_target
+        fired, err, progress = check_target(source, target)
+        return fired, err, progress
+
     def hint_for(self, target: dict, retries: int = 1) -> dict:
-        span = tuple(target["match_pd_lines"])
         messages = [
             {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": PROMPT.format(
-                comment=target.get("comment", ""), for_headers="\n".join(target.get("for_headers", [])),
-                rule=target["rule"])},
+            {"role": "user", "content": self._user_prompt(target)},
         ]
         out = {"id": target["id"], "attempts": 0, "validated": False}
         for attempt in range(retries + 1):
@@ -151,13 +201,20 @@ class HintGenerator:
                        hint=ans.get("hint", ""), example=ans.get("example", ""))
             if not out["triggerable"] or not out["example"]:
                 return out
-            fired, err, applied = rule_fires(out["example"], span)
-            out.update(validated=fired, compile_error=err[:400], applied_lines=applied[:50])
+            fired, err, applied = self._check(target, out["example"])
+            if isinstance(applied, str):
+                out.update(validated=fired, compile_error=err[:400], progress=applied)
+            else:
+                out.update(validated=fired, compile_error=err[:400], applied_lines=applied[:50])
             if fired:
                 return out
-            problem = (f"it does not compile:\n{err}" if err else
-                       "it compiled, but GCC did not apply this rule (it applied match.pd lines "
-                       f"{applied[:20]} instead).")
+            if err:
+                problem = f"it does not compile:\n{err}"
+            elif target.get("kind", "matchpd") == "matchpd":
+                problem = ("it compiled, but GCC did not apply this rule"
+                           + (f" (it applied match.pd lines {applied[:20]} instead)." if applied else "."))
+            else:
+                problem = f"it compiled, but GCC did not execute the target code. {applied}"
             messages += [{"role": "assistant", "content": text},
                          {"role": "user", "content": RETRY.format(problem=problem)}]
         return out
@@ -177,7 +234,8 @@ def generate_hints(targets: Sequence[dict], out_path: str, generator: HintGenera
     counts = {"done": 0, "validated": 0, "triggerable": 0, "errors": 0}
 
     def work(t):
-        h = generator.hint_for(t, retries=retries)
+        # function targets are harder; give them one more corrected attempt
+        h = generator.hint_for(t, retries=retries + (t.get("kind", "matchpd") != "matchpd"))
         with lock:
             with open(out_path, "a") as f:
                 f.write(json.dumps(h) + "\n")
